@@ -11,7 +11,7 @@ class Incidents extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initialRoute = Routes.addIncidentType;
+    final initialRoute = Routes.crisisDashboardScreen;
 
     return ScreenUtilInit(
       designSize: const Size(375, 812),

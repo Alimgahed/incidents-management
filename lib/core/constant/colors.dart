@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// =======================
 /// BRAND / PRIMARY
 /// =======================
-const Color appColor = Color(0xFF1DA1FA);
+const Color appColor = Color(0xFF1E3A5F);
 const Color buttonColor = Color(0xFF007BFF);
 // Additional helper colors used in this file:
 const Color darkBorder = Color(0xFF334155); // Subtle borders

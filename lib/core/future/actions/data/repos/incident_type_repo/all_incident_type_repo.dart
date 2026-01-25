@@ -1,17 +1,17 @@
 import 'package:dio/dio.dart';
-import 'package:incidents_managment/core/future/actions/data/models/all_incident_type.dart';
+import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
 import 'package:incidents_managment/core/network/api_error_model.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
 
-class AddIncidentTypeRepo {
+class AllIncidentTypeRepo {
   final ApiService apiService;
 
-  AddIncidentTypeRepo({required this.apiService});
+  AllIncidentTypeRepo({required this.apiService});
 
-  Future<ApiResult> addIncidentType(IncidentType incidentType) async {
+  Future<ApiResult<List<IncidentType>>> getAllIncidentTypes() async {
     try {
-      final response = await apiService.addIncidentType(incidentType);
+      final response = await apiService.getAllIncidentTypes();
       return ApiResult.success(response);
     } on DioException catch (e) {
       // Backend returned an error response

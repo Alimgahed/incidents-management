@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:incidents_managment/core/future/actions/data/models/all_incident_classes.dart';
+import 'package:incidents_managment/core/future/actions/data/models/classes/all_incident_classes.dart';
 import 'package:incidents_managment/core/network/api_error_model.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
 import 'package:incidents_managment/core/network/api_services.dart';

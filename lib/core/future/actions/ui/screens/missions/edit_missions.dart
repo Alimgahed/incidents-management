@@ -1,28 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/future/actions/data/models/classes/all_incident_classes.dart';
-import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_type.dart';
+import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/classes_cubit/all_incident_classes.dart';
-import 'package:incidents_managment/core/future/actions/logic/states/add_incident_type_states.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/edit_missions_cubit.dart';
+import 'package:incidents_managment/core/future/actions/logic/states/add_missions_states.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/all_incident_classes.dart';
+import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 
 import 'package:incidents_managment/core/widget/fields.dart';
 
-class AddIncidentType extends StatelessWidget {
-  const AddIncidentType({super.key});
+class EditMissions extends StatelessWidget {
+  final AllMissionModel? mission;
+
+  const EditMissions({super.key, this.mission});
 
   @override
   Widget build(BuildContext context) {
+    final editCubit = context.read<EditMissionsCubit>();
+    if (mission != null) {
+      editCubit.id = mission!.missionId!;
+      editCubit.selectedClassId = mission!.classId;
+      editCubit.missionName.text = mission!.missionName;
+    }
     return Scaffold(
-      appBar: const GlobalAppBar(
-        title: 'إضافة نوع أزمة',
-        leadingIcon: Icons.add_circle_outline,
+      appBar: GlobalAppBar(
+        onBackPress: () => context.pop(),
+        title: 'تعديل مهمة',
+        leadingIcon: Icons.edit_note_rounded,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: // Inside your build method or a BlocListener
-        BlocListener<AddIncidentTypeCubit, AddIncidentTypeState>(
+        BlocListener<EditMissionsCubit, AddMissionsState>(
           listener: (context, state) {
             state.whenOrNull(
               loading: () {
@@ -33,7 +44,12 @@ class AddIncidentType extends StatelessWidget {
                 SuccessDialog.show(
                   context,
                   title: 'تم',
-                  message: "تمت إضافة نوع الأزمة بنجاح",
+
+                  message: "تم تعديل المهمة بنجاح",
+                  onPressed: () {
+                    context.pop();
+                    Navigator.pop(context, true);
+                  },
                 );
               },
               error: (message) {
@@ -51,7 +67,7 @@ class AddIncidentType extends StatelessWidget {
               // Section Header
               const Globalheader(
                 icon: Icons.edit_note_rounded,
-                title: 'بيانات الأزمة ',
+                title: 'بيانات المهمة ',
               ),
               const SizedBox(height: 24),
 
@@ -63,14 +79,15 @@ class AddIncidentType extends StatelessWidget {
                     loading: () => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        buildLabel("تصنيف الأزمة"),
+                        buildLabel("تصنيف المهمة"),
                         const LinearProgressIndicator(minHeight: 2),
                         const SizedBox(height: 20),
                       ],
                     ),
                     error: (e) => buildErrorState(),
                     loaded: (types) => CustomDropdownFormField<int>(
-                      hintText: 'اختر تصنيف الأزمة',
+                      hintText: 'اختر تصنيف المهمة',
+                      value: editCubit.selectedClassId,
                       iconData: Icons.category_outlined,
                       items: types.map((IncidentClass type) {
                         return DropdownMenuItem<int>(
@@ -79,9 +96,9 @@ class AddIncidentType extends StatelessWidget {
                         );
                       }).toList(),
                       onChanged: (value) {
-                        context
-                            .read<AddIncidentTypeCubit>()
-                            .updateSelectedClass(value);
+                        context.read<EditMissionsCubit>().updateSelectedClass(
+                          value,
+                        );
                       },
                     ),
                   );
@@ -90,15 +107,11 @@ class AddIncidentType extends StatelessWidget {
               const SizedBox(height: 20),
 
               // 2. Incident Name Field
-              buildLabel("اسم الأزمة"),
+              buildLabel("اسم المهمة"),
               CustomTextFormField(
-                hintText: 'أدخل اسم الأزمة بالتفصيل',
+                controller: editCubit.missionName,
+                hintText: 'أدخل اسم المهمة بالتفصيل',
                 iconData: Icons.warning_amber_outlined,
-                onChanged: (value) {
-                  context.read<AddIncidentTypeCubit>().updateIncidentName(
-                    value,
-                  );
-                },
               ),
 
               const SizedBox(height: 40),
@@ -110,7 +123,7 @@ class AddIncidentType extends StatelessWidget {
                 child: CustomButton(
                   text: "حفظ البيانات",
                   onPressed: () {
-                    context.read<AddIncidentTypeCubit>().saveIncidentType();
+                    context.read<EditMissionsCubit>().saveMission();
                   },
                 ),
               ),
@@ -120,6 +133,4 @@ class AddIncidentType extends StatelessWidget {
       ),
     );
   }
-
-  // Helper to keep code clean
 }

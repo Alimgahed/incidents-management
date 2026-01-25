@@ -1,11 +1,19 @@
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
-import 'package:incidents_managment/core/future/actions/data/repos/add_incident_type_repo.dart';
-import 'package:incidents_managment/core/future/actions/data/repos/all_incident_classes_rep.dart';
-import 'package:incidents_managment/core/future/actions/data/repos/all_incident_type_repo.dart';
-import 'package:incidents_managment/core/future/actions/logic/cubit/add_incident_type.dart';
-import 'package:incidents_managment/core/future/actions/logic/cubit/all_incident_classes.dart';
-import 'package:incidents_managment/core/future/actions/logic/cubit/all_incident_type.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/classes_repo/all_incident_classes_rep.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/incident_missions_repo.dart/incident_missions.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/incident_type_repo/add_incident_type_repo.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_mission_cubit.dart';
+import 'package:incidents_managment/future/actions/data/repos/all_incident_type_repo.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/missions_repo/add_mission_repo.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/missions_repo/edit_mission_repo.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/missions_repo/get_missions-repo.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/classes_cubit/all_incident_classes.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_type.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/add_missions_cubit.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/edit_missions_cubit.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
 import 'package:incidents_managment/core/network/dio_factory.dart';
 
@@ -14,29 +22,66 @@ final getIt = GetIt.instance;
 Future<void> setup() async {
   // Core Services
   Dio dio = DioFactory.getDioInstance();
-  getIt.registerLazySingleton(() => ApiService(dio));
+  getIt.registerLazySingleton<ApiService>(() => ApiService(dio));
 
-  // ⭐ Register UserService as singleton
-
-  // Initialize UserService (load user from storage)
-
-  getIt.registerLazySingleton(() => AllIncidentTypeRepo(apiService: getIt()));
-
-  getIt.registerLazySingleton(() => AllIncidentClassRepo(apiService: getIt()));
-  getIt.registerLazySingleton(() => AddIncidentTypeRepo(apiService: getIt()));
-
-  // Repositories
-  // getIt.registerLazySingleton(() => LoginRepo(apiService: getIt()));
-
-  getIt.registerFactory(
-    () => AllIncidentTypeCubit(allIncidentTypeRepo: getIt()),
+  // Repositories - LazySingleton is correct for repos
+  getIt.registerLazySingleton<AllIncidentClassRepo>(
+    () => AllIncidentClassRepo(apiService: getIt<ApiService>()),
   );
 
-  getIt.registerFactory(() => AddIncidentTypeCubit(repository: getIt()));
-  getIt.registerFactory(
-    () => AllIncidentClasses(allIncidentClassRepo: getIt()),
+  getIt.registerLazySingleton<AddIncidentMissionRepo>(
+    () => AddIncidentMissionRepo(apiService: getIt<ApiService>()),
   );
 
-  // // ⭐⭐⭐ Cubits - Register LoginCubit as Factory
-  // getIt.registerFactory(() => AddClientCubit(addClientRepo: getIt()));
+  getIt.registerLazySingleton<AddIncidentTypeRepo>(
+    () => AddIncidentTypeRepo(apiService: getIt<ApiService>()),
+  );
+
+  getIt.registerLazySingleton<AddMissionRepo>(
+    () => AddMissionRepo(apiService: getIt<ApiService>()),
+  );
+
+  getIt.registerLazySingleton<AllMissionsRepo>(
+    () => AllMissionsRepo(apiService: getIt<ApiService>()),
+  );
+
+  getIt.registerLazySingleton<EditMissionRepo>(
+    () => EditMissionRepo(apiService: getIt<ApiService>()),
+  );
+
+  getIt.registerLazySingleton<AllIncidentTypeRepo>(
+    () => AllIncidentTypeRepo(apiService: getIt<ApiService>()),
+  );
+
+  // Cubits - ALL should be Factory to get fresh instances
+  // ⚠️ FIXED: Changed from LazySingleton to Factory
+  getIt.registerFactory<AddIncidentMissionCubit>(
+    () => AddIncidentMissionCubit(repository: getIt<AddIncidentMissionRepo>()),
+  );
+
+  getIt.registerFactory<AllIncidentTypeCubit>(
+    () =>
+        AllIncidentTypeCubit(allIncidentTypeRepo: getIt<AllIncidentTypeRepo>()),
+  );
+
+  getIt.registerFactory<EditMissionsCubit>(
+    () => EditMissionsCubit(repository: getIt<EditMissionRepo>()),
+  );
+
+  getIt.registerFactory<AllMissionsCubit>(
+    () => AllMissionsCubit(allMissionsRepo: getIt<AllMissionsRepo>()),
+  );
+
+  getIt.registerFactory<AddMissionCubit>(
+    () => AddMissionCubit(repository: getIt<AddMissionRepo>()),
+  );
+
+  getIt.registerFactory<AddIncidentTypeCubit>(
+    () => AddIncidentTypeCubit(repository: getIt<AddIncidentTypeRepo>()),
+  );
+
+  getIt.registerFactory<AllIncidentClasses>(
+    () =>
+        AllIncidentClasses(allIncidentClassRepo: getIt<AllIncidentClassRepo>()),
+  );
 }

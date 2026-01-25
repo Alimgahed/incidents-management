@@ -10,6 +10,7 @@ IncidentType _$IncidentTypeFromJson(Map<String, dynamic> json) => IncidentType(
   incidentTypeId: (json['incident_type_id'] as num?)?.toInt(),
   incidentTypeName: json['incident_type_name'] as String,
   classId: (json['class_id'] as num).toInt(),
+  missionId: (json['mission_id'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$IncidentTypeToJson(IncidentType instance) =>
@@ -17,4 +18,5 @@ Map<String, dynamic> _$IncidentTypeToJson(IncidentType instance) =>
       'incident_type_id': instance.incidentTypeId,
       'incident_type_name': instance.incidentTypeName,
       'class_id': instance.classId,
+      'mission_id': instance.missionId,
     };

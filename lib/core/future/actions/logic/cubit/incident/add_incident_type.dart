@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:incidents_managment/core/future/actions/data/models/all_incident_type.dart';
-import 'package:incidents_managment/core/future/actions/data/repos/add_incident_type_repo.dart';
+import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/incident_type_repo/add_incident_type_repo.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_type_states.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
 

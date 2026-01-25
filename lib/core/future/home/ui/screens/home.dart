@@ -1,43 +1,39 @@
+import 'package:flutter/material.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/side_bar.dart';
 
-// import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
+class CrisisDashboard extends StatelessWidget {
+  const CrisisDashboard({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: SafeArea(
+        child: Row(
+          children: [
+            buildSidebar(context),
 
-// class CrisisDashboard extends StatelessWidget {
-//   const CrisisDashboard({super.key});
-//   @override
-//   Widget build(BuildContext context) {
-//     Get.put(DashboardController(), permanent: false);
-//     return Scaffold(
-//       backgroundColor: const Color(0xFFF5F7FA),
-//       body: SafeArea(
-//         child: GetBuilder<DashboardController>(
-//           builder: (controller) {
-//             return Row(
-//               children: [
-//                 buildSidebar(controller),
-//                 Obx(() {
-//                   switch (controller.selectedIndex.value) {
-//                     case 0:
-//                       return _buildDashboardView(controller);
-//                     case 1:
-//                       return const Expanded(child: IncidentsMapScreen());
-//                     case 2:
-//                       return _buildTeamsView(controller);
-//                     case 3:
-//                       return Expanded(child: WaterCompanyAnalyticsDashboard());
-//                     case 4:
-//                       return _buildSettingsView();
-//                     default:
-//                       return _buildDashboardView(controller);
-//                   }
-//                 }),
-//               ],
-//             );
-//           },
-//         ),
-//       ),
-//     );
-//   }
+            // Obx(() {
+            //   switch (controller.selectedIndex.value) {
+            //     case 0:
+            //       return _buildDashboardView(controller);
+            //     case 1:
+            //       return const Expanded(child: IncidentsMapScreen());
+            //     case 2:
+            //       return _buildTeamsView(controller);
+            //     case 3:
+            //       return Expanded(child: WaterCompanyAnalyticsDashboard());
+            //     case 4:
+            //       return _buildSettingsView();
+            //     default:
+            //       return _buildDashboardView(controller);
+            //   }
+            // }),,
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 //   Widget _buildDashboardView(DashboardController controller) {
 //     return Expanded(

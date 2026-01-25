@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:incidents_managment/core/future/actions/data/repos/all_incident_classes_rep.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/classes_repo/all_incident_classes_rep.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/all_incident_classes.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
 

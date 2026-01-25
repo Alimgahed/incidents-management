@@ -10,11 +10,14 @@ class IncidentType {
   final String incidentTypeName;
   @JsonKey(name: 'class_id')
   final int classId;
+  @JsonKey(name: 'mission_id')
+  final int? missionId;
 
   IncidentType({
     this.incidentTypeId,
     required this.incidentTypeName,
     required this.classId,
+    this.missionId,
   });
 
   // Factory method for deserialization

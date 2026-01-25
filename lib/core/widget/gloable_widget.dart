@@ -54,7 +54,17 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: appColor,
+      backgroundColor: Colors.transparent,
+      automaticallyImplyLeading: false,
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1E3A5F), Color(0xFF2C5F8D)],
+          ),
+        ),
+      ),
       // Leading section with custom back button design
 
       // Centered Title with Icon
@@ -68,27 +78,30 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
 
-      actions: actions != null
-          ? [
-              ...actions!,
-              ?showBack
-                  ? Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_forward_ios, size: 18),
-                          onPressed: onBackPress ?? () => context.pop(),
-                          tooltip: 'Back',
-                        ),
+      actions:
+          actions ??
+          (showBack
+              ? [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    )
-                  : null,
-            ]
-          : null,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 18,
+                          color: appColor,
+                        ),
+                        onPressed: onBackPress ?? () => context.pop(),
+                        tooltip: 'رجوع',
+                      ),
+                    ),
+                  ),
+                ]
+              : null),
 
       // Professional Decoration
 
@@ -173,11 +186,26 @@ class ErrorDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 28),
 
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    "حسناً",
-                    style: TextStyle(color: Colors.grey[600]),
+                SizedBox(
+                  width: 100,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: onPressed ?? () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[400], // Your global app color
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      'موافق',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -215,6 +243,38 @@ class ErrorDialog extends StatelessWidget {
   }
 }
 
+Widget buildLabel(String text) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 8.0, right: 4),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Colors.black87,
+      ),
+    ),
+  );
+}
+
+Widget buildErrorState() {
+  return Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.red.withOpacity(0.05),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: Colors.red.withOpacity(0.2)),
+    ),
+    child: const Row(
+      children: [
+        Icon(Icons.error_outline, color: Colors.red, size: 20),
+        SizedBox(width: 8),
+        Text('خطأ في تحميل البيانات', style: TextStyle(color: Colors.red)),
+      ],
+    ),
+  );
+}
+
 class SuccessDialog extends StatelessWidget {
   final String title;
   final String message;
@@ -225,7 +285,7 @@ class SuccessDialog extends StatelessWidget {
     super.key,
     required this.title,
     required this.message,
-    this.buttonText = 'Continue',
+    this.buttonText = 'نم',
     this.onPressed,
   });
 
@@ -233,11 +293,13 @@ class SuccessDialog extends StatelessWidget {
     BuildContext context, {
     required String title,
     required String message,
+    VoidCallback? onPressed,
   }) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => SuccessDialog(title: title, message: message),
+      builder: (context) =>
+          SuccessDialog(title: title, message: message, onPressed: onPressed),
     );
   }
 
@@ -288,12 +350,13 @@ class SuccessDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 SizedBox(
-                  width: double.infinity,
+                  width: 80,
                   height: 54,
                   child: ElevatedButton(
                     onPressed: onPressed ?? () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: appColor, // Your global app color
+                      backgroundColor:
+                          Colors.green[400], // Your global app color
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(

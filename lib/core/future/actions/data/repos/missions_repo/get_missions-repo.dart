@@ -1,17 +1,17 @@
 import 'package:dio/dio.dart';
-import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
+import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
 import 'package:incidents_managment/core/network/api_error_model.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
 
-class AllIncidentTypeRepo {
+class AllMissionsRepo {
   final ApiService apiService;
 
-  AllIncidentTypeRepo({required this.apiService});
+  AllMissionsRepo({required this.apiService});
 
-  Future<ApiResult<List<IncidentType>>> getAllIncidentTypes() async {
+  Future<ApiResult<List<AllMissionModel>>> getAllMissions() async {
     try {
-      final response = await apiService.getAllIncidentTypes();
+      final response = await apiService.getAllMissions();
       return ApiResult.success(response);
     } on DioException catch (e) {
       // Backend returned an error response
