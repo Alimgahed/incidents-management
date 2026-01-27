@@ -395,26 +395,12 @@ class _AddIncidentMissionBodyState extends State<_AddIncidentMissionBody> {
               // Save Button
               BlocBuilder<MissionSelectionCubit, MissionSelectionState>(
                 builder: (context, selectionState) {
-                  final hasIncidentType =
-                      selectionState.selectedIncidentTypeId != null;
-                  final hasMissions =
-                      selectionState.selectedMissions.isNotEmpty;
-                  final canSave = hasIncidentType && hasMissions;
-
                   return SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: CustomButton(
                       text: "حفظ البيانات",
                       onPressed: () {
-                        print("Save button pressed");
-                        print(
-                          "Incident Type ID: ${selectionState.selectedIncidentTypeId}",
-                        );
-                        print(
-                          "Selected Missions: ${selectionState.selectedMissions.length}",
-                        );
-
                         context
                             .read<AddIncidentMissionCubit>()
                             .saveIncidentMission(

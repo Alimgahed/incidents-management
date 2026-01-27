@@ -4,10 +4,9 @@ import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_missions_state.dart';
-import 'package:incidents_managment/core/helpers/routing.dart';
+import 'package:incidents_managment/core/future/actions/ui/widgets/missions/missions_card.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
-import 'package:incidents_managment/core/widget/fields.dart';
 
 class AllMissions extends StatelessWidget {
   const AllMissions({super.key});
@@ -19,7 +18,10 @@ class AllMissions extends StatelessWidget {
         title: 'جميع المهام',
         leadingIcon: Icons.assignment_outlined,
       ),
-      floatingActionButton: _buildFloatingActionButton(context),
+      floatingActionButton: BuildFloatingActionButton(
+        routeName: Routes.addMissions,
+        text: 'إضافة مهمة جديدة',
+      ),
       body: Column(
         children: [
           _SearchAndFilterBar(),
@@ -27,119 +29,17 @@ class AllMissions extends StatelessWidget {
             child: BlocBuilder<AllMissionsCubit, GetAllMissionState>(
               builder: (context, state) {
                 return state.when(
-                  initial: () => _buildEmptyState(),
-                  loading: () => _buildLoadingState(),
+                  initial: () => BuildEmptyState(
+                    title: 'لا توجد مهام حالياً',
+                    message: 'ابدأ بإضافة مهمة جديدة',
+                  ),
+
+                  loading: () => const Loadding(),
                   loaded: (missions) => _MissionsList(missions: missions),
-                  error: (message) => _buildErrorState(context, message),
+                  error: (message) => Error(),
                 );
               },
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFloatingActionButton(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: () async {
-        final result = await context.pushNamed(Routes.addMissions);
-        if (result == true && context.mounted) {
-          context.read<AllMissionsCubit>().getAllMissions();
-        }
-      },
-      backgroundColor: appColor,
-      icon: const Icon(Icons.add, color: Colors.white),
-      label: const Text(
-        'إضافة مهمة جديدة',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
-        ),
-      ),
-      elevation: 4,
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.assignment_outlined,
-            size: 120,
-            color: Colors.grey.shade300,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'لا توجد مهام حالياً',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'ابدأ بإضافة مهمة جديدة',
-            style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            strokeWidth: 3,
-            valueColor: AlwaysStoppedAnimation<Color>(appColor),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'جاري تحميل المهام...',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(BuildContext context, String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 120, color: Colors.red.shade300),
-          const SizedBox(height: 24),
-          Text(
-            'حدث خطأ',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
-            ),
-          ),
-          const SizedBox(height: 32),
-          CustomButton(
-            text: 'إعادة المحاولة',
-            onPressed: () {
-              context.read<AllMissionsCubit>().getAllMissions();
-            },
           ),
         ],
       ),
@@ -298,7 +198,6 @@ class _SearchAndFilterBarState extends State<_SearchAndFilterBar> {
   }
 }
 
-// ============= MISSIONS LIST =============
 class _MissionsList extends StatelessWidget {
   final List<AllMissionModel> missions;
 
@@ -307,27 +206,9 @@ class _MissionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (missions.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, size: 120, color: Colors.grey.shade300),
-            const SizedBox(height: 24),
-            Text(
-              'لا توجد نتائج',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'جرب البحث بكلمات مختلفة',
-              style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
-            ),
-          ],
-        ),
+      return BuildEmptyState(
+        title: 'لا توجد مهام مطابقة',
+        message: 'حاول تعديل معايير البحث أو التصفية',
       );
     }
 
@@ -336,232 +217,8 @@ class _MissionsList extends StatelessWidget {
       itemCount: missions.length,
       itemBuilder: (context, index) {
         final mission = missions[index];
-        return _MissionCard(mission: mission, index: index);
+        return MissionCard(mission: mission, index: index);
       },
-    );
-  }
-}
-
-// ============= MISSION CARD (Keep your existing implementation) =============
-class _MissionCard extends StatelessWidget {
-  final AllMissionModel mission;
-  final int index;
-
-  const _MissionCard({required this.mission, required this.index});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          _showMissionDetails(context, mission);
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: appColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(child: Icon(Icons.tag_sharp)),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      mission.missionName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.category_outlined,
-                          size: 16,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'التصنيف: ${mission.className}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.edit_outlined, color: appColor, size: 22),
-                    onPressed: () {
-                      _editMission(context, mission);
-                    },
-                    tooltip: 'تعديل',
-                    splashRadius: 24,
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline,
-                      color: Colors.red.shade400,
-                      size: 22,
-                    ),
-                    onPressed: () {
-                      _confirmDelete(context, mission);
-                    },
-                    tooltip: 'حذف',
-                    splashRadius: 24,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showMissionDetails(BuildContext context, AllMissionModel mission) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.info_outline, color: appColor),
-            const SizedBox(width: 12),
-            const Text('تفاصيل المهمة'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailRow('رقم المهمة', '#${mission.missionId}'),
-            const SizedBox(height: 12),
-            _buildDetailRow('اسم المهمة', mission.missionName),
-            const SizedBox(height: 12),
-            _buildDetailRow('التصنيف', mission.className!),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'إغلاق',
-              style: TextStyle(color: appColor, fontSize: 15),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 100,
-          child: Text(
-            '$label:',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(value, style: const TextStyle(color: Colors.black87)),
-        ),
-      ],
-    );
-  }
-
-  void _editMission(BuildContext context, AllMissionModel mission) async {
-    final result = await context.pushNamed(
-      Routes.editMissions,
-      arguments: mission,
-    );
-
-    if (result == true && context.mounted) {
-      context.read<AllMissionsCubit>().getAllMissions();
-    }
-  }
-
-  void _confirmDelete(BuildContext context, AllMissionModel mission) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
-            const SizedBox(width: 12),
-            const Text('تأكيد الحذف'),
-          ],
-        ),
-        content: Text(
-          'هل أنت متأكد من حذف المهمة "${mission.missionName}"؟',
-          style: const TextStyle(fontSize: 15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(
-              'إلغاء',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              // Call delete method from cubit
-              // context.read<AllMissionsCubit>().deleteMission(mission.missionId);
-
-              SuccessDialog.show(
-                context,
-                title: 'تم الحذف',
-                message: 'تم حذف المهمة بنجاح',
-              );
-            },
-            child: const Text(
-              'حذف',
-              style: TextStyle(color: Colors.red, fontSize: 15),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

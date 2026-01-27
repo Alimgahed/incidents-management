@@ -257,22 +257,91 @@ Widget buildLabel(String text) {
   );
 }
 
-Widget buildErrorState() {
-  return Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.red.withOpacity(0.05),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.red.withOpacity(0.2)),
-    ),
-    child: const Row(
-      children: [
-        Icon(Icons.error_outline, color: Colors.red, size: 20),
-        SizedBox(width: 8),
-        Text('خطأ في تحميل البيانات', style: TextStyle(color: Colors.red)),
-      ],
-    ),
-  );
+class BuildEmptyState extends StatelessWidget {
+  final String title;
+  final String message;
+  const BuildEmptyState({
+    super.key,
+    required this.title,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.assignment_outlined,
+            size: 120,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'ابدأ بإضافة مهمة جديدة',
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class Loadding extends StatelessWidget {
+  const Loadding({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            strokeWidth: 3,
+            valueColor: AlwaysStoppedAnimation<Color>(appColor),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'جاري تحميل ...',
+            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class Error extends StatelessWidget {
+  const Error({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red.withOpacity(0.2)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red, size: 20),
+          SizedBox(width: 8),
+          Text('خطأ في تحميل البيانات', style: TextStyle(color: Colors.red)),
+        ],
+      ),
+    );
+  }
 }
 
 class SuccessDialog extends StatelessWidget {
@@ -404,6 +473,36 @@ class SuccessDialog extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class BuildFloatingActionButton extends StatelessWidget {
+  final String routeName;
+  final String text;
+  const BuildFloatingActionButton({
+    super.key,
+    required this.routeName,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.extended(
+      onPressed: () async {
+        Navigator.pushNamed(context, routeName);
+      },
+      backgroundColor: appColor,
+      icon: const Icon(Icons.add, color: Colors.white),
+      label: Text(
+        text,
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+      ),
+      elevation: 4,
     );
   }
 }

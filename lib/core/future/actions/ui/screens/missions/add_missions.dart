@@ -70,7 +70,7 @@ class AddMissions extends StatelessWidget {
                         const SizedBox(height: 20),
                       ],
                     ),
-                    error: (e) => buildErrorState(),
+                    error: (e) => Error(),
                     loaded: (types) => CustomDropdownFormField<int>(
                       hintText: 'اختر تصنيف المهمة',
                       iconData: Icons.category_outlined,

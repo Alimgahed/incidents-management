@@ -22,10 +22,14 @@ Map<String, dynamic> _$IncidentMissionToJson(IncidentMission instance) =>
 
 Missions _$MissionsFromJson(Map<String, dynamic> json) => Missions(
   missionId: (json['mission_id'] as num?)?.toInt(),
-  order: (json['order'] as num?)?.toInt(),
+  missionClassName: json['mission_class_name'] as String?,
+  missionName: json['mission_name'] as String?,
+  order: (json['mission_order'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$MissionsToJson(Missions instance) => <String, dynamic>{
   'mission_id': instance.missionId,
-  'order': instance.order,
+  'mission_class_name': instance.missionClassName,
+  'mission_name': instance.missionName,
+  'mission_order': instance.order,
 };

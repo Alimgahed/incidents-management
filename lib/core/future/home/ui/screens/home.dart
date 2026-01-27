@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/map_widget.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/side_bar.dart';
 
 class CrisisDashboard extends StatelessWidget {
@@ -11,6 +12,7 @@ class CrisisDashboard extends StatelessWidget {
         child: Row(
           children: [
             buildSidebar(context),
+            const Expanded(child: IncidentsMapScreen()),
 
             // Obx(() {
             //   switch (controller.selectedIndex.value) {

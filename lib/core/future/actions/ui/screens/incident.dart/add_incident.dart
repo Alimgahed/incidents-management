@@ -2,20 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
-import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_incident_type_states.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
-
 import 'package:incidents_managment/core/widget/fields.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:latlong2/latlong.dart';
 
-class AddIncidentScreen extends StatelessWidget {
+class AddIncidentScreen extends StatefulWidget {
   const AddIncidentScreen({super.key});
+
+  @override
+  State<AddIncidentScreen> createState() => _AddIncidentScreenState();
+}
+
+class _AddIncidentScreenState extends State<AddIncidentScreen> {
+  final TextEditingController descriptionController = TextEditingController();
+  int? selectedTypeId;
 
   @override
   Widget build(BuildContext context) {
@@ -23,153 +29,102 @@ class AddIncidentScreen extends StatelessWidget {
       appBar: GlobalAppBar(
         title: 'تفاصيل الأزمة',
         leadingIcon: Icons.info_outline,
-        actions: [
-          IconButton(icon: const Icon(Icons.notifications), onPressed: () {}),
-        ],
       ),
-      body: Row(
-        children: [
-          _buildFormSidebar(context),
-          Expanded(child: _MapWidget()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFormSidebar(BuildContext context) {
-    return Container(
-      width: 420,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(2, 0),
-          ),
-        ],
-      ),
-      child: BlocBuilder<AddIncidentCubit, AddIncidentState>(
-        builder: (context, state) {
-          return Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Globalheader(
-                        icon: Icons.info_outline,
-                        title: 'تفاصيل البلاغ',
-                      ),
-                      const SizedBox(height: 24),
-                      _buildIncidentTypeDropdown(context, state),
-                      const SizedBox(height: 20),
-                      _buildAddressField(context, state),
-                      const SizedBox(height: 20),
-                      _buildDescriptionField(context, state),
-                    ],
-                  ),
-                ),
-              ),
-              _buildSubmitButton(context),
-            ],
+      body: BlocListener<AddIncidentCubit, AddIncidentStates>(
+        listener: (context, state) {
+          state.whenOrNull(
+            success: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('تم إرسال البلاغ بنجاح')),
+              );
+            },
+            error: (e) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(e.error ?? 'حدث خطأ')));
+            },
           );
         },
+        child: Row(
+          children: [
+            _buildForm(context),
+            const Expanded(child: _MapWidget()),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildIncidentTypeDropdown(
-    BuildContext context,
-    AddIncidentState state,
-  ) {
-    return BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
-      builder: (context, typeState) {
-        return typeState.when(
-          loading: () => CustomDropdownFormField<int>(
-            value: null,
-            items: const [
-              DropdownMenuItem<int>(
-                value: null,
-                child: Text('جاري التحميل...'),
-              ),
-            ],
-            onChanged: null,
-            labelText: 'نوع الأزمة',
+  Widget _buildForm(BuildContext context) {
+    return Container(
+      width: 420,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          _buildTypeDropdown(),
+          const SizedBox(height: 20),
+          CustomTextFormField(
+            controller: descriptionController,
+            hintText: "اشرح الحالة بالتفصيل...",
+            maxLines: 6,
           ),
+          const Spacer(),
+          BlocBuilder<AddIncidentCubit, AddIncidentStates>(
+            builder: (context, state) {
+              return CustomButton(
+                text: state.maybeWhen(
+                  loading: () => 'جاري الإرسال...',
+                  orElse: () => 'إرسال البلاغ',
+                ),
+                onPressed: () {
+                  _submit(context);
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeDropdown() {
+    return BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
+      builder: (context, state) {
+        return state.when(
+          loading: () => const CircularProgressIndicator(),
           initial: () => const SizedBox.shrink(),
+          error: (_) => const Text('خطأ في تحميل الأنواع'),
           loaded: (types) => CustomDropdownFormField<int>(
-            value: state.selectedTypeId != null
-                ? int.tryParse(state.selectedTypeId!)
-                : null,
-            hintText: 'اختر نوع الأزمة',
-            iconData: Icons.category_outlined,
+            hintText: 'نوع الأزمة',
             items: types
                 .map(
-                  (IncidentType type) => DropdownMenuItem<int>(
-                    value: type.incidentTypeId,
-                    child: Text(type.incidentTypeName),
+                  (e) => DropdownMenuItem<int>(
+                    value: e.incidentTypeId,
+                    child: Text(e.incidentTypeName),
                   ),
                 )
                 .toList(),
-            onChanged: (value) {
-              // context.read<AddIncidentCubit>().setSelectedType(value?.toString());
-            },
-          ),
-          error: (e) => Text(
-            'خطأ في تحميل أنواع الأزمات',
-            style: TextStyle(color: Colors.red),
+            onChanged: (value) => selectedTypeId = value,
           ),
         );
       },
     );
   }
 
-  Widget _buildAddressField(BuildContext context, AddIncidentState state) {
-    return CustomTextFormField(
-      controller: TextEditingController(text: state.address),
-      iconData: Icons.location_city_outlined,
-      hintText: "مثال: شارع الجمهورية، المنيا",
-      maxLines: 1,
-      onChanged: (value) {
-        context.read<AddIncidentCubit>().setAddress(value);
-      },
-    );
-  }
+  void _submit(BuildContext context) {
+    if (selectedTypeId == null || descriptionController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى ملء جميع الحقول')));
+      return;
+    }
 
-  Widget _buildDescriptionField(BuildContext context, AddIncidentState state) {
-    return CustomTextFormField(
-      controller: TextEditingController(text: state.description),
-      iconData: Icons.description_outlined,
-      hintText: "اشرح الحالة بالتفصيل هنا...",
-      maxLines: 6,
-      onChanged: (value) {
-        context.read<AddIncidentCubit>().setDescription(value);
-      },
-    );
-  }
+    final location = context.read<MapCubit>().state.selectedLocation;
 
-  Widget _buildSubmitButton(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: CustomButton(
-        text: 'إرسال البلاغ',
-        onPressed: () {
-          // Handle submit
-        },
-      ),
+    context.read<AddIncidentCubit>().submitIncident(
+      typeId: selectedTypeId!,
+      description: descriptionController.text,
+      location: location,
     );
   }
 }

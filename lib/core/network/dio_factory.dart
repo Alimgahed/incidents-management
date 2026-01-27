@@ -1,8 +1,5 @@
-import 'package:flutter/material.dart';
-
 import 'package:dio/dio.dart';
-import 'package:incidents_managment/core/helpers/shared_preference.dart';
-import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
+
 import 'package:incidents_managment/core/network/api_constants.dart';
 
 class DioFactory {
@@ -29,15 +26,6 @@ class DioFactory {
     _dio!.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await SharedPreferencesHelper.getSecureString(
-            SharedPreferenceKeys.userToken,
-          );
-          final refreshToken = await SharedPreferencesHelper.getSecureString(
-            SharedPreferenceKeys.refreshToken,
-          );
-
-          debugPrint('🔑 Token from Storage: $token');
-
           options.headers.addAll({
             // "Authorization": token,
             // "refresh_token": refreshToken,

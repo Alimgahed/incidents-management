@@ -68,7 +68,7 @@ class AddIncidentType extends StatelessWidget {
                         const SizedBox(height: 20),
                       ],
                     ),
-                    error: (e) => buildErrorState(),
+                    error: (e) => Error(),
                     loaded: (types) => CustomDropdownFormField<int>(
                       hintText: 'اختر تصنيف الأزمة',
                       iconData: Icons.category_outlined,
@@ -120,6 +120,4 @@ class AddIncidentType extends StatelessWidget {
       ),
     );
   }
-
-  // Helper to keep code clean
 }

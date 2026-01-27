@@ -1,22 +1,38 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/add_incident/add_incdient_repo.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
+import 'package:incidents_managment/core/network/api_result.dart';
+import 'package:latlong2/latlong.dart';
 
-class AddIncidentCubit extends Cubit<AddIncidentState> {
-  AddIncidentCubit() : super(AddIncidentState.initial());
+class AddIncidentCubit extends Cubit<AddIncidentStates> {
+  final AddIncdientRepo addIncdientRepo;
 
-  void setType(String? typeId, String? typeName) {
-    emit(state.copyWith(selectedTypeId: typeId, selectedTypeName: typeName));
-  }
+  AddIncidentCubit({required this.addIncdientRepo})
+    : super(const AddIncidentStates.initial());
 
-  void setSeverity(String severity) {
-    emit(state.copyWith(selectedSeverity: severity));
-  }
+  Future<void> submitIncident({
+    required int typeId,
+    required String description,
+    required LatLng location,
+  }) async {
+    emit(const AddIncidentStates.loading());
 
-  void setDescription(String description) {
-    emit(state.copyWith(description: description));
-  }
+    final model = CurrentIncidentModel(
+      currentIncidentTypeId: typeId,
+      currentIncidentDescription: description,
+      currentIncidentXAxis: location.latitude,
+      currentIncidentYAxis: location.longitude,
+      currentIncidentStatus: 1, // تم التبليغ
+      currentIncidentSeverity: 1,
+      currentIncidentNotes: "تم انقطاع المياة",
+    );
 
-  void setAddress(String address) {
-    emit(state.copyWith(address: address));
+    final result = await addIncdientRepo.addIncdient(model);
+
+    result.when(
+      success: (_) => emit(const AddIncidentStates.success()),
+      error: (e) => emit(AddIncidentStates.error(e)),
+    );
   }
 }

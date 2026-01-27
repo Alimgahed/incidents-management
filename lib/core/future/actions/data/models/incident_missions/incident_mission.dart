@@ -21,9 +21,18 @@ class IncidentMission {
 class Missions {
   @JsonKey(name: 'mission_id')
   final int? missionId;
+  @JsonKey(name: 'mission_class_name')
+  final String? missionClassName;
+  @JsonKey(name: 'mission_name')
+  final String? missionName;
+  @JsonKey(name: 'mission_order')
   final int? order;
-  Missions({this.missionId, this.order});
-
+  Missions({
+    this.missionId,
+    this.missionClassName,
+    this.missionName,
+    this.order,
+  });
   // Factory method for deserialization
   factory Missions.fromJson(Map<String, dynamic> json) =>
       _$MissionsFromJson(json);

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferencesHelper {
@@ -68,18 +67,17 @@ class SharedPreferencesHelper {
   }
 
   /// Secure storage methods
-  static Future<void> setSecureString(String key, String value) async {
-    const flutterSecureStorage = FlutterSecureStorage();
-    await flutterSecureStorage.write(key: key, value: value);
-  }
+  // static Future<void> setSecureString(String key, String value) async {
+  //   const flutterSecureStorage = FlutterSecureStorage();
+  //   await flutterSecureStorage.write(key: key, value: value);
+  // }
 
-  static Future<String> getSecureString(String key) async {
-    const flutterSecureStorage = FlutterSecureStorage();
-    return await flutterSecureStorage.read(key: key) ?? '';
-  }
+  // static Future<String> getSecureString(String key) async {
+  //   return await flutterSecureStorage.read(key: key) ?? '';
+  // }
 
-  static Future<void> deleteSecureString(String key) async {
-    const flutterSecureStorage = FlutterSecureStorage();
-    await flutterSecureStorage.delete(key: key);
-  }
+  // static Future<void> deleteSecureString(String key) async {
+  //   const flutterSecureStorage = FlutterSecureStorage();
+  //   await flutterSecureStorage.delete(key: key);
+  // }
 }

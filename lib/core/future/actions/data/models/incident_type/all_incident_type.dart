@@ -1,3 +1,4 @@
+import 'package:incidents_managment/core/future/actions/data/models/incident_missions/incident_mission.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'all_incident_type.g.dart'; // Generated code part
@@ -8,16 +9,19 @@ class IncidentType {
   final int? incidentTypeId;
   @JsonKey(name: 'incident_type_name')
   final String incidentTypeName;
+  @JsonKey(name: 'class_name')
+  final String? className;
   @JsonKey(name: 'class_id')
   final int classId;
-  @JsonKey(name: 'mission_id')
-  final int? missionId;
+  @JsonKey(name: 'missions')
+  final List<Missions>? missions;
 
   IncidentType({
     this.incidentTypeId,
+    this.className,
     required this.incidentTypeName,
     required this.classId,
-    this.missionId,
+    this.missions,
   });
 
   // Factory method for deserialization

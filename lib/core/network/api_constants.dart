@@ -6,4 +6,5 @@ class ApiConstants {
   static const editMissions = "/edit-mission/{id}";
   static const allMissions = "/all-missions";
   static const addIncidentMission = "/assign-incident-type-missions";
+  static const addcurrentincdient = "/add-current-incident";
 }

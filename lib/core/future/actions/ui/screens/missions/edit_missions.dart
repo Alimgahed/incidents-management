@@ -84,7 +84,7 @@ class EditMissions extends StatelessWidget {
                         const SizedBox(height: 20),
                       ],
                     ),
-                    error: (e) => buildErrorState(),
+                    error: (e) => Error(),
                     loaded: (types) => CustomDropdownFormField<int>(
                       hintText: 'اختر تصنيف المهمة',
                       value: editCubit.selectedClassId,

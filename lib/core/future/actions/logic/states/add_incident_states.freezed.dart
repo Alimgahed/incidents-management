@@ -12,73 +12,37 @@ part of 'add_incident_states.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$AddIncidentState {
+mixin _$AddIncidentStates {
 
- String? get selectedTypeId; String? get selectedTypeName; String? get selectedSeverity; String get description;// Default value for description
- String get address;
-/// Create a copy of AddIncidentState
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$AddIncidentStateCopyWith<AddIncidentState> get copyWith => _$AddIncidentStateCopyWithImpl<AddIncidentState>(this as AddIncidentState, _$identity);
+
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddIncidentState&&(identical(other.selectedTypeId, selectedTypeId) || other.selectedTypeId == selectedTypeId)&&(identical(other.selectedTypeName, selectedTypeName) || other.selectedTypeName == selectedTypeName)&&(identical(other.selectedSeverity, selectedSeverity) || other.selectedSeverity == selectedSeverity)&&(identical(other.description, description) || other.description == description)&&(identical(other.address, address) || other.address == address));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddIncidentStates);
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,selectedTypeId,selectedTypeName,selectedSeverity,description,address);
+int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AddIncidentState(selectedTypeId: $selectedTypeId, selectedTypeName: $selectedTypeName, selectedSeverity: $selectedSeverity, description: $description, address: $address)';
+  return 'AddIncidentStates()';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $AddIncidentStateCopyWith<$Res>  {
-  factory $AddIncidentStateCopyWith(AddIncidentState value, $Res Function(AddIncidentState) _then) = _$AddIncidentStateCopyWithImpl;
-@useResult
-$Res call({
- String? selectedTypeId, String? selectedTypeName, String? selectedSeverity, String description, String address
-});
-
-
-
-
-}
-/// @nodoc
-class _$AddIncidentStateCopyWithImpl<$Res>
-    implements $AddIncidentStateCopyWith<$Res> {
-  _$AddIncidentStateCopyWithImpl(this._self, this._then);
-
-  final AddIncidentState _self;
-  final $Res Function(AddIncidentState) _then;
-
-/// Create a copy of AddIncidentState
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? selectedTypeId = freezed,Object? selectedTypeName = freezed,Object? selectedSeverity = freezed,Object? description = null,Object? address = null,}) {
-  return _then(_self.copyWith(
-selectedTypeId: freezed == selectedTypeId ? _self.selectedTypeId : selectedTypeId // ignore: cast_nullable_to_non_nullable
-as String?,selectedTypeName: freezed == selectedTypeName ? _self.selectedTypeName : selectedTypeName // ignore: cast_nullable_to_non_nullable
-as String?,selectedSeverity: freezed == selectedSeverity ? _self.selectedSeverity : selectedSeverity // ignore: cast_nullable_to_non_nullable
-as String?,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String,address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
+class $AddIncidentStatesCopyWith<$Res>  {
+$AddIncidentStatesCopyWith(AddIncidentStates _, $Res Function(AddIncidentStates) __);
 }
 
 
-/// Adds pattern-matching-related methods to [AddIncidentState].
-extension AddIncidentStatePatterns on AddIncidentState {
+/// Adds pattern-matching-related methods to [AddIncidentStates].
+extension AddIncidentStatesPatterns on AddIncidentStates {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -91,11 +55,14 @@ extension AddIncidentStatePatterns on AddIncidentState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AddIncidentState value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( AddIncidentStatesInitial value)?  initial,TResult Function( AddIncidentStatesLoading value)?  loading,TResult Function( AddIncidentStatesSuccess value)?  success,TResult Function( AddIncidentStatesError value)?  error,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _AddIncidentState() when $default != null:
-return $default(_that);case _:
+case AddIncidentStatesInitial() when initial != null:
+return initial(_that);case AddIncidentStatesLoading() when loading != null:
+return loading(_that);case AddIncidentStatesSuccess() when success != null:
+return success(_that);case AddIncidentStatesError() when error != null:
+return error(_that);case _:
   return orElse();
 
 }
@@ -113,11 +80,14 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AddIncidentState value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( AddIncidentStatesInitial value)  initial,required TResult Function( AddIncidentStatesLoading value)  loading,required TResult Function( AddIncidentStatesSuccess value)  success,required TResult Function( AddIncidentStatesError value)  error,}){
 final _that = this;
 switch (_that) {
-case _AddIncidentState():
-return $default(_that);case _:
+case AddIncidentStatesInitial():
+return initial(_that);case AddIncidentStatesLoading():
+return loading(_that);case AddIncidentStatesSuccess():
+return success(_that);case AddIncidentStatesError():
+return error(_that);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -134,11 +104,14 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AddIncidentState value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( AddIncidentStatesInitial value)?  initial,TResult? Function( AddIncidentStatesLoading value)?  loading,TResult? Function( AddIncidentStatesSuccess value)?  success,TResult? Function( AddIncidentStatesError value)?  error,}){
 final _that = this;
 switch (_that) {
-case _AddIncidentState() when $default != null:
-return $default(_that);case _:
+case AddIncidentStatesInitial() when initial != null:
+return initial(_that);case AddIncidentStatesLoading() when loading != null:
+return loading(_that);case AddIncidentStatesSuccess() when success != null:
+return success(_that);case AddIncidentStatesError() when error != null:
+return error(_that);case _:
   return null;
 
 }
@@ -155,10 +128,13 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? selectedTypeId,  String? selectedTypeName,  String? selectedSeverity,  String description,  String address)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function()?  success,TResult Function( ApiErrorModel message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _AddIncidentState() when $default != null:
-return $default(_that.selectedTypeId,_that.selectedTypeName,_that.selectedSeverity,_that.description,_that.address);case _:
+case AddIncidentStatesInitial() when initial != null:
+return initial();case AddIncidentStatesLoading() when loading != null:
+return loading();case AddIncidentStatesSuccess() when success != null:
+return success();case AddIncidentStatesError() when error != null:
+return error(_that.message);case _:
   return orElse();
 
 }
@@ -176,10 +152,13 @@ return $default(_that.selectedTypeId,_that.selectedTypeName,_that.selectedSeveri
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? selectedTypeId,  String? selectedTypeName,  String? selectedSeverity,  String description,  String address)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function()  success,required TResult Function( ApiErrorModel message)  error,}) {final _that = this;
 switch (_that) {
-case _AddIncidentState():
-return $default(_that.selectedTypeId,_that.selectedTypeName,_that.selectedSeverity,_that.description,_that.address);case _:
+case AddIncidentStatesInitial():
+return initial();case AddIncidentStatesLoading():
+return loading();case AddIncidentStatesSuccess():
+return success();case AddIncidentStatesError():
+return error(_that.message);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +175,13 @@ return $default(_that.selectedTypeId,_that.selectedTypeName,_that.selectedSeveri
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? selectedTypeId,  String? selectedTypeName,  String? selectedSeverity,  String description,  String address)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function()?  success,TResult? Function( ApiErrorModel message)?  error,}) {final _that = this;
 switch (_that) {
-case _AddIncidentState() when $default != null:
-return $default(_that.selectedTypeId,_that.selectedTypeName,_that.selectedSeverity,_that.description,_that.address);case _:
+case AddIncidentStatesInitial() when initial != null:
+return initial();case AddIncidentStatesLoading() when loading != null:
+return loading();case AddIncidentStatesSuccess() when success != null:
+return success();case AddIncidentStatesError() when error != null:
+return error(_that.message);case _:
   return null;
 
 }
@@ -210,48 +192,139 @@ return $default(_that.selectedTypeId,_that.selectedTypeName,_that.selectedSeveri
 /// @nodoc
 
 
-class _AddIncidentState implements AddIncidentState {
-  const _AddIncidentState({this.selectedTypeId, this.selectedTypeName, this.selectedSeverity, this.description = '', this.address = ''});
+class AddIncidentStatesInitial implements AddIncidentStates {
+  const AddIncidentStatesInitial();
   
 
-@override final  String? selectedTypeId;
-@override final  String? selectedTypeName;
-@override final  String? selectedSeverity;
-@override@JsonKey() final  String description;
-// Default value for description
-@override@JsonKey() final  String address;
 
-/// Create a copy of AddIncidentState
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$AddIncidentStateCopyWith<_AddIncidentState> get copyWith => __$AddIncidentStateCopyWithImpl<_AddIncidentState>(this, _$identity);
+
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AddIncidentState&&(identical(other.selectedTypeId, selectedTypeId) || other.selectedTypeId == selectedTypeId)&&(identical(other.selectedTypeName, selectedTypeName) || other.selectedTypeName == selectedTypeName)&&(identical(other.selectedSeverity, selectedSeverity) || other.selectedSeverity == selectedSeverity)&&(identical(other.description, description) || other.description == description)&&(identical(other.address, address) || other.address == address));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddIncidentStatesInitial);
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,selectedTypeId,selectedTypeName,selectedSeverity,description,address);
+int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AddIncidentState(selectedTypeId: $selectedTypeId, selectedTypeName: $selectedTypeName, selectedSeverity: $selectedSeverity, description: $description, address: $address)';
+  return 'AddIncidentStates.initial()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class AddIncidentStatesLoading implements AddIncidentStates {
+  const AddIncidentStatesLoading();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddIncidentStatesLoading);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'AddIncidentStates.loading()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class AddIncidentStatesSuccess implements AddIncidentStates {
+  const AddIncidentStatesSuccess();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddIncidentStatesSuccess);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'AddIncidentStates.success()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class AddIncidentStatesError implements AddIncidentStates {
+  const AddIncidentStatesError(this.message);
+  
+
+ final  ApiErrorModel message;
+
+/// Create a copy of AddIncidentStates
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AddIncidentStatesErrorCopyWith<AddIncidentStatesError> get copyWith => _$AddIncidentStatesErrorCopyWithImpl<AddIncidentStatesError>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddIncidentStatesError&&(identical(other.message, message) || other.message == message));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,message);
+
+@override
+String toString() {
+  return 'AddIncidentStates.error(message: $message)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$AddIncidentStateCopyWith<$Res> implements $AddIncidentStateCopyWith<$Res> {
-  factory _$AddIncidentStateCopyWith(_AddIncidentState value, $Res Function(_AddIncidentState) _then) = __$AddIncidentStateCopyWithImpl;
-@override @useResult
+abstract mixin class $AddIncidentStatesErrorCopyWith<$Res> implements $AddIncidentStatesCopyWith<$Res> {
+  factory $AddIncidentStatesErrorCopyWith(AddIncidentStatesError value, $Res Function(AddIncidentStatesError) _then) = _$AddIncidentStatesErrorCopyWithImpl;
+@useResult
 $Res call({
- String? selectedTypeId, String? selectedTypeName, String? selectedSeverity, String description, String address
+ ApiErrorModel message
 });
 
 
@@ -259,23 +332,19 @@ $Res call({
 
 }
 /// @nodoc
-class __$AddIncidentStateCopyWithImpl<$Res>
-    implements _$AddIncidentStateCopyWith<$Res> {
-  __$AddIncidentStateCopyWithImpl(this._self, this._then);
+class _$AddIncidentStatesErrorCopyWithImpl<$Res>
+    implements $AddIncidentStatesErrorCopyWith<$Res> {
+  _$AddIncidentStatesErrorCopyWithImpl(this._self, this._then);
 
-  final _AddIncidentState _self;
-  final $Res Function(_AddIncidentState) _then;
+  final AddIncidentStatesError _self;
+  final $Res Function(AddIncidentStatesError) _then;
 
-/// Create a copy of AddIncidentState
+/// Create a copy of AddIncidentStates
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? selectedTypeId = freezed,Object? selectedTypeName = freezed,Object? selectedSeverity = freezed,Object? description = null,Object? address = null,}) {
-  return _then(_AddIncidentState(
-selectedTypeId: freezed == selectedTypeId ? _self.selectedTypeId : selectedTypeId // ignore: cast_nullable_to_non_nullable
-as String?,selectedTypeName: freezed == selectedTypeName ? _self.selectedTypeName : selectedTypeName // ignore: cast_nullable_to_non_nullable
-as String?,selectedSeverity: freezed == selectedSeverity ? _self.selectedSeverity : selectedSeverity // ignore: cast_nullable_to_non_nullable
-as String?,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String,address: null == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
-as String,
+@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+  return _then(AddIncidentStatesError(
+null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as ApiErrorModel,
   ));
 }
 
