@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_incident_type_states.dart';
@@ -12,17 +13,9 @@ class AllIncidentType extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: const GlobalAppBar(
-        title: 'جميع أنواع الأزمات',
-        leadingIcon: Icons.warning_amber_rounded,
-      ),
-      floatingActionButton: BuildFloatingActionButton(
-        routeName: Routes.addIncidentType,
-        text: 'إضافة نوع جديد',
-      ),
-      body: BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
+    return BlocProvider(
+      create: (context) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+      child: BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
         builder: (context, state) {
           return state.when(
             initial: () => const SizedBox.shrink(),
@@ -48,55 +41,66 @@ class _LoadedView extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return RefreshIndicator(
-      color: appColor,
-      onRefresh: () async {
-        context.read<AllIncidentTypeCubit>().getAllIncidentTypes();
-      },
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final crossAxisCount = _calculateCrossAxisCount(width);
+    return Stack(
+      children: [
+        // Main content
+        RefreshIndicator(
+          color: appColor,
+          onRefresh: () async {
+            context.read<AllIncidentTypeCubit>().getAllIncidentTypes();
+          },
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final crossAxisCount = _calculateCrossAxisCount(width);
 
-          return CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverToBoxAdapter(
-                  child: Text(
-                    'إجمالي الأنواع: ${incidentTypes.length}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: appColor,
+              return CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.all(16),
+                    sliver: SliverToBoxAdapter(
+                      child: Text(
+                        'إجمالي الأنواع: ${incidentTypes.length}',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          color: appColor,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: _calculateAspectRatio(
-                      width,
-                      crossAxisCount,
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    sliver: SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: _calculateAspectRatio(
+                          width,
+                          crossAxisCount,
+                        ),
+                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        return _IncidentTypeCard(
+                          incidentType: incidentTypes[index],
+                          index: index,
+                        );
+                      }, childCount: incidentTypes.length),
                     ),
                   ),
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    return _IncidentTypeCard(
-                      incidentType: incidentTypes[index],
-                      index: index,
-                    );
-                  }, childCount: incidentTypes.length),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+                ],
+              );
+            },
+          ),
+        ),
+
+        // Floating Action Button
+        CustomFloatingButton(
+          routeName: Routes.addIncidentType,
+          text: "أضافة نوع ازمة",
+        ),
+      ],
     );
   }
 
@@ -189,7 +193,7 @@ class _IncidentTypeCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -201,12 +205,16 @@ class _IncidentTypeCard extends StatelessWidget {
                         color: Colors.white,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        'الفئة: ${incidentType.className}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                      Expanded(
+                        child: Text(
+                          'الفئة: ${incidentType.className}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

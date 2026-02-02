@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/add_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_missions_state.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/missions/missions_card.dart';
@@ -13,33 +15,39 @@ class AllMissions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const GlobalAppBar(
-        title: 'جميع المهام',
-        leadingIcon: Icons.assignment_outlined,
-      ),
-      floatingActionButton: BuildFloatingActionButton(
-        routeName: Routes.addMissions,
-        text: 'إضافة مهمة جديدة',
-      ),
-      body: Column(
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => getIt<AllMissionsCubit>()..getAllMissions(),
+        ),
+        BlocProvider(create: (_) => getIt<AddMissionCubit>()),
+      ],
+      child: Stack(
         children: [
-          _SearchAndFilterBar(),
-          Expanded(
-            child: BlocBuilder<AllMissionsCubit, GetAllMissionState>(
-              builder: (context, state) {
-                return state.when(
-                  initial: () => BuildEmptyState(
-                    title: 'لا توجد مهام حالياً',
-                    message: 'ابدأ بإضافة مهمة جديدة',
-                  ),
+          Column(
+            children: [
+              _SearchAndFilterBar(),
+              Expanded(
+                child: BlocBuilder<AllMissionsCubit, GetAllMissionState>(
+                  builder: (context, state) {
+                    return state.when(
+                      initial: () => BuildEmptyState(
+                        title: 'لا توجد مهام حالياً',
+                        message: 'ابدأ بإضافة مهمة جديدة',
+                      ),
 
-                  loading: () => const Loadding(),
-                  loaded: (missions) => _MissionsList(missions: missions),
-                  error: (message) => Error(),
-                );
-              },
-            ),
+                      loading: () => const Loadding(),
+                      loaded: (missions) => _MissionsList(missions: missions),
+                      error: (message) => Error(),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          CustomFloatingButton(
+            routeName: Routes.addMissions,
+            text: "إضافة مهمة جديدة",
           ),
         ],
       ),

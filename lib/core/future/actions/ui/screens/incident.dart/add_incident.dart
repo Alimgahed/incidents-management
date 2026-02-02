@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
@@ -9,7 +10,6 @@ import 'package:incidents_managment/core/future/actions/logic/states/get_all_inc
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
-import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:latlong2/latlong.dart';
 
 class AddIncidentScreen extends StatefulWidget {
@@ -22,15 +22,20 @@ class AddIncidentScreen extends StatefulWidget {
 class _AddIncidentScreenState extends State<AddIncidentScreen> {
   final TextEditingController descriptionController = TextEditingController();
   int? selectedTypeId;
+  int? selectedSeverity;
+  int? selectedBranchId;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: GlobalAppBar(
-        title: 'تفاصيل الأزمة',
-        leadingIcon: Icons.info_outline,
-      ),
-      body: BlocListener<AddIncidentCubit, AddIncidentStates>(
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => getIt<AddIncidentCubit>()),
+        BlocProvider(create: (_) => getIt<MapCubit>()),
+        BlocProvider(
+          create: (_) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+        ),
+      ],
+      child: BlocListener<AddIncidentCubit, AddIncidentStates>(
         listener: (context, state) {
           state.whenOrNull(
             success: () {
@@ -63,6 +68,36 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
         children: [
           _buildTypeDropdown(),
           const SizedBox(height: 20),
+          CustomDropdownFormField(
+            items: [
+              const DropdownMenuItem(value: 1, child: Text('منخفض')),
+              const DropdownMenuItem(value: 2, child: Text('متوسطة')),
+              const DropdownMenuItem(value: 3, child: Text('مرتفعة')),
+              const DropdownMenuItem(value: 4, child: Text('حرجة')),
+            ],
+            hintText: 'درجة الخطورة',
+            onChanged: (value) => selectedSeverity = value,
+          ),
+          SizedBox(height: 20),
+          CustomDropdownFormField(
+            items: [
+              const DropdownMenuItem(value: 1, child: Text('المنيا')),
+              const DropdownMenuItem(value: 2, child: Text('المنيا الجديدة')),
+              const DropdownMenuItem(value: 3, child: Text('سمالوط')),
+              const DropdownMenuItem(value: 4, child: Text('مطاي')),
+              const DropdownMenuItem(value: 5, child: Text('بني مزار')),
+              const DropdownMenuItem(value: 6, child: Text('مغاغة')),
+              const DropdownMenuItem(value: 7, child: Text('العدوة')),
+              const DropdownMenuItem(value: 8, child: Text('أبو قرقاص')),
+              const DropdownMenuItem(value: 9, child: Text('ملاوي')),
+              const DropdownMenuItem(value: 10, child: Text('ديرمواس')),
+            ],
+            hintText: 'الفرع',
+            onChanged: (value) {
+              selectedBranchId = value;
+            },
+          ),
+          SizedBox(height: 20),
           CustomTextFormField(
             controller: descriptionController,
             hintText: "اشرح الحالة بالتفصيل...",
@@ -122,8 +157,11 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
     final location = context.read<MapCubit>().state.selectedLocation;
 
     context.read<AddIncidentCubit>().submitIncident(
+      severity: selectedSeverity!,
       typeId: selectedTypeId!,
+      branchId: selectedBranchId!,
       description: descriptionController.text,
+
       location: location,
     );
   }

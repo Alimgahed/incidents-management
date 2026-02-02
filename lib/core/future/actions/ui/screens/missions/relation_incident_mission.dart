@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_mission_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/order_mission_cubit.dart';
@@ -7,7 +8,6 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cub
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_incident_type_states.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_missions_state.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/incident_missions_state.dart';
-import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
 
@@ -73,34 +73,14 @@ class MissionSelectionState {
   }
 }
 
-class Addincidentmission extends StatelessWidget {
+class Addincidentmission extends StatefulWidget {
   const Addincidentmission({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => MissionSelectionCubit(),
-      child: Scaffold(
-        appBar: GlobalAppBar(
-          onBackPress: () => context.pop(),
-          title: 'تعيين مهمات لأزمة',
-          leadingIcon: Icons.add_circle_outline,
-        ),
-        body: const _AddIncidentMissionBody(),
-      ),
-    );
-  }
+  State<Addincidentmission> createState() => _AddIncidentMissionBodyState();
 }
 
-class _AddIncidentMissionBody extends StatefulWidget {
-  const _AddIncidentMissionBody();
-
-  @override
-  State<_AddIncidentMissionBody> createState() =>
-      _AddIncidentMissionBodyState();
-}
-
-class _AddIncidentMissionBodyState extends State<_AddIncidentMissionBody> {
+class _AddIncidentMissionBodyState extends State<Addincidentmission> {
   bool _isDialogShowing = false;
 
   @override
@@ -124,299 +104,308 @@ class _AddIncidentMissionBodyState extends State<_AddIncidentMissionBody> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: BlocConsumer<AddIncidentMissionCubit, AddincidentMissionsstates>(
-        listener: (context, state) {
-          state.when(
-            initial: () {
-              _closeDialogIfOpen();
-            },
-            loading: () {
-              if (!_isDialogShowing) {
-                _isDialogShowing = true;
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (dialogContext) => WillPopScope(
-                    onWillPop: () async => false,
-                    child: const Center(child: CircularProgressIndicator()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => MissionSelectionCubit()),
+        BlocProvider(
+          create: (_) => getIt<AllMissionsCubit>()..getAllMissions(),
+        ),
+        BlocProvider(create: (_) => getIt<AddIncidentMissionCubit>()),
+        BlocProvider(
+          create: (_) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+        ),
+      ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 20.0),
+        child: BlocConsumer<AddIncidentMissionCubit, AddincidentMissionsstates>(
+          listener: (context, state) {
+            state.when(
+              initial: () {
+                _closeDialogIfOpen();
+              },
+              loading: () {
+                if (!_isDialogShowing) {
+                  _isDialogShowing = true;
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (dialogContext) => WillPopScope(
+                      onWillPop: () async => false,
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                  );
+                }
+              },
+              success: () {
+                _closeDialogIfOpen();
+
+                if (!context.mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('تم حفظ البيانات بنجاح'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
                   ),
                 );
-              }
-            },
-            success: () {
-              _closeDialogIfOpen();
 
-              if (!context.mounted) return;
+                // Reset both cubits for next save
+                context.read<MissionSelectionCubit>().reset();
+                context.read<AddIncidentMissionCubit>().resetState();
+              },
+              error: (e) {
+                _closeDialogIfOpen();
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('تم حفظ البيانات بنجاح'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 2),
+                if (!context.mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(e.error ?? "حدث خطأ غير متوقع"),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              },
+            );
+          },
+          builder: (context, state) {
+            // ... rest of your UI code stays exactly the same
+            // ... rest of your build method stays the same
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Globalheader(
+                  icon: Icons.edit_note_rounded,
+                  title: 'بيانات المهمة',
                 ),
-              );
+                const SizedBox(height: 24),
 
-              // Reset both cubits for next save
-              context.read<MissionSelectionCubit>().reset();
-              context.read<AddIncidentMissionCubit>().resetState();
-            },
-            error: (e) {
-              _closeDialogIfOpen();
-
-              if (!context.mounted) return;
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(e.error ?? "حدث خطأ غير متوقع"),
-                  backgroundColor: Colors.red,
-                  duration: const Duration(seconds: 3),
+                // Incident Type Dropdown
+                BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
+                  builder: (context, typeState) {
+                    return typeState.when(
+                      initial: () => const SizedBox.shrink(),
+                      loading: () => _buildLoadingField("نوع الأزمة"),
+                      error: (e) => _buildErrorState(),
+                      loaded: (types) =>
+                          BlocBuilder<
+                            MissionSelectionCubit,
+                            MissionSelectionState
+                          >(
+                            builder: (context, selectionState) {
+                              return CustomDropdownFormField<int>(
+                                hintText: 'اختر نوع الأزمة',
+                                iconData: Icons.category_outlined,
+                                value: selectionState.selectedIncidentTypeId,
+                                items: types.map((type) {
+                                  return DropdownMenuItem<int>(
+                                    value: type.incidentTypeId,
+                                    child: Text(type.incidentTypeName),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  context
+                                      .read<MissionSelectionCubit>()
+                                      .setIncidentType(value);
+                                },
+                              );
+                            },
+                          ),
+                    );
+                  },
                 ),
-              );
-            },
-          );
-        },
-        builder: (context, state) {
-          // ... rest of your UI code stays exactly the same
-          // ... rest of your build method stays the same
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Globalheader(
-                icon: Icons.edit_note_rounded,
-                title: 'بيانات المهمة',
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Incident Classification Dropdown
-              const SizedBox(height: 20),
+                // Selected Missions Section
+                BlocBuilder<MissionSelectionCubit, MissionSelectionState>(
+                  builder: (context, selectionState) {
+                    if (selectionState.selectedMissions.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
 
-              // Incident Type Dropdown
-              BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
-                builder: (context, typeState) {
-                  return typeState.when(
-                    initial: () => const SizedBox.shrink(),
-                    loading: () => _buildLoadingField("نوع الأزمة"),
-                    error: (e) => _buildErrorState(),
-                    loaded: (types) =>
-                        BlocBuilder<
-                          MissionSelectionCubit,
-                          MissionSelectionState
-                        >(
-                          builder: (context, selectionState) {
-                            return CustomDropdownFormField<int>(
-                              hintText: 'اختر نوع الأزمة',
-                              iconData: Icons.category_outlined,
-                              value: selectionState.selectedIncidentTypeId,
-                              items: types.map((type) {
-                                return DropdownMenuItem<int>(
-                                  value: type.incidentTypeId,
-                                  child: Text(type.incidentTypeName),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Globalheader(
+                              icon: Icons.check_circle_outline,
+                              title: 'المهمات المحددة',
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade100,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                'العدد: ${selectionState.selectedMissions.length}',
+                                style: TextStyle(
+                                  color: Colors.blue.shade900,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: selectionState.selectedMissions.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final mission =
+                                selectionState.selectedMissions[index];
+
+                            return _SelectedMissionItem(
+                              order: mission.order,
+                              missionName: mission.missionName,
+                              onRemove: () {
                                 context
                                     .read<MissionSelectionCubit>()
-                                    .setIncidentType(value);
+                                    .removeMission(mission.uniqueId);
                               },
                             );
                           },
                         ),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Selected Missions Section
-              BlocBuilder<MissionSelectionCubit, MissionSelectionState>(
-                builder: (context, selectionState) {
-                  if (selectionState.selectedMissions.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Globalheader(
-                            icon: Icons.check_circle_outline,
-                            title: 'المهمات المحددة',
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade100,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'العدد: ${selectionState.selectedMissions.length}',
-                              style: TextStyle(
-                                color: Colors.blue.shade900,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: selectionState.selectedMissions.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final mission =
-                              selectionState.selectedMissions[index];
-
-                          return _SelectedMissionItem(
-                            order: mission.order,
-                            missionName: mission.missionName,
-                            onRemove: () {
-                              context
-                                  .read<MissionSelectionCubit>()
-                                  .removeMission(mission.uniqueId);
-                            },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                  );
-                },
-              ),
-
-              // Available Missions Section Header
-              const Globalheader(
-                icon: Icons.assignment_outlined,
-                title: 'المهمات المتاحة',
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'اضغط على المهمة لإضافتها (يمكنك إضافة نفس المهمة عدة مرات بترتيبات مختلفة)',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic,
+                        const SizedBox(height: 24),
+                      ],
+                    );
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
 
-              // Missions Grid
-              BlocBuilder<AllMissionsCubit, GetAllMissionState>(
-                builder: (context, missionState) {
-                  return missionState.when(
-                    initial: () => const SizedBox.shrink(),
-                    loading: () => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: CircularProgressIndicator(),
+                // Available Missions Section Header
+                const Globalheader(
+                  icon: Icons.assignment_outlined,
+                  title: 'المهمات المتاحة',
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'اضغط على المهمة لإضافتها (يمكنك إضافة نفس المهمة عدة مرات بترتيبات مختلفة)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Missions Grid
+                BlocBuilder<AllMissionsCubit, GetAllMissionState>(
+                  builder: (context, missionState) {
+                    return missionState.when(
+                      initial: () => const SizedBox.shrink(),
+                      loading: () => const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ),
                       ),
-                    ),
-                    error: (e) => _buildErrorState(),
-                    loaded: (missions) {
-                      if (missions.isEmpty) {
-                        return _buildEmptyState();
-                      }
-                      return BlocBuilder<
-                        MissionSelectionCubit,
-                        MissionSelectionState
-                      >(
-                        builder: (context, selectionState) {
-                          return LayoutBuilder(
-                            builder: (context, constraints) {
-                              int crossAxisCount;
-                              double childAspectRatio;
+                      error: (e) => _buildErrorState(),
+                      loaded: (missions) {
+                        if (missions.isEmpty) {
+                          return _buildEmptyState();
+                        }
+                        return BlocBuilder<
+                          MissionSelectionCubit,
+                          MissionSelectionState
+                        >(
+                          builder: (context, selectionState) {
+                            return LayoutBuilder(
+                              builder: (context, constraints) {
+                                int crossAxisCount;
+                                double childAspectRatio;
 
-                              if (constraints.maxWidth < 600) {
-                                crossAxisCount = 2;
-                                childAspectRatio = 1.8;
-                              } else if (constraints.maxWidth < 900) {
-                                crossAxisCount = 3;
-                                childAspectRatio = 2.0;
-                              } else if (constraints.maxWidth < 1200) {
-                                crossAxisCount = 4;
-                                childAspectRatio = 2.0;
-                              } else {
-                                crossAxisCount = 5;
-                                childAspectRatio = 2;
-                              }
+                                if (constraints.maxWidth < 600) {
+                                  crossAxisCount = 2;
+                                  childAspectRatio = 1.8;
+                                } else if (constraints.maxWidth < 900) {
+                                  crossAxisCount = 3;
+                                  childAspectRatio = 2.0;
+                                } else if (constraints.maxWidth < 1200) {
+                                  crossAxisCount = 4;
+                                  childAspectRatio = 2.0;
+                                } else {
+                                  crossAxisCount = 5;
+                                  childAspectRatio = 2;
+                                }
 
-                              return GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: crossAxisCount,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 12,
-                                      childAspectRatio: childAspectRatio,
-                                    ),
-                                itemCount: missions.length,
-                                itemBuilder: (context, index) {
-                                  final mission = missions[index];
-                                  final selectionCount = context
-                                      .read<MissionSelectionCubit>()
-                                      .getMissionCount(mission.missionId!);
+                                return GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: crossAxisCount,
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 12,
+                                        childAspectRatio: childAspectRatio,
+                                      ),
+                                  itemCount: missions.length,
+                                  itemBuilder: (context, index) {
+                                    final mission = missions[index];
+                                    final selectionCount = context
+                                        .read<MissionSelectionCubit>()
+                                        .getMissionCount(mission.missionId!);
 
-                                  return _MissionCard(
-                                    missionId: mission.missionId!,
-                                    missionName: mission.missionName,
-                                    selectionCount: selectionCount,
-                                    onTap: () {
-                                      context
-                                          .read<MissionSelectionCubit>()
-                                          .addMission(
-                                            mission.missionId!,
-                                            mission.missionName,
-                                          );
-                                    },
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Save Button
-              // Save Button
-              BlocBuilder<MissionSelectionCubit, MissionSelectionState>(
-                builder: (context, selectionState) {
-                  return SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: CustomButton(
-                      text: "حفظ البيانات",
-                      onPressed: () {
-                        context
-                            .read<AddIncidentMissionCubit>()
-                            .saveIncidentMission(
-                              selectionState: selectionState,
-                              incidentTypeId:
-                                  selectionState.selectedIncidentTypeId,
+                                    return _MissionCard(
+                                      missionId: mission.missionId!,
+                                      missionName: mission.missionName,
+                                      selectionCount: selectionCount,
+                                      onTap: () {
+                                        context
+                                            .read<MissionSelectionCubit>()
+                                            .addMission(
+                                              mission.missionId!,
+                                              mission.missionName,
+                                            );
+                                      },
+                                    );
+                                  },
+                                );
+                              },
                             );
+                          },
+                        );
                       },
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-            ],
-          );
-        },
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+
+                // Save Button
+                // Save Button
+                BlocBuilder<MissionSelectionCubit, MissionSelectionState>(
+                  builder: (context, selectionState) {
+                    return SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: CustomButton(
+                        text: "حفظ البيانات",
+                        onPressed: () {
+                          context
+                              .read<AddIncidentMissionCubit>()
+                              .saveIncidentMission(
+                                selectionState: selectionState,
+                                incidentTypeId:
+                                    selectionState.selectedIncidentTypeId,
+                              );
+                        },
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

@@ -3,10 +3,12 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:incidents_managment/core/helpers/routing.dart';
-import 'package:incidents_managment/core/routing/routes.dart';
+import 'package:incidents_managment/core/constant/colors.dart';
+import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_cubit.dart';
+import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_states.dart';
 
 Widget buildSidebar(BuildContext context) {
   return Container(
@@ -71,117 +73,91 @@ Widget _buildNavigation(BuildContext context) {
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: Column(
       children: [
-        _buildNavItem(
-          icon: Icons.dashboard,
-          label: 'لوحة التحكم',
-          index: 0,
-          customAction: () => {},
-        ),
-        _buildNavItem(
-          icon: Icons.map,
-          label: 'عرض الخريطة',
-          index: 1,
-          customAction: () => {},
-        ),
-        _buildNavItem(
-          icon: Icons.people,
-          label: 'الفرق',
-          index: 2,
-          customAction: () => {},
-        ),
-        _buildNavItem(
-          icon: Icons.analytics,
-          label: 'التحليلات',
-          index: 3,
-          customAction: () => {},
-        ),
+        _buildNavItem(icon: Icons.dashboard, label: 'لوحة التحكم', index: 0),
+        _buildNavItem(icon: Icons.map, label: 'عرض الخريطة', index: 1),
+        _buildNavItem(icon: Icons.people, label: 'الفرق', index: 2),
+        _buildNavItem(icon: Icons.analytics, label: 'التحليلات', index: 3),
         _buildNavItem(
           icon: Icons.add_circle_outline,
           label: 'أضافة أزمة',
-          index: 5,
-          customAction: () {
-            context.pushNamed(Routes.addIncident);
-          },
+          index: 4,
         ),
-        _buildNavItem(
-          icon: Icons.category,
-          label: 'أنواع الأزمات',
-          index: 5,
-          customAction: () {
-            context.pushNamed(Routes.allIncidentType);
-          },
-        ),
-        _buildNavItem(
-          icon: Icons.list_alt,
-          label: 'جميع المهام',
-          index: 5,
-          customAction: () {
-            context.pushNamed(Routes.allMissions);
-          },
-        ),
+        _buildNavItem(icon: Icons.category, label: 'أنواع الأزمات', index: 5),
+        _buildNavItem(icon: Icons.list_alt, label: 'جميع المهام', index: 6),
         _buildNavItem(
           icon: Icons.category,
           label: 'إضافة مهام الأزمة',
-          index: 6,
-          customAction: () {
-            context.pushNamed(Routes.addIncidentMission);
-          },
+          index: 7,
         ),
       ],
     ),
   );
 }
 
-// ============================================================================
-// NAV ITEM
-// ============================================================================
 Widget _buildNavItem({
   required IconData icon,
   required String label,
   required int index,
-  required VoidCallback customAction,
 }) {
-  return Padding(
-    padding: const EdgeInsets.all(2.0),
-    child: InkWell(
-      onTap: customAction,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.normal,
-                  fontSize: 12,
+  return BlocBuilder<HomeCubit, HomeStates>(
+    buildWhen: (previous, current) => current is HomeChanged,
+    builder: (context, state) {
+      final cubit = context.read<HomeCubit>();
+      final bool isSelected = cubit.selectedIndex == index;
+
+      return InkWell(
+        onTap: () {
+          cubit.changeState(index);
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: isSelected ? appColor : Colors.white, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isSelected
+                        ? appColor
+                        : Colors.white.withValues(alpha: 0.7),
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                    fontSize: 12,
+                  ),
                 ),
               ),
-            ),
-            Container(
-              width: 4,
-              height: 20,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 4,
+                height: isSelected ? 24 : 0,
+                decoration: BoxDecoration(
+                  color: appColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }
 

@@ -477,10 +477,10 @@ class SuccessDialog extends StatelessWidget {
   }
 }
 
-class BuildFloatingActionButton extends StatelessWidget {
+class CustomFloatingButton extends StatelessWidget {
   final String routeName;
   final String text;
-  const BuildFloatingActionButton({
+  const CustomFloatingButton({
     super.key,
     required this.routeName,
     required this.text,
@@ -488,21 +488,44 @@ class BuildFloatingActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: () async {
-        Navigator.pushNamed(context, routeName);
-      },
-      backgroundColor: appColor,
-      icon: const Icon(Icons.add, color: Colors.white),
-      label: Text(
-        text,
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
+    return Positioned(
+      bottom: 32.0,
+      left: 32.0,
+      child: GestureDetector(
+        onTap: () {
+          context.pushNamed(routeName);
+        },
+        child: Container(
+          margin: const EdgeInsets.only(top: 16),
+          decoration: BoxDecoration(
+            color: appColor,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: appColor.withOpacity(0.4),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                const Icon(Icons.add, color: Colors.white),
+                Text(
+                  text,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-      elevation: 4,
     );
   }
 }

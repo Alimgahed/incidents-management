@@ -13,8 +13,10 @@ class AddIncidentCubit extends Cubit<AddIncidentStates> {
 
   Future<void> submitIncident({
     required int typeId,
+    required int severity,
     required String description,
     required LatLng location,
+    required int branchId,
   }) async {
     emit(const AddIncidentStates.loading());
 
@@ -24,7 +26,8 @@ class AddIncidentCubit extends Cubit<AddIncidentStates> {
       currentIncidentXAxis: location.latitude,
       currentIncidentYAxis: location.longitude,
       currentIncidentStatus: 1, // تم التبليغ
-      currentIncidentSeverity: 1,
+      currentIncidentSeverity: severity,
+      branchId: branchId,
       currentIncidentNotes: "تم انقطاع المياة",
     );
 
