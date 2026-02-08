@@ -18,6 +18,7 @@ class Incidents extends StatelessWidget {
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
+      splitScreenMode: true,
       builder: (_, __) {
         return BlocProvider(
           create: (context) =>
@@ -25,30 +26,31 @@ class Incidents extends StatelessWidget {
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'Incidents Management',
-
             theme: AppTheme.lightTheme,
-
             onGenerateRoute: appRouter.generateRoute,
             initialRoute: initialRoute,
 
             // Set the app's locale to Arabic
-            locale: Locale('ar', 'AE'), // Arabic (UAE) locale
-            // Set the text direction globally to RTL (handled in builder)
-
+            locale: const Locale('ar', 'AE'), // Arabic (UAE) locale
             // Localization support for different languages
-            supportedLocales: [Locale('en', 'US'), Locale('ar', 'AE')],
+            supportedLocales: const [Locale('en', 'US'), Locale('ar', 'AE')],
             // LocalizationsDelegates for support
-            localizationsDelegates: [
+            localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
 
-            // Ensure RTL layout when using Arabic locale
+            // Ensure RTL layout when using Arabic locale and responsive design
             builder: (context, child) {
               return Directionality(
                 textDirection: TextDirection.rtl,
-                child: child ?? const SizedBox.shrink(),
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaleFactor: 1.0, // Prevent system text scaling issues
+                  ),
+                  child: child ?? const SizedBox.shrink(),
+                ),
               );
             },
           ),

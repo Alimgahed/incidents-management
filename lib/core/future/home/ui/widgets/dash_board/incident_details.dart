@@ -11,7 +11,9 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/incident/upd
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_state.dart';
 import 'package:incidents_managment/core/helpers/date_format.dart';
+import 'package:incidents_managment/core/helpers/responsive.dart';
 import 'package:latlong2/latlong.dart';
+
 class IncidentDetailsPanel extends StatelessWidget {
   const IncidentDetailsPanel({super.key});
 
@@ -27,64 +29,162 @@ class IncidentDetailsPanel extends StatelessWidget {
           return const _EmptyIncidentState();
         }
 
+        final isMobile = ResponsiveHelper.isMobile(context);
+        final isTablet = ResponsiveHelper.isTablet(context);
+        final padding = ResponsiveHelper.responsivePadding(context);
+
         return Container(
           color: backgroundColor,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: padding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Hero Header
                 _IncidentHeroHeader(incident: incident),
-                const SizedBox(height: 20),
-
-                // Quick Stats Row
-                _QuickStatsRow(incident: incident),
-                const SizedBox(height: 20),
-
-                // Main Content Grid
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left Column
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        children: [
-                          _DescriptionCard(incident: incident),
-                          const SizedBox(height: 16),
-                          _MissionsCard(incident: incident),
-                          const SizedBox(height: 16),
-                          _TimelineCard(incident: incident),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-
-                    // Right Column
-                    Expanded(
-                      child: Column(
-                        children: [
-                          _MetadataCard(incident: incident),
-                          const SizedBox(height: 16),
-                          if (incident
-                                  .currentIncidentWithMissions
-                                  ?.isNotEmpty ==
-                              true)
-                            if (incident.currentIncidentXAxis != null &&
-                                incident.currentIncidentYAxis != null)
-                              _LocationCard(
-                                lat: incident.currentIncidentXAxis!,
-                                lng: incident.currentIncidentYAxis!,
-                              ),
-                          const SizedBox(height: 16),
-                          if (incident.currentIncidentNotes != null)
-                            _NotesCard(notes: incident.currentIncidentNotes!),
-                        ],
-                      ),
-                    ),
-                  ],
+                SizedBox(
+                  height: ResponsiveHelper.responsiveSpacing(
+                    context,
+                    mobileSpacing: 16,
+                    desktopSpacing: 24,
+                  ),
                 ),
+
+                // Quick Stats Row - Responsive
+                if (isMobile)
+                  SizedBox(
+                    width: double.infinity,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _QuickStatsRow(incident: incident),
+                    ),
+                  )
+                else
+                  _QuickStatsRow(incident: incident),
+                SizedBox(
+                  height: ResponsiveHelper.responsiveSpacing(
+                    context,
+                    mobileSpacing: 16,
+                    desktopSpacing: 24,
+                  ),
+                ),
+
+                // Main Content Grid - Responsive
+                if (isMobile)
+                  // Mobile: Stack layout
+                  Column(
+                    children: [
+                      _DescriptionCard(incident: incident),
+                      const SizedBox(height: 16),
+                      _MissionsCard(incident: incident),
+                      const SizedBox(height: 16),
+                      _TimelineCard(incident: incident),
+                      const SizedBox(height: 16),
+                      _MetadataCard(incident: incident),
+                      const SizedBox(height: 16),
+                      if (incident.currentIncidentWithMissions?.isNotEmpty ==
+                          true)
+                        if (incident.currentIncidentXAxis != null &&
+                            incident.currentIncidentYAxis != null)
+                          _LocationCard(
+                            lat: incident.currentIncidentXAxis!,
+                            lng: incident.currentIncidentYAxis!,
+                          ),
+                      const SizedBox(height: 16),
+                      if (incident.currentIncidentNotes != null)
+                        _NotesCard(notes: incident.currentIncidentNotes!),
+                    ],
+                  )
+                else if (isTablet)
+                  // Tablet: Two-column layout
+                  Column(
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 1,
+                            child: Column(
+                              children: [
+                                _DescriptionCard(incident: incident),
+                                const SizedBox(height: 16),
+                                _MissionsCard(incident: incident),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            flex: 1,
+                            child: Column(
+                              children: [
+                                _MetadataCard(incident: incident),
+                                const SizedBox(height: 16),
+                                if (incident
+                                        .currentIncidentWithMissions
+                                        ?.isNotEmpty ==
+                                    true)
+                                  if (incident.currentIncidentXAxis != null &&
+                                      incident.currentIncidentYAxis != null)
+                                    _LocationCard(
+                                      lat: incident.currentIncidentXAxis!,
+                                      lng: incident.currentIncidentYAxis!,
+                                    ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _TimelineCard(incident: incident),
+                      const SizedBox(height: 16),
+                      if (incident.currentIncidentNotes != null)
+                        _NotesCard(notes: incident.currentIncidentNotes!),
+                    ],
+                  )
+                else
+                  // Desktop: Three-column layout
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left Column
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          children: [
+                            _DescriptionCard(incident: incident),
+                            const SizedBox(height: 16),
+                            _MissionsCard(incident: incident),
+                            const SizedBox(height: 16),
+                            _TimelineCard(incident: incident),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+
+                      // Right Column
+                      Expanded(
+                        child: Column(
+                          children: [
+                            _MetadataCard(incident: incident),
+                            const SizedBox(height: 16),
+                            if (incident
+                                    .currentIncidentWithMissions
+                                    ?.isNotEmpty ==
+                                true)
+                              if (incident.currentIncidentXAxis != null &&
+                                  incident.currentIncidentYAxis != null)
+                                _LocationCard(
+                                  lat: incident.currentIncidentXAxis!,
+                                  lng: incident.currentIncidentYAxis!,
+                                ),
+                            const SizedBox(height: 16),
+                            if (incident.currentIncidentNotes != null)
+                              _NotesCard(notes: incident.currentIncidentNotes!),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -93,6 +193,7 @@ class IncidentDetailsPanel extends StatelessWidget {
     );
   }
 }
+
 class _EmptyIncidentState extends StatelessWidget {
   const _EmptyIncidentState();
 
@@ -136,6 +237,7 @@ class _EmptyIncidentState extends StatelessWidget {
     );
   }
 }
+
 class _IncidentHeroHeader extends StatelessWidget {
   final CurrentIncidentModel incident;
 
@@ -244,6 +346,7 @@ class _IncidentHeroHeader extends StatelessWidget {
     );
   }
 }
+
 class _StatusChip extends StatelessWidget {
   final String text;
   final Color color;
@@ -287,6 +390,7 @@ class _StatusChip extends StatelessWidget {
     );
   }
 }
+
 class _SeverityChip extends StatelessWidget {
   final String text;
   final int severity;
@@ -335,6 +439,7 @@ class _SeverityChip extends StatelessWidget {
     }
   }
 }
+
 class _QuickStatsRow extends StatefulWidget {
   final CurrentIncidentModel incident;
 
@@ -343,6 +448,7 @@ class _QuickStatsRow extends StatefulWidget {
   @override
   State<_QuickStatsRow> createState() => _QuickStatsRowState();
 }
+
 class _QuickStatsRowState extends State<_QuickStatsRow> {
   late Duration _elapsed;
   Timer? _timer;
@@ -455,6 +561,7 @@ class _QuickStatsRowState extends State<_QuickStatsRow> {
     );
   }
 }
+
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -523,6 +630,7 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
+
 class _DescriptionCard extends StatelessWidget {
   final CurrentIncidentModel incident;
 
@@ -540,6 +648,7 @@ class _DescriptionCard extends StatelessWidget {
     );
   }
 }
+
 class _LocationCard extends StatefulWidget {
   final double lat;
   final double lng;
@@ -549,6 +658,7 @@ class _LocationCard extends StatefulWidget {
   @override
   State<_LocationCard> createState() => _LocationCardState();
 }
+
 class _LocationCardState extends State<_LocationCard> {
   String? _address;
   bool _loading = true;
@@ -705,6 +815,7 @@ class _LocationCardState extends State<_LocationCard> {
     );
   }
 }
+
 class _CoordinateItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -752,6 +863,7 @@ class _CoordinateItem extends StatelessWidget {
     );
   }
 }
+
 class _NotesCard extends StatelessWidget {
   final String notes;
 
@@ -790,6 +902,7 @@ class _NotesCard extends StatelessWidget {
     );
   }
 }
+
 class _MetadataCard extends StatelessWidget {
   final CurrentIncidentModel incident;
 
@@ -829,6 +942,7 @@ class _MetadataCard extends StatelessWidget {
     child: Divider(height: 1),
   );
 }
+
 class _MetadataRow extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -864,6 +978,7 @@ class _MetadataRow extends StatelessWidget {
     );
   }
 }
+
 class _MissionsCard extends StatelessWidget {
   final CurrentIncidentModel incident;
 
@@ -899,6 +1014,7 @@ class _MissionsCard extends StatelessWidget {
     );
   }
 }
+
 class _MissionItem extends StatelessWidget {
   final CurrentIncidentWithMissions mission;
   final int incidentId;
@@ -1014,6 +1130,7 @@ class _MissionItem extends StatelessWidget {
 
   /// 🔽 Bottom Sheet (نظيف ومتناغم)
 }
+
 class _TimelineCard extends StatelessWidget {
   final CurrentIncidentModel incident;
 
@@ -1056,6 +1173,7 @@ class _TimelineCard extends StatelessWidget {
     );
   }
 }
+
 class _TimelineItem extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -1138,6 +1256,7 @@ class _TimelineItem extends StatelessWidget {
     );
   }
 }
+
 class _SectionCard extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -1212,6 +1331,7 @@ class _SectionCard extends StatelessWidget {
     );
   }
 }
+
 void _showStatusSelector(
   BuildContext context,
   CurrentIncidentWithMissions mission,
@@ -1550,4 +1670,3 @@ void _showEditDialog(
     ),
   );
 }
-
