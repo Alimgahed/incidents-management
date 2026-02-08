@@ -16,6 +16,7 @@ CurrentIncidentModel _$CurrentIncidentModelFromJson(
         currentIncidentTypeId: (json['current_incident_type_id'] as num?)
             ?.toInt(),
         branchId: (json['branch_id'] as num?)?.toInt(),
+        currentIncidentTypeName: json['incident_type_name'] as String?,
         currentIncidentCreatedBy: (json['current_incident_created_by'] as num?)
             ?.toInt(),
         currentIncidentCreatedAt: json['current_incident_created_at'] == null
@@ -46,6 +47,8 @@ CurrentIncidentModel _$CurrentIncidentModelFromJson(
         currentIncidentYAxis: (json['current_incident_y_axis'] as num?)
             ?.toDouble(),
         currentIncidentNotes: json['current_incident_notes'] as String?,
+        branchName: json['branch_name'] as String?,
+        username: json['user_name'] as String?,
       )
       ..currentIncidentWithMissions = (json['missions'] as List<dynamic>?)
           ?.map(
@@ -77,7 +80,10 @@ Map<String, dynamic> _$CurrentIncidentModelToJson(
   'current_incident_y_axis': instance.currentIncidentYAxis,
   'current_incident_notes': instance.currentIncidentNotes,
   'missions': instance.currentIncidentWithMissions,
+  'incident_type_name': instance.currentIncidentTypeName,
   'branch_id': instance.branchId,
+  'branch_name': instance.branchName,
+  'user_name': instance.username,
 };
 
 CurrentIncidentWithMissions _$CurrentIncidentWithMissionsFromJson(

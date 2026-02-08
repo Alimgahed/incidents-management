@@ -476,11 +476,11 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             () => _mapController.move(const LatLng(28.0871, 30.7618), 12),
           ),
           const SizedBox(height: 8),
-          _buildControlButton(
-            Icons.refresh,
-            'تحديث',
-            () => context.read<IncidentMapCubit>().refresh(),
-          ),
+          // _buildControlButton(
+          //   Icons.refresh,
+          //   'تحديث',
+          //     () => context.read<IncidentMapCubit>().refresh(),
+          // ),
         ],
       ),
     );
@@ -590,12 +590,12 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
           );
         },
         onMissionStatusChanged: (missionId, newStatus) async {
-          // Send update to backend via Socket.IO
-          context.read<IncidentMapCubit>().updateMissionStatus(
-            incidentId: incident.currentIncidentId!,
-            missionId: missionId,
-            newStatus: newStatus,
-          );
+          // // Send update to backend via Socket.IO
+          // context.read<IncidentMapCubit>().updateMissionStatus(
+          //   incidentId: incident.currentIncidentId!,
+          //   missionId: missionId,
+          //   newStatus: newStatus,
+          // );
         },
       ),
     );

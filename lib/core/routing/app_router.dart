@@ -19,7 +19,6 @@ import 'package:incidents_managment/core/future/actions/ui/screens/missions/all_
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/edit_missions.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/relation_incident_mission.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
-import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/home/ui/screens/home.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 
@@ -119,19 +118,10 @@ class AppRouter {
           ),
         );
       case Routes.crisisDashboardScreen:
-        return MaterialPageRoute(
-          builder: (_) => BlocProvider(
-            create: (context) => IncidentMapCubit(),
-            child: const CrisisDashboard(),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const CrisisDashboard());
 
       default:
-        return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: Center(child: Text('No route defined for ${settings.name}')),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const CrisisDashboard());
     }
   }
 }

@@ -32,4 +32,16 @@ abstract class ApiService {
   );
   @POST(ApiConstants.addcurrentincdient)
   Future<dynamic> addCurrentIncident(@Body() CurrentIncidentModel incident);
+  @POST(ApiConstants.editcurrentincdient)
+  Future<dynamic> editCurrentIncident(
+    @Path("id") int id,
+    @Body() CurrentIncidentModel incident,
+  );
+  @POST(ApiConstants.editcurrentmissions)
+  Future<dynamic> editCurrentMission(
+    @Path("id1") int id1,
+    @Path("id2") int id2,
+    @Path("id3") int id3,
+    @Body() Map<String, dynamic> data,
+  );
 }

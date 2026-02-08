@@ -42,9 +42,13 @@ const Color darkFieldColor = Color(0xFF1E293B);
 const Color successColor = Color(0xFF22C55E);
 const Color warningColor = Color(0xFFCB3843);
 const Color infoColor = Color(0xFF38BDF8);
+const Color accentColor = Color(0xFF2C5F8D);
+const Color backgroundColor = Color(0xFFF5F7FA);
+const Color borderColor = Color(0xFFE0E6ED);
+
+const Color errorColor = Color(0xFFEF4444);
 
 /// =======================
 /// BORDERS & DIVIDERS
 /// =======================
-const Color borderColor = Color(0xFFE5E7EB);
 const Color darkBorderColor = Color(0xFF334155);

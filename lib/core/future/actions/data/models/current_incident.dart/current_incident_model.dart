@@ -33,14 +33,21 @@ class CurrentIncidentModel {
   final String? currentIncidentNotes;
   @JsonKey(name: 'missions')
   List<CurrentIncidentWithMissions>? currentIncidentWithMissions;
+  @JsonKey(name: 'incident_type_name')
+  final String? currentIncidentTypeName;
   @JsonKey(name: 'branch_id')
   final int? branchId;
+  @JsonKey(name: 'branch_name')
+  final String? branchName;
+  @JsonKey(name: 'user_name')
+  final String? username;
 
   CurrentIncidentModel({
     this.currentIncidentId,
     this.currentIncidentDescription,
     this.currentIncidentTypeId,
     this.branchId,
+    this.currentIncidentTypeName,
     this.currentIncidentCreatedBy,
     this.currentIncidentCreatedAt,
     this.currentIncidentSeverity,
@@ -52,6 +59,8 @@ class CurrentIncidentModel {
     this.currentIncidentXAxis,
     this.currentIncidentYAxis,
     this.currentIncidentNotes,
+    this.branchName,
+    this.username,
   });
   factory CurrentIncidentModel.fromJson(Map<String, dynamic> json) =>
       _$CurrentIncidentModelFromJson(json);

@@ -2,10 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/add_incident/add_incdient_repo.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/classes_repo/all_incident_classes_rep.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/edit_incident/edit_incident.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/edit_incident/update_statues.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/incident_missions_repo.dart/incident_missions.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/incident_type_repo/add_incident_type_repo.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_mission_cubit.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/incident/edit_incident.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/incident/update_statues.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/future/actions/data/repos/all_incident_type_repo.dart';
@@ -32,6 +36,9 @@ Future<void> setup() async {
   getIt.registerLazySingleton<AllIncidentClassRepo>(
     () => AllIncidentClassRepo(apiService: getIt<ApiService>()),
   );
+  getIt.registerLazySingleton<EditIncidentRepo>(
+    () => EditIncidentRepo(apiService: getIt<ApiService>()),
+  );
 
   getIt.registerLazySingleton<AddIncidentMissionRepo>(
     () => AddIncidentMissionRepo(apiService: getIt<ApiService>()),
@@ -50,6 +57,9 @@ Future<void> setup() async {
   );
   getIt.registerLazySingleton<AddIncdientRepo>(
     () => AddIncdientRepo(apiService: getIt<ApiService>()),
+  );
+  getIt.registerLazySingleton<UpdateStatuesRepo>(
+    () => UpdateStatuesRepo(apiService: getIt<ApiService>()),
   );
 
   getIt.registerLazySingleton<EditMissionRepo>(
@@ -89,6 +99,12 @@ Future<void> setup() async {
 
   getIt.registerFactory<AddIncidentTypeCubit>(
     () => AddIncidentTypeCubit(repository: getIt<AddIncidentTypeRepo>()),
+  );
+  getIt.registerFactory<UpdateStatuesCubit>(
+    () => UpdateStatuesCubit(updateStatuesRepo: getIt<UpdateStatuesRepo>()),
+  );
+  getIt.registerFactory<EditIncidentCubit>(
+    () => EditIncidentCubit(editIncidentRepo: getIt<EditIncidentRepo>()),
   );
 
   getIt.registerFactory<MapCubit>(() => MapCubit());

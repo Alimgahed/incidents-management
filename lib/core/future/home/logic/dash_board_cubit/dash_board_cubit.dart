@@ -1,100 +1,79 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
-import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_state.dart';
+import 'dash_board_state.dart';
 
 class DashboardCubit extends Cubit<DashboardState> {
-  DashboardCubit() : super(DashboardInitial());
+  DashboardCubit() : super(const DashboardInitial());
 
-  // Current selected incident
+  // ---------------- INTERNAL STATE ----------------
   CurrentIncidentModel? _selectedIncident;
-
-  // Filter settings
   String _selectedFilter = 'الكل';
   String _searchQuery = '';
 
-  // Getters
+  // ---------------- GETTERS ----------------
   CurrentIncidentModel? get selectedIncident => _selectedIncident;
   String get selectedFilter => _selectedFilter;
   String get searchQuery => _searchQuery;
 
-  // ============================================================================
-  // INCIDENT SELECTION
-  // ============================================================================
+  // ---------------- INCIDENT SELECTION ----------------
   void selectIncident(CurrentIncidentModel? incident) {
     _selectedIncident = incident;
-
-    if (incident != null) {
-      emit(DashboardIncidentSelected(incident: incident));
-    } else {
-      emit(DashboardIncidentDeselected());
-    }
+    emit(
+      incident == null
+          ? const DashboardIncidentDeselected()
+          : DashboardIncidentSelected(incident),
+    );
   }
 
-  void deselectIncident() {
-    _selectedIncident = null;
-    emit(DashboardIncidentDeselected());
-  }
+  void deselectIncident() => selectIncident(null);
 
-  // ============================================================================
-  // FILTERING
-  // ============================================================================
+  // ---------------- FILTERING ----------------
   void updateFilter(String filter) {
+    if (_selectedFilter == filter) return;
     _selectedFilter = filter;
-    emit(DashboardFilterChanged(filter: filter));
+    emit(DashboardFilterChanged(filter));
   }
 
   void updateSearchQuery(String query) {
+    if (_searchQuery == query) return;
     _searchQuery = query;
-    emit(DashboardSearchChanged(query: query));
+    emit(DashboardSearchChanged(query));
   }
 
   List<CurrentIncidentModel> filterIncidents(
     List<CurrentIncidentModel> incidents,
   ) {
-    var filtered = incidents;
+    Iterable<CurrentIncidentModel> filtered = incidents;
 
-    // Apply severity filter
     if (_selectedFilter != 'الكل') {
       const severityMap = {'حرجة': 4, 'عالية': 3, 'متوسطة': 2, 'منخفضة': 1};
-      final targetSeverity = severityMap[_selectedFilter];
-      if (targetSeverity != null) {
-        filtered = filtered
-            .where((i) => i.currentIncidentSeverity == targetSeverity)
-            .toList();
+      final severity = severityMap[_selectedFilter];
+      if (severity != null) {
+        filtered = filtered.where((i) => i.currentIncidentSeverity == severity);
       }
     }
 
-    // Apply search filter
     if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
-      filtered = filtered.where((incident) {
-        final description =
-            incident.currentIncidentDescription?.toLowerCase() ?? '';
-        final notes = incident.currentIncidentNotes?.toLowerCase() ?? '';
-        final id = incident.currentIncidentId?.toString() ?? '';
-
-        return description.contains(query) ||
-            notes.contains(query) ||
-            id.contains(query);
-      }).toList();
+      final q = _searchQuery.toLowerCase();
+      filtered = filtered.where((i) {
+        return (i.currentIncidentDescription ?? '').toLowerCase().contains(q) ||
+            (i.currentIncidentNotes ?? '').toLowerCase().contains(q) ||
+            (i.currentIncidentId?.toString() ?? '').contains(q);
+      });
     }
 
-    return filtered;
+    return filtered.toList();
   }
 
-  // ============================================================================
-  // UPDATE INCIDENT STATUS AND SEVERITY
-  // ============================================================================
+  // ---------------- INCIDENT STATUS & SEVERITY ----------------
   void updateIncidentStatusAndSeverity({
     required int incidentId,
     required int newStatus,
     required int newSeverity,
   }) {
-    emit(DashboardUpdating());
+    emit(const DashboardUpdating());
 
     try {
-      // Emit event to update via Socket.IO
-      // This will be handled by IncidentMapCubit
       emit(
         DashboardUpdateRequested(
           incidentId: incidentId,
@@ -103,53 +82,29 @@ class DashboardCubit extends Cubit<DashboardState> {
         ),
       );
 
-      // Update local selected incident if it matches
-      if (_selectedIncident?.currentIncidentId == incidentId) {
-        _selectedIncident =
-            CurrentIncidentModel(
-                currentIncidentId: _selectedIncident!.currentIncidentId,
-                currentIncidentDescription:
-                    _selectedIncident!.currentIncidentDescription,
-                currentIncidentTypeId: _selectedIncident!.currentIncidentTypeId,
-                currentIncidentCreatedBy:
-                    _selectedIncident!.currentIncidentCreatedBy,
-                currentIncidentCreatedAt:
-                    _selectedIncident!.currentIncidentCreatedAt,
-                currentIncidentSeverity: newSeverity,
-                currentIncidentSeverityUpdateBy:
-                    _selectedIncident!.currentIncidentSeverityUpdateBy,
-                currentIncidentSeverityUpdateAt: DateTime.now(),
-                currentIncidentStatus: newStatus,
-                currentIncidentStatusUpdatedBy:
-                    _selectedIncident!.currentIncidentStatusUpdatedBy,
-                currentIncidentStatusUpdatedAt: DateTime.now(),
-                currentIncidentXAxis: _selectedIncident!.currentIncidentXAxis,
-                currentIncidentYAxis: _selectedIncident!.currentIncidentYAxis,
-                currentIncidentNotes: _selectedIncident!.currentIncidentNotes,
-              )
-              ..currentIncidentWithMissions =
-                  _selectedIncident!.currentIncidentWithMissions;
+      if (_selectedIncident?.currentIncidentId != incidentId) return;
 
-        emit(DashboardIncidentUpdated(incident: _selectedIncident!));
-      }
+      _selectedIncident = _copyIncident(
+        _selectedIncident!,
+        status: newStatus,
+        severity: newSeverity,
+      );
+
+      emit(DashboardIncidentUpdated(_selectedIncident!));
     } catch (e) {
-      emit(DashboardError(message: 'فشل في تحديث الأزمة: $e'));
+      emit(DashboardError('فشل في تحديث الأزمة: $e'));
     }
   }
 
-  // ============================================================================
-  // MISSION STATUS UPDATE
-  // ============================================================================
+  // ---------------- MISSION STATUS ----------------
   void updateMissionStatus({
     required int incidentId,
     required int missionId,
     required int newStatus,
   }) {
-    emit(DashboardUpdating());
+    emit(const DashboardUpdating());
 
     try {
-      // Emit event to update via Socket.IO
-      // This will be handled by IncidentMapCubit
       emit(
         DashboardMissionUpdateRequested(
           incidentId: incidentId,
@@ -158,83 +113,77 @@ class DashboardCubit extends Cubit<DashboardState> {
         ),
       );
 
-      // Update local selected incident's missions if it matches
-      if (_selectedIncident?.currentIncidentId == incidentId) {
-        final missions = _selectedIncident!.currentIncidentWithMissions ?? [];
-        final missionIndex = missions.indexWhere(
-          (m) => m.idCurrentIncidentMission == missionId,
-        );
+      if (_selectedIncident?.currentIncidentId != incidentId) return;
 
-        if (missionIndex != -1) {
-          final updatedMissions = List<CurrentIncidentWithMissions>.from(
-            missions,
-          );
-          updatedMissions[missionIndex] = CurrentIncidentWithMissions(
-            idCurrentIncidentMission:
-                missions[missionIndex].idCurrentIncidentMission,
-            currentIncidentId: missions[missionIndex].currentIncidentId,
-            currentIncidentMissionId:
-                missions[missionIndex].currentIncidentMissionId,
-            currentIncidentMissionOrder:
-                missions[missionIndex].currentIncidentMissionOrder,
-            currentIncidentMissionStatus: newStatus,
-            currentIncidentMissionStatusUpdatedBy:
-                missions[missionIndex].currentIncidentMissionStatusUpdatedBy,
-            currentIncidentMissionStatusUpdatedAt: DateTime.now(),
-          );
+      final missions = _selectedIncident!.currentIncidentWithMissions ?? [];
+      final index = missions.indexWhere(
+        (m) => m.idCurrentIncidentMission == missionId,
+      );
 
-          _selectedIncident = CurrentIncidentModel(
-            currentIncidentId: _selectedIncident!.currentIncidentId,
-            currentIncidentDescription:
-                _selectedIncident!.currentIncidentDescription,
-            currentIncidentTypeId: _selectedIncident!.currentIncidentTypeId,
-            currentIncidentCreatedBy:
-                _selectedIncident!.currentIncidentCreatedBy,
-            currentIncidentCreatedAt:
-                _selectedIncident!.currentIncidentCreatedAt,
-            currentIncidentSeverity: _selectedIncident!.currentIncidentSeverity,
-            currentIncidentSeverityUpdateBy:
-                _selectedIncident!.currentIncidentSeverityUpdateBy,
-            currentIncidentSeverityUpdateAt:
-                _selectedIncident!.currentIncidentSeverityUpdateAt,
-            currentIncidentStatus: _selectedIncident!.currentIncidentStatus,
-            currentIncidentStatusUpdatedBy:
-                _selectedIncident!.currentIncidentStatusUpdatedBy,
-            currentIncidentStatusUpdatedAt:
-                _selectedIncident!.currentIncidentStatusUpdatedAt,
-            currentIncidentXAxis: _selectedIncident!.currentIncidentXAxis,
-            currentIncidentYAxis: _selectedIncident!.currentIncidentYAxis,
-            currentIncidentNotes: _selectedIncident!.currentIncidentNotes,
-          )..currentIncidentWithMissions = updatedMissions;
+      if (index == -1) return;
 
-          emit(
-            DashboardMissionUpdated(
-              incident: _selectedIncident!,
-              missionId: missionId,
-            ),
-          );
-        }
-      }
+      final updatedMissions = List<CurrentIncidentWithMissions>.from(missions);
+
+      _selectedIncident = _copyIncident(
+        _selectedIncident!,
+        missions: updatedMissions,
+      );
+
+      emit(
+        DashboardMissionUpdated(
+          incident: _selectedIncident!,
+          missionId: missionId,
+        ),
+      );
     } catch (e) {
-      emit(DashboardError(message: 'فشل في تحديث حالة المهمة: $e'));
+      emit(DashboardError('فشل في تحديث حالة المهمة: $e'));
     }
   }
 
-  // ============================================================================
-  // SYNC WITH INCIDENT MAP CUBIT
-  // ============================================================================
+  // ---------------- SYNC WITH INCIDENT MAP ----------------
   void syncWithIncidents(List<CurrentIncidentModel> incidents) {
-    // Update selected incident if it exists in the new list
-    if (_selectedIncident != null) {
-      final updated = incidents.firstWhere(
-        (i) => i.currentIncidentId == _selectedIncident!.currentIncidentId,
-        orElse: () => _selectedIncident!,
-      );
+    if (_selectedIncident == null) return;
 
-      if (updated.currentIncidentId != null) {
-        _selectedIncident = updated;
-        emit(DashboardIncidentSelected(incident: updated));
-      }
-    }
+    final updated = incidents.firstWhere(
+      (i) => i.currentIncidentId == _selectedIncident!.currentIncidentId,
+      orElse: () => _selectedIncident!,
+    );
+
+    if (identical(updated, _selectedIncident)) return;
+
+    _selectedIncident = updated;
+    emit(DashboardIncidentSelected(updated));
+  }
+
+  // ---------------- HELPER ----------------
+  CurrentIncidentModel _copyIncident(
+    CurrentIncidentModel incident, {
+    int? status,
+    int? severity,
+    List<CurrentIncidentWithMissions>? missions,
+  }) {
+    return CurrentIncidentModel(
+        currentIncidentId: incident.currentIncidentId,
+        currentIncidentDescription: incident.currentIncidentDescription,
+        currentIncidentTypeId: incident.currentIncidentTypeId,
+        currentIncidentCreatedBy: incident.currentIncidentCreatedBy,
+        currentIncidentCreatedAt: incident.currentIncidentCreatedAt,
+        currentIncidentSeverity: severity ?? incident.currentIncidentSeverity,
+        currentIncidentSeverityUpdateBy:
+            incident.currentIncidentSeverityUpdateBy,
+        currentIncidentSeverityUpdateAt: severity != null
+            ? DateTime.now()
+            : incident.currentIncidentSeverityUpdateAt,
+        currentIncidentStatus: status ?? incident.currentIncidentStatus,
+        currentIncidentStatusUpdatedBy: incident.currentIncidentStatusUpdatedBy,
+        currentIncidentStatusUpdatedAt: status != null
+            ? DateTime.now()
+            : incident.currentIncidentStatusUpdatedAt,
+        currentIncidentXAxis: incident.currentIncidentXAxis,
+        currentIncidentYAxis: incident.currentIncidentYAxis,
+        currentIncidentNotes: incident.currentIncidentNotes,
+      )
+      ..currentIncidentWithMissions =
+          missions ?? incident.currentIncidentWithMissions;
   }
 }

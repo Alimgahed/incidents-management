@@ -10,7 +10,7 @@ class MiniaWaterMapApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'خريطة مياه المنيا',
+      title: 'خريطة  المنيا',
       theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Cairo'),
       home: const MiniaWaterMapScreen(),
     );

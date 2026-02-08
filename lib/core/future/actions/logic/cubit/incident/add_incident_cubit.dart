@@ -17,6 +17,7 @@ class AddIncidentCubit extends Cubit<AddIncidentStates> {
     required String description,
     required LatLng location,
     required int branchId,
+    String? notes,
   }) async {
     emit(const AddIncidentStates.loading());
 
@@ -28,7 +29,7 @@ class AddIncidentCubit extends Cubit<AddIncidentStates> {
       currentIncidentStatus: 1, // تم التبليغ
       currentIncidentSeverity: severity,
       branchId: branchId,
-      currentIncidentNotes: "تم انقطاع المياة",
+      currentIncidentNotes:notes
     );
 
     final result = await addIncdientRepo.addIncdient(model);

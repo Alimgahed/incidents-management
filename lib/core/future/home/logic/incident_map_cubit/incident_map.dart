@@ -1,24 +1,66 @@
 import 'dart:async';
+import 'dart:html' as html;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
+
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 
+// Provide a lightweight copyWith for CurrentIncidentModel in case the model
+// does not define one; this attempts to use toJson/fromJson if present,
+// and falls back to a best-effort mutation if necessary.
+extension _CurrentIncidentModelCopy on CurrentIncidentModel {
+  CurrentIncidentModel copyWith({List<dynamic>? currentIncidentWithMissions}) {
+    try {
+      final map = (this as dynamic).toJson() as Map<String, dynamic>;
+      // prefer camelCase key as used by the app model field; adjust if your JSON uses another key
+      map['currentIncidentWithMissions'] = currentIncidentWithMissions
+          ?.map(
+            (m) => (m as dynamic).toJson != null ? (m as dynamic).toJson() : m,
+          )
+          .toList();
+      return CurrentIncidentModel.fromJson(map);
+    } catch (_) {
+      // fallback: try to mutate the instance if fields are non-final, else return original
+      try {
+        (this as dynamic).currentIncidentWithMissions =
+            currentIncidentWithMissions;
+        return this;
+      } catch (_) {
+        return this;
+      }
+    }
+  }
+}
+
 class IncidentMapCubit extends Cubit<IncidentMapState> {
   io.Socket? _socket;
-  List<CurrentIncidentModel> _incidents = [];
+
+  List<CurrentIncidentModel> incidentss = [];
+
   Timer? _reconnectTimer;
+  Timer? _alertTimer;
+
   int _reconnectAttempts = 0;
   static const int _maxReconnectAttempts = 5;
   static const Duration _reconnectDelay = Duration(seconds: 3);
+
+  // ================= ALERT STATE =================
+  bool _isAlertPlaying = false;
+  html.AudioElement? _audio;
+
+  // 🔊 SAME SOUND USED IN DASHBOARD CONTROLLER
+  static const String alertSoundUrl =
+      'https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg';
 
   IncidentMapCubit() : super(IncidentMapInitial()) {
     _initSocket();
   }
 
-  // ============================================================================
-  // SOCKET.IO INITIALIZATION WITH RECONNECTION LOGIC
-  // ============================================================================
+  // ===========================================================================
+  // SOCKET INITIALIZATION
+  // ===========================================================================
   void _initSocket() {
     try {
       _socket = io.io(
@@ -41,45 +83,35 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     _socket?.onConnect((_) {
       _reconnectAttempts = 0;
       _reconnectTimer?.cancel();
-
-      // Request initial data on connect
       _socket?.emit('get_incidents');
     });
 
-    _socket?.onDisconnect((_) {
+    _socket?.onDisconnect((_) => _attemptReconnect());
+
+    _socket?.onConnectError((_) {
+      emit(IncidentMapError(message: 'فشل الاتصال بالخادم'));
       _attemptReconnect();
     });
 
-    _socket?.onConnectError((error) {
-      emit(IncidentMapError(message: 'خطأ في الاتصال: فشل الاتصال بالخادم'));
-      _attemptReconnect();
-    });
-
-    _socket?.onError((error) {
+    _socket?.onError((_) {
       emit(IncidentMapError(message: 'خطأ في الاتصال بالخادم'));
     });
 
-    // Listen to incident events
     _socket?.on('incident_snapshot', _handleIncidentSnapshot);
     _socket?.on('incident_created', _handleIncidentCreated);
     _socket?.on('incident_updated', _handleIncidentUpdated);
     _socket?.on('incident_deleted', _handleIncidentDeleted);
 
-    // NEW: Listen to mission update responses
-    _socket?.on('mission_status_updated', _handleMissionStatusUpdated);
+    _socket?.on('mission_updated', _handleMissionStatusUpdated);
     _socket?.on('mission_update_error', _handleMissionUpdateError);
   }
 
-  // ============================================================================
+  // ===========================================================================
   // RECONNECTION LOGIC
-  // ============================================================================
+  // ===========================================================================
   void _attemptReconnect() {
     if (_reconnectAttempts >= _maxReconnectAttempts) {
-      emit(
-        IncidentMapError(
-          message: 'فشل الاتصال بالخادم بعد عدة محاولات. يرجى المحاولة لاحقاً',
-        ),
-      );
+      emit(IncidentMapError(message: 'فشل الاتصال بالخادم بعد عدة محاولات'));
       return;
     }
 
@@ -90,277 +122,203 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     });
   }
 
-  // ============================================================================
-  // HANDLE INCIDENT EVENTS
-  // ============================================================================
+  // ===========================================================================
+  // 🔊 ALERT SOUND (WEB – SAME AS DASHBOARD, 7 SECONDS)
+  // ===========================================================================
+  void _playAlertFor7Seconds() {
+    if (_isAlertPlaying) return;
+
+    try {
+      _isAlertPlaying = true;
+
+      _audio?.pause();
+      _audio = html.AudioElement()
+        ..src = alertSoundUrl
+        ..volume = 1.0
+        ..autoplay = true;
+
+      // ⏱ Stop after 7 seconds
+      _alertTimer?.cancel();
+      _alertTimer = Timer(const Duration(seconds: 7), _stopAlert);
+    } catch (_) {
+      _stopAlert();
+    }
+  }
+
+  void _stopAlert() {
+    try {
+      _audio?.pause();
+      _audio?.currentTime = 0;
+    } catch (_) {}
+
+    _audio = null;
+    _isAlertPlaying = false;
+  }
+
+  // ===========================================================================
+  // INCIDENT HANDLERS
+  // ===========================================================================
   void _handleIncidentSnapshot(dynamic data) {
     try {
       if (data is! List) {
         emit(IncidentMapError(message: 'تنسيق بيانات غير صحيح'));
         return;
       }
-      print(data);
-      _incidents = data
-          .map((item) {
-            try {
-              return CurrentIncidentModel.fromJson(item);
-            } catch (e) {
-              return null;
-            }
-          })
-          .whereType<CurrentIncidentModel>()
-          .toList();
 
-      emit(IncidentMapLoaded(incidents: List.unmodifiable(_incidents)));
+      incidentss = data.map((e) => CurrentIncidentModel.fromJson(e)).toList();
+
+      emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     } catch (e) {
       emit(IncidentMapError(message: 'خطأ في تحميل البيانات'));
     }
   }
 
   void _handleIncidentCreated(dynamic data) {
-    try {
-      final newIncident = CurrentIncidentModel.fromJson(data);
-      final updatedIncidents = [..._incidents, newIncident];
-      _incidents = updatedIncidents;
-      emit(IncidentMapLoaded(incidents: List.unmodifiable(updatedIncidents)));
-    } catch (e) {
-      print('Error parsing created incident: $e');
-    }
+    final newIncident = CurrentIncidentModel.fromJson(data);
+
+    incidentss = [...incidentss, newIncident];
+    emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+
+    // 🚨 PLAY SAME ALERT SOUND (7 SECONDS)
+    _playAlertFor7Seconds();
   }
 
   void _handleIncidentUpdated(dynamic data) {
-    try {
-      final updatedIncident = CurrentIncidentModel.fromJson(data);
+    final updatedIncident = CurrentIncidentModel.fromJson(data);
 
-      final index = _incidents.indexWhere(
-        (i) => i.currentIncidentId == updatedIncident.currentIncidentId,
-      );
+    final index = incidentss.indexWhere(
+      (i) => i.currentIncidentId == updatedIncident.currentIncidentId,
+    );
 
-      if (index != -1) {
-        _incidents = List.from(_incidents)..[index] = updatedIncident;
-        emit(IncidentMapLoaded(incidents: List.unmodifiable(_incidents)));
-      } else {
-        _handleIncidentCreated(data);
-      }
-    } catch (e) {
-      // Silently fail for individual incident parsing errors
+    if (index != -1) {
+      incidentss = List.from(incidentss)..[index] = updatedIncident;
+      emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     }
   }
 
   void _handleIncidentDeleted(dynamic data) {
-    try {
-      final incidentId = data is Map ? data['id'] : data;
+    final id = data is Map ? data['id'] : data;
+    incidentss = incidentss.where((i) => i.currentIncidentId != id).toList();
 
-      _incidents = _incidents
-          .where((i) => i.currentIncidentId != incidentId)
-          .toList();
-
-      emit(IncidentMapLoaded(incidents: List.unmodifiable(_incidents)));
-    } catch (e) {
-      // Silently fail
-    }
+    emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
   }
 
-  // ============================================================================
-  // NEW: HANDLE MISSION STATUS UPDATE EVENTS
-  // ============================================================================
+  // ===========================================================================
+  // MISSION STATUS HANDLERS
+
   void _handleMissionStatusUpdated(dynamic data) {
     try {
-      // Expected data format:
-      // {
-      //   "incident_id": int,
-      //   "mission_id": int,
-      //   "new_status": int,
-      //   "updated_at": string (ISO date)
-      // }
-
       if (data is! Map) return;
 
-      final incidentId = data['incident_id'] as int?;
-      final missionId = data['mission_id'] as int?;
-      final newStatus = data['new_status'] as int?;
-      final updatedAt = data['updated_at'] != null
-          ? DateTime.parse(data['updated_at'] as String)
-          : DateTime.now();
+      final incidentId = data['current_incident_id'] as int?;
+      final missionId = data['current_incident_mission_id'] as int?;
+      final newStatus = data['current_incident_mission_status'] as int?;
 
       if (incidentId == null || missionId == null || newStatus == null) return;
 
-      // Find and update the incident in local state
-      final incidentIndex = _incidents.indexWhere(
+      // إيجاد الـ incident
+      final incidentIndex = incidentss.indexWhere(
         (i) => i.currentIncidentId == incidentId,
       );
+      if (incidentIndex == -1) return;
 
-      if (incidentIndex != -1) {
-        final incident = _incidents[incidentIndex];
-        final missions = incident.currentIncidentWithMissions ?? [];
+      final incident = incidentss[incidentIndex];
 
-        final missionIndex = missions.indexWhere(
-          (m) => m.idCurrentIncidentMission == missionId,
+      // تحديث المهمة داخل الـ incident
+      final missions = incident.currentIncidentWithMissions ?? [];
+
+      final missionIndex = missions.indexWhere(
+        (m) => m.currentIncidentMissionId == missionId,
+      );
+
+      if (missionIndex != -1) {
+        final mission = missions[missionIndex];
+        final updatedMission = CurrentIncidentWithMissions(
+          missionName: mission.missionName,
+          currentIncidentMissionStatusUpdatedBy:
+              mission.currentIncidentMissionStatusUpdatedBy,
+          currentIncidentMissionId: mission.currentIncidentMissionId,
+          currentIncidentMissionOrder: mission.currentIncidentMissionOrder,
+
+          idCurrentIncidentMission: mission.idCurrentIncidentMission,
+          currentIncidentMissionStatus: newStatus,
+          currentIncidentMissionStatusUpdatedAt: DateTime.now(),
+          // Copy other fields from the original mission
         );
 
-        if (missionIndex != -1) {
-          // Update the mission status
-          final updatedMission = CurrentIncidentWithMissions(
-            idCurrentIncidentMission:
-                missions[missionIndex].idCurrentIncidentMission,
-            currentIncidentId: missions[missionIndex].currentIncidentId,
-            currentIncidentMissionId:
-                missions[missionIndex].currentIncidentMissionId,
-            currentIncidentMissionOrder:
-                missions[missionIndex].currentIncidentMissionOrder,
-            currentIncidentMissionStatus: newStatus,
-            currentIncidentMissionStatusUpdatedBy:
-                missions[missionIndex].currentIncidentMissionStatusUpdatedBy,
-            currentIncidentMissionStatusUpdatedAt: updatedAt,
-          );
-
-          final updatedMissions = List<CurrentIncidentWithMissions>.from(
-            missions,
-          )..[missionIndex] = updatedMission;
-
-          // Create updated incident with new missions list
-          final updatedIncident = CurrentIncidentModel(
-            currentIncidentId: incident.currentIncidentId,
-            currentIncidentDescription: incident.currentIncidentDescription,
-            currentIncidentTypeId: incident.currentIncidentTypeId,
-            currentIncidentCreatedBy: incident.currentIncidentCreatedBy,
-            currentIncidentCreatedAt: incident.currentIncidentCreatedAt,
-            currentIncidentSeverity: incident.currentIncidentSeverity,
-            currentIncidentSeverityUpdateBy:
-                incident.currentIncidentSeverityUpdateBy,
-            currentIncidentSeverityUpdateAt:
-                incident.currentIncidentSeverityUpdateAt,
-            currentIncidentStatus: incident.currentIncidentStatus,
-            currentIncidentStatusUpdatedBy:
-                incident.currentIncidentStatusUpdatedBy,
-            currentIncidentStatusUpdatedAt:
-                incident.currentIncidentStatusUpdatedAt,
-            currentIncidentXAxis: incident.currentIncidentXAxis,
-            currentIncidentYAxis: incident.currentIncidentYAxis,
-            currentIncidentNotes: incident.currentIncidentNotes,
-          )..currentIncidentWithMissions = updatedMissions;
-
-          _incidents = List.from(_incidents)..[incidentIndex] = updatedIncident;
-          emit(IncidentMapLoaded(incidents: List.unmodifiable(_incidents)));
-        }
+        missions[missionIndex] = updatedMission;
       }
+
+      // تحديث الـ incident في القائمة
+      final updatedIncident = incident.copyWith(
+        currentIncidentWithMissions: missions,
+      );
+
+      incidentss[incidentIndex] = updatedIncident;
+
+      emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     } catch (e) {
-      print('Error handling mission status update: $e');
+      emit(IncidentMapError(message: 'فشل تحديث حالة المهمة'));
     }
   }
 
   void _handleMissionUpdateError(dynamic data) {
-    try {
-      final errorMessage = data is Map
-          ? (data['message'] as String? ?? 'فشل في تحديث حالة المهمة')
-          : 'فشل في تحديث حالة المهمة';
+    final msg = data is Map ? data['message'] ?? 'فشل تحديث المهمة' : 'خطأ';
+    emit(IncidentMapError(message: msg));
 
-      emit(IncidentMapError(message: errorMessage));
-
-      // Re-emit the loaded state to keep UI functional
-      if (_incidents.isNotEmpty) {
-        emit(IncidentMapLoaded(incidents: List.unmodifiable(_incidents)));
-      }
-    } catch (e) {
-      print('Error handling mission update error: $e');
+    if (incidentss.isNotEmpty) {
+      emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     }
   }
 
-  // ============================================================================
-  // NEW: UPDATE MISSION STATUS
-  // ============================================================================
-  /// Updates the status of a mission and sends the update to the backend
-  ///
-  /// Parameters:
-  /// - [incidentId]: The ID of the incident containing the mission
-  /// - [missionId]: The ID of the mission to update
-  /// - [newStatus]: The new status value (1 = pending, 2 = completed)
+  // ===========================================================================
+  // UPDATE MISSION STATUS
+  // ===========================================================================
   void updateMissionStatus({
     required int incidentId,
     required int missionId,
     required int newStatus,
   }) {
-    if (_socket == null || !(_socket?.connected ?? false)) {
+    if (!(_socket?.connected ?? false)) {
       emit(IncidentMapError(message: 'لا يوجد اتصال بالخادم'));
       return;
     }
 
-    try {
-      // Emit the update event to the backend
-      _socket?.emit('update_mission_status', {
-        'incident_id': incidentId,
-        'mission_id': missionId,
-        'new_status': newStatus,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-
-      print(
-        'Mission status update sent: Incident=$incidentId, Mission=$missionId, Status=$newStatus',
-      );
-    } catch (e) {
-      emit(IncidentMapError(message: 'فشل في إرسال تحديث حالة المهمة'));
-      print('Error updating mission status: $e');
-    }
+    _socket?.emit('update_mission_status', {
+      'incident_id': incidentId,
+      'mission_id': missionId,
+      'new_status': newStatus,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
   }
 
-  // ============================================================================
-  // MANUAL INCIDENT CONTROL (For Testing/Offline Mode)
-  // ============================================================================
-  void addIncident(CurrentIncidentModel incident) {
-    if (!_incidents.any(
-      (i) => i.currentIncidentId == incident.currentIncidentId,
-    )) {
-      _incidents = [..._incidents, incident];
-      emit(IncidentMapLoaded(incidents: List.unmodifiable(_incidents)));
-    }
-  }
-
-  void updateIncident(CurrentIncidentModel incident) {
-    final index = _incidents.indexWhere(
-      (i) => i.currentIncidentId == incident.currentIncidentId,
-    );
-
-    if (index != -1) {
-      _incidents = List.from(_incidents)..[index] = incident;
-      emit(IncidentMapLoaded(incidents: List.unmodifiable(_incidents)));
-    }
-  }
-
-  void removeIncident(dynamic incidentId) {
-    _incidents = _incidents
-        .where((i) => i.currentIncidentId != incidentId)
-        .toList();
-    emit(IncidentMapLoaded(incidents: List.unmodifiable(_incidents)));
-  }
-
-  // ============================================================================
+  // ===========================================================================
   // MANUAL REFRESH
-  // ============================================================================
+  // ===========================================================================
   void refresh() {
     emit(IncidentMapLoading());
     _socket?.emit('get_incidents');
   }
 
-  // ============================================================================
+  // ===========================================================================
   // GETTERS
-  // ============================================================================
-  List<CurrentIncidentModel> get incidents => List.unmodifiable(_incidents);
+  // ===========================================================================
+  List<CurrentIncidentModel> get incidents => List.unmodifiable(incidentss);
+
   bool get isConnected => _socket?.connected ?? false;
 
-  // ============================================================================
+  // ===========================================================================
   // CLEANUP
-  // ============================================================================
+  // ===========================================================================
   @override
   Future<void> close() {
     _reconnectTimer?.cancel();
-    _socket?.off('incident_snapshot');
-    _socket?.off('incident_created');
-    _socket?.off('incident_updated');
-    _socket?.off('incident_deleted');
-    _socket?.off('mission_status_updated');
-    _socket?.off('mission_update_error');
+    _alertTimer?.cancel();
+    _stopAlert();
+
     _socket?.dispose();
     _socket = null;
+
     return super.close();
   }
 }

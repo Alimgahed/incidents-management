@@ -6,7 +6,7 @@ import 'package:incidents_managment/core/future/actions/ui/screens/missions/all_
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/relation_incident_mission.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_states.dart';
-import 'package:incidents_managment/core/future/home/ui/widgets/dash_board.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dash_board.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/map_widget.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/side_bar.dart';
 
@@ -33,18 +33,35 @@ class CrisisDashboard extends StatelessWidget {
                       (HomeCubit c) => c.selectedIndex,
                     );
 
+                    // Lazy-loaded IndexedStack
                     return IndexedStack(
                       index: index,
-                      children: const [
-                        DashboardView(), // 0
-                        IncidentsMapScreen(), // 1
-                        SizedBox(), // 2 (future)
-                        SizedBox(), // 3 (future)
-                        AddIncidentScreen(), // 4
-                        AllIncidentType(), // 5
-                        AllMissions(), // 6
-                        Addincidentmission(), // 7
-                      ],
+                      children: List.generate(8, (i) {
+                        switch (i) {
+                          case 0:
+                            return const DashboardView();
+                          case 1:
+                            return const IncidentsMapScreen();
+                          case 4:
+                            return i == index
+                                ? const AddIncidentScreen()
+                                : const SizedBox.shrink();
+                          case 5:
+                            return i == index
+                                ? const AllIncidentType()
+                                : const SizedBox.shrink();
+                          case 6:
+                            return i == index
+                                ? const AllMissions()
+                                : const SizedBox.shrink();
+                          case 7:
+                            return i == index
+                                ? const Addincidentmission()
+                                : const SizedBox.shrink();
+                          default:
+                            return const SizedBox.shrink();
+                        }
+                      }),
                     );
                   },
                 ),

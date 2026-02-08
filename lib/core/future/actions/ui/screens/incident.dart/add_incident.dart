@@ -21,6 +21,8 @@ class AddIncidentScreen extends StatefulWidget {
 
 class _AddIncidentScreenState extends State<AddIncidentScreen> {
   final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController notesController = TextEditingController();
+
   int? selectedTypeId;
   int? selectedSeverity;
   int? selectedBranchId;
@@ -98,10 +100,19 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
             },
           ),
           SizedBox(height: 20),
+
           CustomTextFormField(
             controller: descriptionController,
             hintText: "اشرح الحالة بالتفصيل...",
             maxLines: 6,
+          ),
+          SizedBox(height: 20),
+
+          CustomTextFormField(
+            controller: notesController,
+            hintText: "ملاحظات إضافية (اختياري)",
+            useValidator: false,
+            maxLines: 3,
           ),
           const Spacer(),
           BlocBuilder<AddIncidentCubit, AddIncidentStates>(
@@ -161,6 +172,7 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
       typeId: selectedTypeId!,
       branchId: selectedBranchId!,
       description: descriptionController.text,
+      notes: notesController.text.isEmpty ? null : notesController.text,
 
       location: location,
     );
@@ -189,7 +201,7 @@ class _MapWidget extends StatelessWidget {
                   urlTemplate:
                       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                   subdomains: const ['a', 'b', 'c'],
-                  userAgentPackageName: 'com.incidents.management',
+                  userAgentPackageName: 'com.example.crisis_management',
                 ),
                 MarkerLayer(
                   markers: [
