@@ -65,7 +65,6 @@ dependencies:
   web_socket_channel: ^3.0.3
   socket_io_client: ^3.1.4
   geocoding_platform_interface: ^3.2.0
-  flutter_ringtone_player: ^4.0.0+4
 
 dev_dependencies:
   flutter_test:

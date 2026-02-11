@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/constant/enms.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
@@ -12,6 +11,7 @@ import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_state.dart';
 import 'package:incidents_managment/core/helpers/date_format.dart';
 import 'package:incidents_managment/core/helpers/responsive.dart';
+import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:latlong2/latlong.dart';
 
 class IncidentDetailsPanel extends StatelessWidget {
@@ -29,8 +29,6 @@ class IncidentDetailsPanel extends StatelessWidget {
           return const _EmptyIncidentState();
         }
 
-        final isMobile = ResponsiveHelper.isMobile(context);
-        final isTablet = ResponsiveHelper.isTablet(context);
         final padding = ResponsiveHelper.responsivePadding(context);
 
         return Container(
@@ -51,15 +49,7 @@ class IncidentDetailsPanel extends StatelessWidget {
                 ),
 
                 // Quick Stats Row - Responsive
-                if (isMobile)
-                  SizedBox(
-                    width: double.infinity,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: _QuickStatsRow(incident: incident),
-                    ),
-                  )
-                else
+               
                   _QuickStatsRow(incident: incident),
                 SizedBox(
                   height: ResponsiveHelper.responsiveSpacing(
@@ -70,79 +60,7 @@ class IncidentDetailsPanel extends StatelessWidget {
                 ),
 
                 // Main Content Grid - Responsive
-                if (isMobile)
-                  // Mobile: Stack layout
-                  Column(
-                    children: [
-                      _DescriptionCard(incident: incident),
-                      const SizedBox(height: 16),
-                      _MissionsCard(incident: incident),
-                      const SizedBox(height: 16),
-                      _TimelineCard(incident: incident),
-                      const SizedBox(height: 16),
-                      _MetadataCard(incident: incident),
-                      const SizedBox(height: 16),
-                      if (incident.currentIncidentWithMissions?.isNotEmpty ==
-                          true)
-                        if (incident.currentIncidentXAxis != null &&
-                            incident.currentIncidentYAxis != null)
-                          _LocationCard(
-                            lat: incident.currentIncidentXAxis!,
-                            lng: incident.currentIncidentYAxis!,
-                          ),
-                      const SizedBox(height: 16),
-                      if (incident.currentIncidentNotes != null)
-                        _NotesCard(notes: incident.currentIncidentNotes!),
-                    ],
-                  )
-                else if (isTablet)
-                  // Tablet: Two-column layout
-                  Column(
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: Column(
-                              children: [
-                                _DescriptionCard(incident: incident),
-                                const SizedBox(height: 16),
-                                _MissionsCard(incident: incident),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            flex: 1,
-                            child: Column(
-                              children: [
-                                _MetadataCard(incident: incident),
-                                const SizedBox(height: 16),
-                                if (incident
-                                        .currentIncidentWithMissions
-                                        ?.isNotEmpty ==
-                                    true)
-                                  if (incident.currentIncidentXAxis != null &&
-                                      incident.currentIncidentYAxis != null)
-                                    _LocationCard(
-                                      lat: incident.currentIncidentXAxis!,
-                                      lng: incident.currentIncidentYAxis!,
-                                    ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _TimelineCard(incident: incident),
-                      const SizedBox(height: 16),
-                      if (incident.currentIncidentNotes != null)
-                        _NotesCard(notes: incident.currentIncidentNotes!),
-                    ],
-                  )
-                else
-                  // Desktop: Three-column layout
+               
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -173,9 +91,10 @@ class IncidentDetailsPanel extends StatelessWidget {
                                 true)
                               if (incident.currentIncidentXAxis != null &&
                                   incident.currentIncidentYAxis != null)
-                                _LocationCard(
+                               AppMapSection(
                                   lat: incident.currentIncidentXAxis!,
                                   lng: incident.currentIncidentYAxis!,
+                                  mapHeight: 200,
                                 ),
                             const SizedBox(height: 16),
                             if (incident.currentIncidentNotes != null)
@@ -334,7 +253,7 @@ class _IncidentHeroHeader extends StatelessWidget {
               color: Colors.white,
               size: 28,
             ),
-            onPressed: () => _showEditDialog(
+            onPressed: () => showEditDialog(
               context,
               incident,
               context.read<EditIncidentCubit>(),
@@ -502,21 +421,7 @@ class _QuickStatsRowState extends State<_QuickStatsRow> {
     super.dispose();
   }
 
-  String _formatDuration(Duration d) {
-    final hours = d.inHours;
-    final minutes = d.inMinutes.remainder(60);
-    final seconds = d.inSeconds.remainder(60);
-
-    if (hours > 0) {
-      return '${hours.toString().padLeft(2, '0')}:'
-          '${minutes.toString().padLeft(2, '0')}:'
-          '${seconds.toString().padLeft(2, '0')}';
-    }
-
-    return '${minutes.toString().padLeft(2, '0')}:'
-        '${seconds.toString().padLeft(2, '0')}';
-  }
-
+ 
   @override
   Widget build(BuildContext context) {
     final missions = widget.incident.currentIncidentWithMissions ?? [];
@@ -550,7 +455,7 @@ class _QuickStatsRowState extends State<_QuickStatsRow> {
           child: _StatCard(
             icon: Icons.access_time,
             title: 'الوقت المنقضي',
-            value: _formatDuration(_elapsed),
+            value: (_elapsed.format()),
             subtitle: widget.incident.currentIncidentStatus == 7
                 ? 'تم الإيقاف'
                 : 'جاري العد',
@@ -649,220 +554,8 @@ class _DescriptionCard extends StatelessWidget {
   }
 }
 
-class _LocationCard extends StatefulWidget {
-  final double lat;
-  final double lng;
 
-  const _LocationCard({required this.lat, required this.lng});
 
-  @override
-  State<_LocationCard> createState() => _LocationCardState();
-}
-
-class _LocationCardState extends State<_LocationCard> {
-  String? _address;
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchAddress();
-  }
-
-  Future<void> _fetchAddress() async {
-    try {
-      // Ensure coordinates are valid (not 0,0 unless intended)
-      if (widget.lat == 0 && widget.lng == 0) {
-        setState(() {
-          _address = 'إحداثيات غير صالحة';
-          _loading = false;
-        });
-        return;
-      }
-
-      final placemarks = await placemarkFromCoordinates(widget.lat, widget.lng);
-
-      if (placemarks.isNotEmpty) {
-        final place = placemarks.first;
-
-        // Construct address safely
-        final street = place.street ?? '';
-        final subLocality = place.subLocality ?? '';
-        final locality = place.locality ?? '';
-        final adminArea = place.administrativeArea ?? '';
-        final country = place.country ?? '';
-
-        final addressList = [
-          street,
-          subLocality,
-          locality,
-          adminArea,
-          country,
-        ].where((e) => e.isNotEmpty);
-
-        setState(() {
-          _address = addressList.isEmpty
-              ? 'عنوان غير معروف'
-              : addressList.join(', ');
-          _loading = false;
-        });
-      } else {
-        setState(() {
-          _address = 'لم يتم العثور على العنوان لهذه الإحداثيات';
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      // DEBUG: Print the actual error to the console
-      print("Error fetching address: $e");
-      print("Error Type: ${e.runtimeType}");
-
-      setState(() {
-        // Show the error message temporarily to help debug, or a generic message
-        _address = 'خطأ: ${e.toString()}';
-        _loading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      title: 'الموقع الجغرافي',
-      icon: Icons.location_on_outlined,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Address
-          // if (_loading)
-          //   Row(
-          //     children: [
-          //       SizedBox(
-          //         width: 16,
-          //         height: 16,
-          //         child: CircularProgressIndicator(
-          //           strokeWidth: 2,
-          //           valueColor: AlwaysStoppedAnimation(accentColor),
-          //         ),
-          //       ),
-          //       const SizedBox(width: 8),
-          //       Text(
-          //         'جاري تحميل العنوان...',
-          //         style: TextStyle(
-          //           fontSize: 13,
-          //           color: secondaryTextColor,
-          //           fontStyle: FontStyle.italic,
-          //         ),
-          //       ),
-          //     ],
-          //   )
-          // else if (_address != null)
-          //   Container(
-          //     padding: const EdgeInsets.all(12),
-          //     decoration: BoxDecoration(
-          //       color: accentColor.withOpacity(0.05),
-          //       borderRadius: BorderRadius.circular(8),
-          //       border: Border.all(color: accentColor.withOpacity(0.2)),
-          //     ),
-          //     child: Row(
-          //       children: [
-          //         Icon(Icons.place, color: accentColor, size: 20),
-          //         const SizedBox(width: 8),
-          //         Expanded(
-          //           child: Text(
-          //             _address!,
-          //             style: TextStyle(
-          //               fontSize: 14,
-          //               color: primaryTextColor,
-          //               fontWeight: FontWeight.w500,
-          //             ),
-          //           ),
-          //         ),
-          //       ],
-          //     ),
-          //   ),
-
-          // const SizedBox(height: 12),
-          // const Divider(),
-          const SizedBox(height: 12),
-
-          // Coordinates
-          Row(
-            children: [
-              Expanded(
-                child: _CoordinateItem(
-                  icon: Icons.my_location,
-                  label: 'خط العرض',
-                  value: widget.lat.toStringAsFixed(6),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _CoordinateItem(
-                  icon: Icons.location_searching,
-                  label: 'خط الطول',
-                  value: widget.lng.toStringAsFixed(6),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Google Maps Link
-        ],
-      ),
-    );
-  }
-}
-
-class _CoordinateItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _CoordinateItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 14, color: secondaryTextColor),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(fontSize: 11, color: secondaryTextColor),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: primaryTextColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _NotesCard extends StatelessWidget {
   final String notes;
@@ -1115,7 +808,7 @@ class _MissionItem extends StatelessWidget {
               color: accentColor,
               onPressed: missionId == null
                   ? null
-                  : () => _showStatusSelector(
+                  : () => showStatusSelector(
                       context,
                       mission,
                       incidentId,
@@ -1332,7 +1025,7 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-void _showStatusSelector(
+void showStatusSelector(
   BuildContext context,
   CurrentIncidentWithMissions mission,
   int incidentId,
@@ -1519,7 +1212,7 @@ Widget _buildDropdown({
   );
 }
 
-void _showEditDialog(
+void showEditDialog(
   BuildContext context,
   CurrentIncidentModel incident,
   EditIncidentCubit cubit,

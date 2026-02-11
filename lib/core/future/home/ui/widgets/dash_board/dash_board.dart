@@ -203,7 +203,7 @@ class _DashboardViewState extends State<DashboardView> {
                 ? mapState.incidents
                 : <CurrentIncidentModel>[];
 
-            return Row(
+            return  Row(
               children: [
                 SizedBox(
                   width: 80.w,

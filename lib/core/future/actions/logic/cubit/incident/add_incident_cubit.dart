@@ -3,7 +3,6 @@ import 'package:incidents_managment/core/future/actions/data/models/current_inci
 import 'package:incidents_managment/core/future/actions/data/repos/add_incident/add_incdient_repo.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
-import 'package:latlong2/latlong.dart';
 
 class AddIncidentCubit extends Cubit<AddIncidentStates> {
   final AddIncdientRepo addIncdientRepo;
@@ -12,26 +11,12 @@ class AddIncidentCubit extends Cubit<AddIncidentStates> {
     : super(const AddIncidentStates.initial());
 
   Future<void> submitIncident({
-    required int typeId,
-    required int severity,
-    required String description,
-    required LatLng location,
-    required int branchId,
-    String? notes,
+    required
+   CurrentIncidentModel model
   }) async {
     emit(const AddIncidentStates.loading());
 
-    final model = CurrentIncidentModel(
-      currentIncidentTypeId: typeId,
-      currentIncidentDescription: description,
-      currentIncidentXAxis: location.latitude,
-      currentIncidentYAxis: location.longitude,
-      currentIncidentStatus: 1, // تم التبليغ
-      currentIncidentSeverity: severity,
-      branchId: branchId,
-      currentIncidentNotes:notes
-    );
-
+  
     final result = await addIncdientRepo.addIncdient(model);
 
     result.when(

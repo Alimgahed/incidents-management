@@ -73,18 +73,18 @@ Widget _buildNavigation(BuildContext context) {
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: Column(
       children: [
-        _buildNavItem(icon: Icons.dashboard, label: 'لوحة التحكم', index: 0),
-        _buildNavItem(icon: Icons.map, label: 'عرض الخريطة', index: 1),
-        _buildNavItem(icon: Icons.people, label: 'الفرق', index: 2),
-        _buildNavItem(icon: Icons.analytics, label: 'التحليلات', index: 3),
-        _buildNavItem(
+        buildNavItem(icon: Icons.dashboard, label: 'لوحة التحكم', index: 0),
+        buildNavItem(icon: Icons.map, label: 'عرض الخريطة', index: 1),
+        buildNavItem(icon: Icons.people, label: 'الفرق', index: 2),
+        buildNavItem(icon: Icons.analytics, label: 'التحليلات', index: 3),
+        buildNavItem(
           icon: Icons.add_circle_outline,
           label: 'أضافة أزمة',
           index: 4,
         ),
-        _buildNavItem(icon: Icons.category, label: 'أنواع الأزمات', index: 5),
-        _buildNavItem(icon: Icons.list_alt, label: 'جميع المهام', index: 6),
-        _buildNavItem(
+        buildNavItem(icon: Icons.category, label: 'أنواع الأزمات', index: 5),
+        buildNavItem(icon: Icons.list_alt, label: 'جميع المهام', index: 6),
+        buildNavItem(
           icon: Icons.category,
           label: 'إضافة مهام الأزمة',
           index: 7,
@@ -94,11 +94,13 @@ Widget _buildNavigation(BuildContext context) {
   );
 }
 
-Widget _buildNavItem({
+Widget buildNavItem({
+  Color? color,
   required IconData icon,
   required String label,
   required int index,
 }) {
+  color ??= Colors.white.withValues(alpha: 0.3);
   return BlocBuilder<HomeCubit, HomeStates>(
     buildWhen: (previous, current) => current is HomeChanged,
     builder: (context, state) {
@@ -112,23 +114,23 @@ Widget _buildNavItem({
         borderRadius: BorderRadius.circular(8),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          padding:  EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
                 ? Colors.white
-                : Colors.white.withValues(alpha: 0.12),
+                  : color ?? Colors.white.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isSelected
                   ? Colors.white
-                  : Colors.white.withValues(alpha: 0.3),
+                  : color ?? Colors.white.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
             children: [
               Icon(icon, color: isSelected ? appColor : Colors.white, size: 22),
               const SizedBox(width: 12),
-              Expanded(
+              Expanded(   
                 child: Text(
                   label,
                   maxLines: 2,
@@ -140,7 +142,7 @@ Widget _buildNavItem({
                     fontWeight: isSelected
                         ? FontWeight.w600
                         : FontWeight.normal,
-                    fontSize: 12,
+                    fontSize: 16,
                   ),
                 ),
               ),

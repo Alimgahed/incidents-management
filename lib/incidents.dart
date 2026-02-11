@@ -13,7 +13,8 @@ class Incidents extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initialRoute = Routes.crisisDashboardScreen;
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final initialRoute = isMobile ? Routes.mobileHome : Routes.crisisDashboardScreen;
 
     return ScreenUtilInit(
       designSize: const Size(375, 812),

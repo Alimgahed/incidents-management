@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:html' as html;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
@@ -48,7 +47,6 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
   // ================= ALERT STATE =================
   bool _isAlertPlaying = false;
-  html.AudioElement? _audio;
 
   // 🔊 SAME SOUND USED IN DASHBOARD CONTROLLER
   static const String alertSoundUrl =
@@ -125,35 +123,35 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   // ===========================================================================
   // 🔊 ALERT SOUND (WEB – SAME AS DASHBOARD, 7 SECONDS)
   // ===========================================================================
-  void _playAlertFor7Seconds() {
-    if (_isAlertPlaying) return;
+  // void _playAlertFor7Seconds() {
+  //   if (_isAlertPlaying) return;
 
-    try {
-      _isAlertPlaying = true;
+  //   try {
+  //     _isAlertPlaying = true;
 
-      _audio?.pause();
-      _audio = html.AudioElement()
-        ..src = alertSoundUrl
-        ..volume = 1.0
-        ..autoplay = true;
+  //     _audio?.pause();
+  //     _audio = html.AudioElement()
+  //       ..src = alertSoundUrl
+  //       ..volume = 1.0
+  //       ..autoplay = true;
 
-      // ⏱ Stop after 7 seconds
-      _alertTimer?.cancel();
-      _alertTimer = Timer(const Duration(seconds: 7), _stopAlert);
-    } catch (_) {
-      _stopAlert();
-    }
-  }
+  //     // ⏱ Stop after 7 seconds
+  //     _alertTimer?.cancel();
+  //     _alertTimer = Timer(const Duration(seconds: 7), _stopAlert);
+  //   } catch (_) {
+  //     _stopAlert();
+  //   }
+  // }
 
-  void _stopAlert() {
-    try {
-      _audio?.pause();
-      _audio?.currentTime = 0;
-    } catch (_) {}
+  // void _stopAlert() {
+  //   try {
+  //     _audio?.pause();
+  //     _audio?.currentTime = 0;
+  //   } catch (_) {}
 
-    _audio = null;
-    _isAlertPlaying = false;
-  }
+  //   _audio = null;
+  //   _isAlertPlaying = false;
+  // }
 
   // ===========================================================================
   // INCIDENT HANDLERS
@@ -180,7 +178,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
 
     // 🚨 PLAY SAME ALERT SOUND (7 SECONDS)
-    _playAlertFor7Seconds();
+    // _playAlertFor7Seconds();
   }
 
   void _handleIncidentUpdated(dynamic data) {
@@ -314,7 +312,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   Future<void> close() {
     _reconnectTimer?.cancel();
     _alertTimer?.cancel();
-    _stopAlert();
+    // _stopAlert();
 
     _socket?.dispose();
     _socket = null;

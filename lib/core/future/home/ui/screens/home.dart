@@ -22,7 +22,8 @@ class CrisisDashboard extends StatelessWidget {
         body: SafeArea(
           child: Row(
             children: [
-              buildSidebar(context),
+            if (MediaQuery.of(context).size.width > 600)
+             buildSidebar(context),
 
               /// MAIN CONTENT
               Expanded(

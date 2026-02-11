@@ -45,6 +45,7 @@ class DashboardCubit extends Cubit<DashboardState> {
   ) {
     Iterable<CurrentIncidentModel> filtered = incidents;
 
+    // Apply filter by severity
     if (_selectedFilter != 'الكل') {
       const severityMap = {'حرجة': 4, 'عالية': 3, 'متوسطة': 2, 'منخفضة': 1};
       final severity = severityMap[_selectedFilter];
@@ -53,6 +54,7 @@ class DashboardCubit extends Cubit<DashboardState> {
       }
     }
 
+    // Apply search query filter
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       filtered = filtered.where((i) {
@@ -60,6 +62,21 @@ class DashboardCubit extends Cubit<DashboardState> {
             (i.currentIncidentNotes ?? '').toLowerCase().contains(q) ||
             (i.currentIncidentId?.toString() ?? '').contains(q);
       });
+    }
+
+    // Apply status filter (added)
+    if (_selectedStatus != null) {
+      filtered = filtered.where((i) => i.currentIncidentStatus == _selectedStatus);
+    }
+
+    // Apply severity filter (added)
+    if (_selectedSeverity != null) {
+      filtered = filtered.where((i) => i.currentIncidentSeverity == _selectedSeverity);
+    }
+
+    // Apply branch filter (added)
+    if (_selectedBranchId != null) {
+      filtered = filtered.where((i) => i.branchId == _selectedBranchId);
     }
 
     return filtered.toList();
@@ -185,5 +202,49 @@ class DashboardCubit extends Cubit<DashboardState> {
       )
       ..currentIncidentWithMissions =
           missions ?? incident.currentIncidentWithMissions;
+  }
+
+  // ---------------- INTERNAL STATE ----------------
+  int? _selectedStatus;
+  int? _selectedSeverity;
+  int? _selectedBranchId;
+
+  // ---------------- GETTERS ----------------
+  int? get selectedStatus => _selectedStatus;
+  int? get selectedSeverity => _selectedSeverity;
+  int? get selectedBranchId => _selectedBranchId;
+
+  // ---------------- FILTERING ----------------
+  void updateStatusFilter(int? status) {
+    if (_selectedStatus == status) return;
+    _selectedStatus = status;
+    emit(DashboardFilterChanged('status'));
+  }
+
+  void updateSeverityFilter(int? severity) {
+    if (_selectedSeverity == severity) return;
+    _selectedSeverity = severity;
+    emit(DashboardFilterChanged('severity'));
+  }
+
+  void updateBranchFilter(int? branchId) {
+    if (_selectedBranchId == branchId) return;
+    _selectedBranchId = branchId;
+    emit(DashboardFilterChanged('branch'));
+  }
+
+  void clearAllFilters() {
+    _selectedStatus = null;
+    _selectedSeverity = null;
+    _selectedBranchId = null;
+    _searchQuery = '';
+    emit(const DashboardFilterChanged('clear_all'));
+  }
+
+  bool get hasActiveFilters {
+    return _selectedStatus != null ||
+        _selectedSeverity != null ||
+        _selectedBranchId != null ||
+        _searchQuery.isNotEmpty;
   }
 }

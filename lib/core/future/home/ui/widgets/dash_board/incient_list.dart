@@ -27,99 +27,100 @@ class IncidentCard extends StatelessWidget {
     final status = incident.currentIncidentStatus!;
 
     return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? appColor : Colors.grey.shade200,
-              width: 1.5,
-            ),
-          ),
-
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-
-                child: Icon(
-                  Icons.warning_amber_rounded,
-                  color: getStatusColor(status),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'فرع ${incident.branchName}',
-                      style: TextStyles.size14(
-                        fontWeight: FontWeight.w600,
-                        color: primaryTextColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      incident.currentIncidentTypeName ?? 'لا يوجد وصف',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyles.size12(color: secondaryTextColor),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: getSeverityColor(severity).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            getSeverityArabic(severity),
-                            style: TextStyles.size12(
-                              fontWeight: FontWeight.bold,
-                              color: getSeverityColor(severity),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (incident.currentIncidentCreatedAt != null)
-                          Text(
-                            incident.currentIncidentCreatedAt!.timeAgoArabic(),
-                            style: TextStyles.size12(color: secondaryTextColor),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: getStatusColor(status),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  getStatusArabic(status),
-                  style: TextStyles.size12(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
+  onTap: onTap,
+  child: Padding(
+    padding: const EdgeInsets.all(8.0),
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? appColor : Colors.grey.shade200,
+          width: 1.5,
         ),
       ),
-    );
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center, // Aligns items vertically
+        children: [
+          // 1. Text Content - Expanded takes all available middle space
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Prevents vertical overflow
+              children: [
+                Text(
+                  'فرع ${incident.branchName}',
+                  style: TextStyles.size14(
+                    fontWeight: FontWeight.w600,
+                    color: primaryTextColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  incident.currentIncidentTypeName ?? 'لا يوجد وصف',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyles.size12(color: secondaryTextColor),
+                ),
+                const SizedBox(height: 8),
+                // Wrap the severity and time in a Wrap instead of a Row 
+                // to prevent overflow if the text is too long.
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: getSeverityColor(severity).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        getSeverityArabic(severity),
+                        style: TextStyles.size12(
+                          fontWeight: FontWeight.bold,
+                          color: getSeverityColor(severity),
+                        ),
+                      ),
+                    ),
+                    if (incident.currentIncidentCreatedAt != null)
+                      Text(
+                        incident.currentIncidentCreatedAt!.timeAgoArabic(),
+                        style: TextStyles.size12(color: secondaryTextColor),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(width: 12), // Spacing between text and badge
+
+          // 2. Status Badge - Keep it fixed or slightly flexible
+          Container(
+            constraints: const BoxConstraints(minWidth: 60), // Ensures a nice shape
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: getStatusColor(status),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              getStatusArabic(status),
+              textAlign: TextAlign.center,
+              style: TextStyles.size12(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+);
   }
 }
 

@@ -12,6 +12,7 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/edit_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/incident.dart/add_incident.dart';
+import 'package:incidents_managment/core/future/actions/ui/screens/incident.dart/add_incident_mobile.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/incident.dart/add_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/incident.dart/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/add_missions.dart';
@@ -19,7 +20,9 @@ import 'package:incidents_managment/core/future/actions/ui/screens/missions/all_
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/edit_missions.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/relation_incident_mission.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
+import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_cubit.dart';
 import 'package:incidents_managment/core/future/home/ui/screens/home.dart';
+import 'package:incidents_managment/core/future/mobile/ui/screens/home/home.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 
 class AppRouter {
@@ -38,8 +41,20 @@ class AppRouter {
             ],
             child: const AddIncidentScreen(),
           ),
-        );
-
+        ); 
+        case Routes.addIncidentMobile:
+        return MaterialPageRoute(
+            builder: (_) => MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => getIt<AddIncidentCubit>()),
+              BlocProvider(create: (_) => getIt<MapCubit>()),
+              BlocProvider(
+                create: (_) =>
+                    getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+              ),
+            ],
+            child: const AddIncidentMobileScreen(),
+          ));
       case Routes.addMissions:
         return MaterialPageRoute(
           builder: (_) => MultiBlocProvider(
@@ -119,7 +134,11 @@ class AppRouter {
         );
       case Routes.crisisDashboardScreen:
         return MaterialPageRoute(builder: (_) => const CrisisDashboard());
+      case Routes.mobileHome:
+        return MaterialPageRoute(builder: (_) => BlocProvider(
+          create: (context) => DashboardCubit(),  
 
+          child: const MobileIncidentsListScreen()));
       default:
         return MaterialPageRoute(builder: (_) => const CrisisDashboard());
     }
