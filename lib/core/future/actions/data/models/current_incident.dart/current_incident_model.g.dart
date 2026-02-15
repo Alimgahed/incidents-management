@@ -49,6 +49,11 @@ CurrentIncidentModel _$CurrentIncidentModelFromJson(
         currentIncidentNotes: json['current_incident_notes'] as String?,
         branchName: json['branch_name'] as String?,
         username: json['user_name'] as String?,
+        photos: (json['photos'] as List<dynamic>?)
+            ?.map(
+              (e) => CurrentIncidentPhoto.fromJson(e as Map<String, dynamic>),
+            )
+            .toList(),
       )
       ..currentIncidentWithMissions = (json['missions'] as List<dynamic>?)
           ?.map(
@@ -84,6 +89,7 @@ Map<String, dynamic> _$CurrentIncidentModelToJson(
   'branch_id': instance.branchId,
   'branch_name': instance.branchName,
   'user_name': instance.username,
+  'photos': instance.photos,
 };
 
 CurrentIncidentWithMissions _$CurrentIncidentWithMissionsFromJson(
@@ -123,4 +129,33 @@ Map<String, dynamic> _$CurrentIncidentWithMissionsToJson(
       .currentIncidentMissionStatusUpdatedAt
       ?.toIso8601String(),
   'mission_name': instance.missionName,
+};
+
+CurrentIncidentPhoto _$CurrentIncidentPhotoFromJson(
+  Map<String, dynamic> json,
+) => CurrentIncidentPhoto(
+  currentIncidentId: (json['current_incident_id'] as num?)?.toInt(),
+  currentIncidentPhotoUploadedAt:
+      json['current_incident_photo_uploaded_at'] == null
+      ? null
+      : DateTime.parse(json['current_incident_photo_uploaded_at'] as String),
+  currentIncidentPhotoUploadedBy:
+      (json['current_incident_photo_uploaded_by'] as num?)?.toInt(),
+  description: json['description'] as String?,
+  userName: json['user_name'] as String?,
+  filePath: json['file_path'] as String?,
+  id: (json['id'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$CurrentIncidentPhotoToJson(
+  CurrentIncidentPhoto instance,
+) => <String, dynamic>{
+  'current_incident_id': instance.currentIncidentId,
+  'current_incident_photo_uploaded_at': instance.currentIncidentPhotoUploadedAt
+      ?.toIso8601String(),
+  'current_incident_photo_uploaded_by': instance.currentIncidentPhotoUploadedBy,
+  'description': instance.description,
+  'user_name': instance.userName,
+  'file_path': instance.filePath,
+  'id': instance.id,
 };

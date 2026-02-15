@@ -41,6 +41,8 @@ class CurrentIncidentModel {
   final String? branchName;
   @JsonKey(name: 'user_name')
   final String? username;
+  @JsonKey(name: 'photos')
+  final List<CurrentIncidentPhoto>? photos;
 
   CurrentIncidentModel({
     this.currentIncidentId,
@@ -61,6 +63,7 @@ class CurrentIncidentModel {
     this.currentIncidentNotes,
     this.branchName,
     this.username,
+    this.photos,
   });
   factory CurrentIncidentModel.fromJson(Map<String, dynamic> json) =>
       _$CurrentIncidentModelFromJson(json);
@@ -99,4 +102,35 @@ class CurrentIncidentWithMissions {
   factory CurrentIncidentWithMissions.fromJson(Map<String, dynamic> json) =>
       _$CurrentIncidentWithMissionsFromJson(json);
   Map<String, dynamic> toJson() => _$CurrentIncidentWithMissionsToJson(this);
+}
+
+@JsonSerializable()
+class CurrentIncidentPhoto {
+  @JsonKey(name: 'current_incident_id')
+  final int? currentIncidentId;
+  @JsonKey(name: 'current_incident_photo_uploaded_at')
+  final DateTime? currentIncidentPhotoUploadedAt;
+  @JsonKey(name: 'current_incident_photo_uploaded_by')
+  final int? currentIncidentPhotoUploadedBy;
+  @JsonKey(name: 'description')
+  final String? description;
+  @JsonKey(name: 'user_name')
+  final String? userName;
+  @JsonKey(name: 'file_path')
+  final String? filePath;
+  @JsonKey(name: 'id')
+  final int? id;
+
+  CurrentIncidentPhoto({
+    this.currentIncidentId,
+    this.currentIncidentPhotoUploadedAt,
+    this.currentIncidentPhotoUploadedBy,
+    this.description,
+    this.userName,
+    this.filePath,
+    this.id,
+  });
+  factory CurrentIncidentPhoto.fromJson(Map<String, dynamic> json) =>
+      _$CurrentIncidentPhotoFromJson(json);
+  Map<String, dynamic> toJson() => _$CurrentIncidentPhotoToJson(this);
 }
