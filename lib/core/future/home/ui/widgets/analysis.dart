@@ -887,7 +887,7 @@ class _WaterCompanyAnalyticsDashboardState
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              headingRowColor: MaterialStateProperty.all(Colors.grey[50]),
+              headingRowColor: WidgetStateProperty.all(Colors.grey[50]),
               columns: const [
                 DataColumn(
                   label: Text(

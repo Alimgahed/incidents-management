@@ -6,6 +6,8 @@ class Routes {
   static const String addIncidentMission = '/add_incident_mission';
   static const String allIncidentType = '/all_incident_type';
   static const String addIncidentMobile = '/add_incident_mobile';
+  static const String addImageScreen = '/add_Image_Screen';
+
 
   static const String editMissions = '/edit_missions';
   static const String crisisDashboardScreen = '/crisis_dashboard';

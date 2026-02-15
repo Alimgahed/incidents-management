@@ -22,6 +22,8 @@ import 'package:incidents_managment/core/future/actions/ui/screens/missions/rela
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_cubit.dart';
 import 'package:incidents_managment/core/future/home/ui/screens/home.dart';
+import 'package:incidents_managment/core/future/mobile/logic/file_upload_cubit.dart';
+import 'package:incidents_managment/core/future/mobile/ui/screens/add_photo/add_image.dart';
 import 'package:incidents_managment/core/future/mobile/ui/screens/home/home.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 
@@ -106,6 +108,10 @@ class AppRouter {
             ],
             child: const AllMissions(),
           ),
+        );
+        case Routes.addImageScreen:
+        return MaterialPageRoute(
+          builder: (_) =>  FileUploadScreen(),
         );
       case Routes.addIncidentMission:
         return MaterialPageRoute(

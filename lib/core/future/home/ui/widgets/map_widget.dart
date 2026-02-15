@@ -636,7 +636,7 @@ class _IncidentDetailsPanel extends StatefulWidget {
 
 class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
   late List<CurrentIncidentWithMissions> _missions;
-  bool _isUpdating = false;
+  final bool _isUpdating = false;
 
   @override
   void initState() {

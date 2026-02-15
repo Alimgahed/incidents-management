@@ -137,7 +137,7 @@ class _ResponsiveGridExample extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Responsive Grid (${crossAxisCount} columns)',
+          'Responsive Grid ($crossAxisCount columns)',
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: ResponsiveSpacing.md),

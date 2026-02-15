@@ -48,7 +48,7 @@ class Incidents extends StatelessWidget {
                 textDirection: TextDirection.rtl,
                 child: MediaQuery(
                   data: MediaQuery.of(context).copyWith(
-                    textScaleFactor: 1.0, // Prevent system text scaling issues
+                    textScaler: TextScaler.linear(1.0), // Prevent system text scaling issues
                   ),
                   child: child ?? const SizedBox.shrink(),
                 ),

@@ -17,6 +17,7 @@ import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_details.dart';
+import 'package:incidents_managment/core/future/mobile/ui/screens/add_photo/add_image.dart';
 import 'package:incidents_managment/core/gloable/gloable.dart';
 import 'package:incidents_managment/core/helpers/date_format.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
@@ -797,7 +798,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
           onChanged: (value) {
             setState(() {
@@ -962,125 +963,153 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
           // ================= MAP → DASHBOARD SYNC =================
          
         ],
-      child: BlocBuilder <IncidentMapCubit, IncidentMapState>(
-        builder: (context, state) {
-         final incidents = state is IncidentMapLoaded
-              ? state.incidents
-              : <CurrentIncidentModel>[];
-           final incident = incidents.firstWhere((i) => i.currentIncidentId == incidentID, orElse: () => CurrentIncidentModel());
-      
-          return Scaffold(
-            backgroundColor: const Color(0xFFF8F9FA),
-            body: CustomScrollView(
-              slivers: [
-                // Collapsible App Bar
-                _MobileSliverAppBar(incident: incident),
-                
-                // Content
-                SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 8),
-                      
-                      // Quick Actions Row
-                      _QuickActionsRow(incident: incident),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Stats Cards
-                      _MobileStatsRow(incident: incident),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Description Section
-                      _MobileSection(
-                        title: 'وصف الأزمة',
-                        icon: Icons.description_outlined,
-                        child: Text(
-                          incident.currentIncidentDescription ?? 'لا يوجد وصف متاح',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: primaryTextColor,
-                            height: 1.6,
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Missions Section
-                      _MobileMissionsSection(incident: incident),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Metadata Section
-                      _MobileMetadataSection(incident: incident),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Timeline Section
-                      _MobileTimelineSection(incident: incident),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Location Section
-                      if (incident.currentIncidentXAxis != null &&
-                          incident.currentIncidentYAxis != null)
-                          AppMapSection(
-                          lat: incident.currentIncidentXAxis!,
-                          lng: incident.currentIncidentYAxis!,  
-                          ),
-                       
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Notes Section
-                      if (incident.currentIncidentNotes != null)
-                        _MobileSection(
-                          title: 'ملاحظات',
-                          icon: Icons.sticky_note_2_outlined,
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: warningColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: warningColor.withOpacity(0.3),
-                              ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  color: warningColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    incident.currentIncidentNotes!,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: primaryTextColor,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-              ],
+      child:BlocBuilder<IncidentMapCubit, IncidentMapState>(
+  builder: (context, state) {
+    final incidents = state is IncidentMapLoaded
+        ? state.incidents
+        : <CurrentIncidentModel>[];
+    final incident = incidents.firstWhere(
+      (i) => i.currentIncidentId == incidentID,
+      orElse: () => CurrentIncidentModel(),
+    );
+
+    return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          // Navigate to FileUploadScreen with incident ID and user ID
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FileUploadScreen(
+                incidentId: incident.currentIncidentId ?? 0,
+                userId: 1, 
+              ),
             ),
           );
         },
+        backgroundColor: appColor,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: Text(
+          'إضافة صور الأزمة',
+          style: TextStyles.size16(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: CustomScrollView(
+        slivers: [
+          // Collapsible App Bar
+          _MobileSliverAppBar(incident: incident),
+
+          // Content
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+
+                // Quick Actions Row
+                _QuickActionsRow(incident: incident),
+
+                const SizedBox(height: 16),
+
+                // Stats Cards
+                _MobileStatsRow(incident: incident),
+
+                const SizedBox(height: 16),
+
+                // Description Section
+                _MobileSection(
+                  title: 'وصف الأزمة',
+                  icon: Icons.description_outlined,
+                  child: Text(
+                    incident.currentIncidentDescription ?? 'لا يوجد وصف متاح',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: primaryTextColor,
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Missions Section
+                _MobileMissionsSection(incident: incident),
+
+                const SizedBox(height: 16),
+
+                // Metadata Section
+                _MobileMetadataSection(incident: incident),
+
+                const SizedBox(height: 16),
+
+                // Timeline Section
+                _MobileTimelineSection(incident: incident),
+
+                const SizedBox(height: 16),
+
+                // Location Section
+                if (incident.currentIncidentXAxis != null &&
+                    incident.currentIncidentYAxis != null)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: AppMapSection(
+                      lat: incident.currentIncidentXAxis!,
+                      lng: incident.currentIncidentYAxis!,
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+
+                // Notes Section
+                if (incident.currentIncidentNotes != null)
+                  _MobileSection(
+                    title: 'ملاحظات',
+                    icon: Icons.sticky_note_2_outlined,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: warningColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: warningColor.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: warningColor,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              incident.currentIncidentNotes!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: primaryTextColor,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  },
+)
     ));
   }
 }

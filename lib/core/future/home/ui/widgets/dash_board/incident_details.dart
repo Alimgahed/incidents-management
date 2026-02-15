@@ -1191,7 +1191,7 @@ Widget _buildDropdown({
   required ValueChanged<int?> onChanged,
 }) {
   return DropdownButtonFormField<int>(
-    value: value,
+    initialValue: value,
     icon: Icon(Icons.arrow_drop_down, color: accentColor),
     decoration: InputDecoration(
       prefixIcon: Icon(icon, color: accentColor, size: 20),
