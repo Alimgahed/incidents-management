@@ -73,7 +73,6 @@ class _DeviceInfoCard extends StatelessWidget {
     final height = ResponsiveHelper.screenHeight(context);
     final isMobile = ResponsiveHelper.isMobile(context);
     final isTablet = ResponsiveHelper.isTablet(context);
-    final isDesktop = ResponsiveHelper.isDesktop(context);
     final isLandscape = ResponsiveHelper.isLandscape(context);
 
     return Card(

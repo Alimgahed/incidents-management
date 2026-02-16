@@ -46,7 +46,6 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   static const Duration _reconnectDelay = Duration(seconds: 3);
 
   // ================= ALERT STATE =================
-  final bool _isAlertPlaying = false;
 
   // 🔊 SAME SOUND USED IN DASHBOARD CONTROLLER
   static const String alertSoundUrl =

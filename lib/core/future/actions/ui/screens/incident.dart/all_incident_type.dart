@@ -37,10 +37,6 @@ class _LoadedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (incidentTypes.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
     return Stack(
       children: [
         // Main content

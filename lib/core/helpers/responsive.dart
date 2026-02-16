@@ -34,7 +34,6 @@ class ResponsiveHelper {
 
   /// Get responsive padding based on screen size
   static EdgeInsets responsivePadding(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
     if (isMobile(context)) {
       return const EdgeInsets.all(16);
     } else if (isTablet(context)) {

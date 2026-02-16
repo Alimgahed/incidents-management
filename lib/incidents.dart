@@ -14,7 +14,9 @@ class Incidents extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    final initialRoute = isMobile ? Routes.mobileHome : Routes.crisisDashboardScreen;
+    final initialRoute = isMobile
+        ? Routes.mobileHome
+        : Routes.crisisDashboardScreen;
 
     return ScreenUtilInit(
       designSize: const Size(375, 812),
@@ -33,9 +35,7 @@ class Incidents extends StatelessWidget {
 
             // Set the app's locale to Arabic
             locale: const Locale('ar', 'AE'), // Arabic (UAE) locale
-            // Localization support for different languages
             supportedLocales: const [Locale('en', 'US'), Locale('ar', 'AE')],
-            // LocalizationsDelegates for support
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
@@ -48,7 +48,9 @@ class Incidents extends StatelessWidget {
                 textDirection: TextDirection.rtl,
                 child: MediaQuery(
                   data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(1.0), // Prevent system text scaling issues
+                    textScaler: TextScaler.linear(
+                      1.0,
+                    ), // Prevent system text scaling issues
                   ),
                   child: child ?? const SizedBox.shrink(),
                 ),

@@ -31,6 +31,10 @@ class CurrentIncidentModel {
   final double? currentIncidentYAxis;
   @JsonKey(name: 'current_incident_notes')
   final String? currentIncidentNotes;
+  @JsonKey(name: 'manager_id')
+  final int? managerId;
+  @JsonKey(name: 'manager_name')
+  final String? managerName;
   @JsonKey(name: 'missions')
   List<CurrentIncidentWithMissions>? currentIncidentWithMissions;
   @JsonKey(name: 'incident_type_name')
@@ -43,12 +47,13 @@ class CurrentIncidentModel {
   final String? username;
   @JsonKey(name: 'photos')
   final List<CurrentIncidentPhoto>? photos;
-
   CurrentIncidentModel({
     this.currentIncidentId,
     this.currentIncidentDescription,
     this.currentIncidentTypeId,
     this.branchId,
+    this.managerName,
+    this.managerId,
     this.currentIncidentTypeName,
     this.currentIncidentCreatedBy,
     this.currentIncidentCreatedAt,
@@ -88,7 +93,6 @@ class CurrentIncidentWithMissions {
   final DateTime? currentIncidentMissionStatusUpdatedAt;
   @JsonKey(name: 'mission_name')
   final String? missionName;
-
   CurrentIncidentWithMissions({
     this.idCurrentIncidentMission,
     this.currentIncidentId,
@@ -106,6 +110,12 @@ class CurrentIncidentWithMissions {
 
 @JsonSerializable()
 class CurrentIncidentPhoto {
+  @JsonKey(name: 'current_incident_status_id')
+  final int? currentIncidentStatusId;
+  @JsonKey(name: 'x_axis')
+  final double? xAxis;
+  @JsonKey(name: 'y_axis')
+  final double? yAxis;
   @JsonKey(name: 'current_incident_id')
   final int? currentIncidentId;
   @JsonKey(name: 'current_incident_photo_uploaded_at')
@@ -122,6 +132,9 @@ class CurrentIncidentPhoto {
   final int? id;
 
   CurrentIncidentPhoto({
+    this.currentIncidentStatusId,
+    this.xAxis,
+    this.yAxis,
     this.currentIncidentId,
     this.currentIncidentPhotoUploadedAt,
     this.currentIncidentPhotoUploadedBy,
