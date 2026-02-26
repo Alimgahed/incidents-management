@@ -26,11 +26,9 @@ class IncidentTypeDropdown extends StatelessWidget {
     return BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
       builder: (context, state) {
         return state.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: CircularProgressIndicator()),
           initial: () => const SizedBox.shrink(),
-          error: (_) =>
-              const Text('خطأ في تحميل الأنواع'),
+          error: (_) => const Text('خطأ في تحميل الأنواع'),
           loaded: (types) => CustomDropdownFormField<int>(
             value: selectedValue,
             hintText: 'نوع الأزمة',
@@ -55,13 +53,10 @@ class IncidentMapWidget extends StatefulWidget {
   const IncidentMapWidget({super.key});
 
   @override
-  State<IncidentMapWidget> createState() =>
-      _IncidentMapWidgetState();
+  State<IncidentMapWidget> createState() => _IncidentMapWidgetState();
 }
 
-class _IncidentMapWidgetState
-    extends State<IncidentMapWidget> {
-
+class _IncidentMapWidgetState extends State<IncidentMapWidget> {
   @override
   void initState() {
     super.initState();
@@ -69,8 +64,8 @@ class _IncidentMapWidgetState
     /// Set default location when screen opens
     Future.microtask(() {
       context.read<MapCubit>().setCurrentLocation(
-            const LatLng(30.0444, 31.2357),
-          );
+        const LatLng(30.0444, 31.2357),
+      );
     });
   }
 
@@ -87,32 +82,22 @@ class _IncidentMapWidgetState
                 borderRadius: BorderRadius.circular(16),
                 child: FlutterMap(
                   options: MapOptions(
-                    initialCenter:
-                        state.selectedLocation,
+                    initialCenter: state.selectedLocation,
                     initialZoom: state.zoom,
                     onTap: (_, point) {
-                      context
-                          .read<MapCubit>()
-                          .setLocation(point);
+                      context.read<MapCubit>().setLocation(point);
                     },
                   ),
                   children: [
                     TileLayer(
                       urlTemplate:
-                          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      subdomains: const [
-                        'a',
-                        'b',
-                        'c'
-                      ],
-                                 userAgentPackageName: 'com.example.crisis_management',
-
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.example.crisis_management',
                     ),
                     MarkerLayer(
                       markers: [
                         Marker(
-                          point:
-                              state.selectedLocation,
+                          point: state.selectedLocation,
                           width: 50,
                           height: 50,
                           child: Icon(
@@ -138,41 +123,29 @@ class _IncidentMapWidgetState
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius:
-            BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
-            color:
-                Colors.black.withOpacity(0.08),
-            blurRadius: 15,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15),
         ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.location_on,
-              color: appColor),
+          const Icon(Icons.location_on, color: appColor),
           const SizedBox(width: 12),
           const Expanded(
             child: Text(
               "حدد موقع الأزمة على الخريطة",
-              style: TextStyle(
-                  fontWeight:
-                      FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.my_location,
-                color: appColor),
+            icon: const Icon(Icons.my_location, color: appColor),
             onPressed: () {
-              context
-                  .read<MapCubit>()
-                  .setCurrentLocation(
-                    const LatLng(
-                        30.0444, 31.2357),
-                  );
+              context.read<MapCubit>().setCurrentLocation(
+                const LatLng(30.0444, 31.2357),
+              );
             },
-          )
+          ),
         ],
       ),
     );

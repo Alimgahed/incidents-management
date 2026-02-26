@@ -370,7 +370,7 @@ class _MiniaWaterMapScreenState extends State<MiniaWaterMapScreen> {
                     TileLayer(
                       urlTemplate:
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.example.minya_water',
+                      userAgentPackageName: 'com.example.crisis_management',
                     ),
 
                     // Pipe lines

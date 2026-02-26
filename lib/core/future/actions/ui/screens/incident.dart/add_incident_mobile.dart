@@ -17,12 +17,9 @@ class AddIncidentMobileScreen extends StatefulWidget {
       _AddIncidentMobileScreenState();
 }
 
-class _AddIncidentMobileScreenState
-    extends State<AddIncidentMobileScreen> {
-  final TextEditingController descriptionController =
-      TextEditingController();
-  final TextEditingController notesController =
-      TextEditingController();
+class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
+  final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController notesController = TextEditingController();
 
   int? selectedTypeId;
   int? selectedSeverity;
@@ -37,8 +34,8 @@ class _AddIncidentMobileScreenState
     /// Set default location on open
     Future.microtask(() {
       context.read<MapCubit>().setCurrentLocation(
-            const LatLng(30.0444, 31.2357),
-          );
+        const LatLng(30.0444, 31.2357),
+      );
     });
   }
 
@@ -52,41 +49,30 @@ class _AddIncidentMobileScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("إرسال بلاغ"),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text("إرسال بلاغ"), centerTitle: true),
       body: SafeArea(
         child: BlocListener<AddIncidentCubit, AddIncidentStates>(
           listener: (context, state) {
             state.whenOrNull(
               success: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('تم إرسال البلاغ بنجاح')),
+                  const SnackBar(content: Text('تم إرسال البلاغ بنجاح')),
                 );
               },
               error: (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content:
-                          Text(e.error ?? 'حدث خطأ')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(e.error ?? 'حدث خطأ')));
               },
             );
           },
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-
                 /// ================= MAP =================
-                const SizedBox(
-                  height: 260,
-                  child: IncidentMapWidget(),
-                ),
+                const SizedBox(height: 260, child: IncidentMapWidget()),
 
                 const SizedBox(height: 20),
 
@@ -94,9 +80,7 @@ class _AddIncidentMobileScreenState
                 IncidentTypeDropdown(
                   selectedValue: selectedTypeId,
                   onChanged: (v) {
-                
-                      selectedTypeId = v;
-              
+                    selectedTypeId = v;
                   },
                 ),
 
@@ -107,17 +91,12 @@ class _AddIncidentMobileScreenState
                   value: selectedSeverity,
                   hintText: 'درجة الخطورة',
                   items: const [
-                    DropdownMenuItem(
-                        value: 1, child: Text('منخفض')),
-                    DropdownMenuItem(
-                        value: 2, child: Text('متوسطة')),
-                    DropdownMenuItem(
-                        value: 3, child: Text('مرتفعة')),
-                    DropdownMenuItem(
-                        value: 4, child: Text('حرجة')),
+                    DropdownMenuItem(value: 1, child: Text('منخفض')),
+                    DropdownMenuItem(value: 2, child: Text('متوسطة')),
+                    DropdownMenuItem(value: 3, child: Text('مرتفعة')),
+                    DropdownMenuItem(value: 4, child: Text('حرجة')),
                   ],
-                  onChanged: (v) =>
-                      setState(() => selectedSeverity = v),
+                  onChanged: (v) => setState(() => selectedSeverity = v),
                 ),
 
                 const SizedBox(height: 16),
@@ -128,28 +107,25 @@ class _AddIncidentMobileScreenState
                   hintText: 'الفرع',
                   items: const [
                     DropdownMenuItem(value: 1, child: Text('المنيا')),
-               DropdownMenuItem(value: 2, child: Text('المنيا الجديدة')),
-               DropdownMenuItem(value: 3, child: Text('سمالوط')),
-               DropdownMenuItem(value: 4, child: Text('مطاي')),
-               DropdownMenuItem(value: 5, child: Text('بني مزار')),
-               DropdownMenuItem(value: 6, child: Text('مغاغة')),
-               DropdownMenuItem(value: 7, child: Text('العدوة')),
-               DropdownMenuItem(value: 8, child: Text('أبو قرقاص')),
-               DropdownMenuItem(value: 9, child: Text('ملاوي')),
-              DropdownMenuItem(value: 10, child: Text('ديرمواس')),
+                    DropdownMenuItem(value: 2, child: Text('المنيا الجديدة')),
+                    DropdownMenuItem(value: 3, child: Text('سمالوط')),
+                    DropdownMenuItem(value: 4, child: Text('مطاي')),
+                    DropdownMenuItem(value: 5, child: Text('بني مزار')),
+                    DropdownMenuItem(value: 6, child: Text('مغاغة')),
+                    DropdownMenuItem(value: 7, child: Text('العدوة')),
+                    DropdownMenuItem(value: 8, child: Text('أبو قرقاص')),
+                    DropdownMenuItem(value: 9, child: Text('ملاوي')),
+                    DropdownMenuItem(value: 10, child: Text('ديرمواس')),
                   ],
-                  onChanged: (v) =>
-                      setState(() => selectedBranchId = v),
+                  onChanged: (v) => setState(() => selectedBranchId = v),
                 ),
 
                 const SizedBox(height: 16),
 
                 /// ================= DESCRIPTION =================
                 CustomTextFormField(
-                  controller:
-                      descriptionController,
-                  hintText:
-                      "اشرح الحالة بالتفصيل...",
+                  controller: descriptionController,
+                  hintText: "اشرح الحالة بالتفصيل...",
                   maxLines: 4,
                 ),
 
@@ -158,8 +134,7 @@ class _AddIncidentMobileScreenState
                 /// ================= NOTES =================
                 CustomTextFormField(
                   controller: notesController,
-                  hintText:
-                      "ملاحظات إضافية (اختياري)",
+                  hintText: "ملاحظات إضافية (اختياري)",
                   useValidator: false,
                   maxLines: 3,
                 ),
@@ -167,16 +142,12 @@ class _AddIncidentMobileScreenState
                 const SizedBox(height: 30),
 
                 /// ================= SUBMIT =================
-                BlocBuilder<
-                    AddIncidentCubit,
-                    AddIncidentStates>(
+                BlocBuilder<AddIncidentCubit, AddIncidentStates>(
                   builder: (context, state) {
                     return CustomButton(
                       text: state.maybeWhen(
-                        loading: () =>
-                            'جاري الإرسال...',
-                        orElse: () =>
-                            'إرسال البلاغ',
+                        loading: () => 'جاري الإرسال...',
+                        orElse: () => 'إرسال البلاغ',
                       ),
                       onPressed: _submit,
                     );
@@ -195,43 +166,28 @@ class _AddIncidentMobileScreenState
         selectedSeverity == null ||
         selectedBranchId == null ||
         descriptionController.text.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(
-        content: Text('يرجى ملء جميع الحقول'),
-      ));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى ملء جميع الحقول')));
       return;
     }
 
-    final location =
-        context.read<MapCubit>().state.selectedLocation;
+    final location = context.read<MapCubit>().state.selectedLocation;
 
     final model = CurrentIncidentModel(
       currentIncidentTypeId: selectedTypeId!,
       currentIncidentSeverity: selectedSeverity!,
       branchId: selectedBranchId!,
-      currentIncidentDescription:
-          descriptionController.text,
-      currentIncidentNotes:
-          notesController.text.isEmpty
-              ? null
-              : notesController.text,
-      currentIncidentXAxis:
-          location.latitude,
-      currentIncidentYAxis:
-          location.longitude,
+      currentIncidentDescription: descriptionController.text,
+      currentIncidentNotes: notesController.text.isEmpty
+          ? null
+          : notesController.text,
+      currentIncidentXAxis: location.latitude,
+      currentIncidentYAxis: location.longitude,
     );
 
-    context
-        .read<AddIncidentCubit>()
-        .submitIncident(model: model);
+    context.read<AddIncidentCubit>().submitIncident(model: model);
   }
 }
-
-
-
-
-
-
-
 
 /// =
