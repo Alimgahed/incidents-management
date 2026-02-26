@@ -533,8 +533,6 @@ class CustomFloatingButton extends StatelessWidget {
   }
 }
 
-
-
 class AppMapSection extends StatelessWidget {
   final double lat;
   final double lng;
@@ -582,7 +580,9 @@ class AppMapSection extends StatelessWidget {
               ),
               children: [
                 TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate:
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  subdomains: const ['a', 'b', 'c'],
                   userAgentPackageName: 'com.example.crisis_management',
                 ),
                 MarkerLayer(
@@ -591,7 +591,11 @@ class AppMapSection extends StatelessWidget {
                       point: LatLng(lat, lng),
                       width: 80,
                       height: 80,
-                      child: const Icon(Icons.location_on, color: Colors.red, size: 40),
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Colors.red,
+                        size: 40,
+                      ),
                     ),
                   ],
                 ),
@@ -606,7 +610,8 @@ class AppMapSection extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () => MapUtils.openMap(lat, lng), // Using the Global Util
+            onPressed: () =>
+                MapUtils.openMap(lat, lng), // Using the Global Util
             icon: const Icon(Icons.map, size: 18),
             label: const Text('فتح في الخرائط'),
             style: ElevatedButton.styleFrom(

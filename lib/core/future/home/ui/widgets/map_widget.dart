@@ -311,9 +311,11 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
           ),
           children: [
             TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.crisis_management',
-            ),
+                    urlTemplate:
+                        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    subdomains: const ['a', 'b', 'c'],
+                    userAgentPackageName: 'com.example.crisis_management',
+                  ),
             if (markers.isNotEmpty) MarkerLayer(markers: markers),
           ],
         ),
@@ -1183,7 +1185,8 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                 children: [
                   TileLayer(
                     urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    subdomains: const ['a', 'b', 'c'],
                     userAgentPackageName: 'com.example.crisis_management',
                   ),
                   MarkerLayer(
