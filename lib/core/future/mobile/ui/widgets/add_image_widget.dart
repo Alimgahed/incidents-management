@@ -83,9 +83,7 @@ class FilePreviewCard extends StatelessWidget {
                           ),
                           child: Text(
                             fileExtension.toUpperCase(),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: AppTheme.accentDark,
                                   fontWeight: FontWeight.w600,
@@ -143,9 +141,9 @@ class FilePreviewCard extends StatelessWidget {
                       Text(
                         _formatFileSize(fileSize),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppTheme.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          color: AppTheme.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -159,8 +157,14 @@ class FilePreviewCard extends StatelessWidget {
   }
 
   bool _isImageFile(String extension) {
-    return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
-        .contains(extension.toLowerCase());
+    return [
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'bmp',
+      'webp',
+    ].contains(extension.toLowerCase());
   }
 
   IconData _getFileIcon(String extension) {
@@ -238,10 +242,7 @@ class UploadProgressCard extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        AppTheme.accentColor,
-                        AppTheme.accentLight,
-                      ],
+                      colors: [AppTheme.accentColor, AppTheme.accentLight],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -264,11 +265,8 @@ class UploadProgressCard extends StatelessWidget {
             },
           ),
           const SizedBox(height: 24),
-          
-          Text(
-            'Uploading...',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+
+          Text('Uploading...', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
             fileName,
@@ -278,7 +276,7 @@ class UploadProgressCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 24),
-          
+
           // Progress indicator
           Stack(
             alignment: Alignment.center,
@@ -307,23 +305,23 @@ class UploadProgressCard extends StatelessWidget {
                   Text(
                     '$percentage%',
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Complete',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Linear progress bar
           Container(
             height: 8,
@@ -349,7 +347,7 @@ class UploadProgressCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -371,7 +369,6 @@ class UploadProgressCard extends StatelessWidget {
   }
 }
 
-
 class UploadButtonSection extends StatelessWidget {
   final VoidCallback onPickFile;
   final VoidCallback onPickImageCamera;
@@ -389,34 +386,34 @@ class UploadButtonSection extends StatelessWidget {
     return Column(
       children: [
         // Main upload options
-        _buildUploadOption(
-          context: context,
-          icon: Icons.photo_library_rounded,
-          title: 'Gallery',
-          subtitle: 'Choose from your photos',
-          gradientColors: [AppTheme.accentColor, AppTheme.accentLight],
-          onTap: onPickImageGallery,
-        ),
+        // _buildUploadOption(
+        //   context: context,
+        //   icon: Icons.photo_library_rounded,
+        //   title: 'Gallery',
+        //   subtitle: 'Choose from your photos',
+        //   gradientColors: [AppTheme.accentColor, AppTheme.accentLight],
+        //   onTap: onPickImageGallery,
+        // ),
         const SizedBox(height: 16),
         _buildUploadOption(
           context: context,
           icon: Icons.camera_alt_rounded,
-          title: 'Camera',
-          subtitle: 'Take a new photo',
+          title: 'كاميرا',
+          subtitle: 'التقاط صور',
           gradientColors: [AppTheme.primaryColor, AppTheme.primaryLight],
           onTap: onPickImageCamera,
         ),
         const SizedBox(height: 16),
-        _buildUploadOption(
-          context: context,
-          icon: Icons.folder_rounded,
-          title: 'Files',
-          subtitle: 'Browse documents',
-          gradientColors: [AppTheme.infoColor, const Color(0xFF9FA8DA)],
-          onTap: onPickFile,
-        ),
+        // _buildUploadOption(
+        //   context: context,
+        //   icon: Icons.folder_rounded,
+        //   title: 'Files',
+        //   subtitle: 'Browse documents',
+        //   gradientColors: [AppTheme.infoColor, const Color(0xFF9FA8DA)],
+        //   onTap: onPickFile,
+        // ),
         const SizedBox(height: 32),
-        
+
         // Info section
         Container(
           padding: const EdgeInsets.all(20),
@@ -426,6 +423,7 @@ class UploadButtonSection extends StatelessWidget {
             border: Border.all(color: AppTheme.borderColor),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
@@ -436,10 +434,10 @@ class UploadButtonSection extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Upload Guidelines',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontSize: 16,
-                        ),
+                    'إرشادات رفع الملفات',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(fontSize: 16),
                   ),
                 ],
               ),
@@ -447,19 +445,19 @@ class UploadButtonSection extends StatelessWidget {
               _buildInfoItem(
                 context,
                 Icons.check_circle_outline,
-                'Maximum file size: 50 MB',
+                'الحد الأقصى لحجم الملف: 50 ميجابايت',
               ),
               const SizedBox(height: 8),
               _buildInfoItem(
                 context,
                 Icons.check_circle_outline,
-                'Supported: Images, PDFs, Documents',
+                'الصيغ المدعومة: الصور، ملفات PDF، المستندات',
               ),
               const SizedBox(height: 8),
               _buildInfoItem(
                 context,
                 Icons.check_circle_outline,
-                'Secure & encrypted transfer',
+                'نقل آمن ومشفّر للملفات',
               ),
             ],
           ),
@@ -507,11 +505,7 @@ class UploadButtonSection extends StatelessWidget {
                     color: Colors.white.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    icon,
-                    size: 32,
-                    color: Colors.white,
-                  ),
+                  child: Icon(icon, size: 32, color: Colors.white),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -520,7 +514,8 @@ class UploadButtonSection extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -529,9 +524,9 @@ class UploadButtonSection extends StatelessWidget {
                       Text(
                         subtitle,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 13,
-                            ),
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -559,18 +554,14 @@ class UploadButtonSection extends StatelessWidget {
   Widget _buildInfoItem(BuildContext context, IconData icon, String text) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: AppTheme.successColor,
-        ),
+        Icon(icon, size: 16, color: AppTheme.successColor),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: 13,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontSize: 13),
           ),
         ),
       ],

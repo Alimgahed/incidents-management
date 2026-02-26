@@ -16,6 +16,8 @@ CurrentIncidentModel _$CurrentIncidentModelFromJson(
         currentIncidentTypeId: (json['current_incident_type_id'] as num?)
             ?.toInt(),
         branchId: (json['branch_id'] as num?)?.toInt(),
+        managerName: json['manager_name'] as String?,
+        managerId: (json['manager_id'] as num?)?.toInt(),
         currentIncidentTypeName: json['incident_type_name'] as String?,
         currentIncidentCreatedBy: (json['current_incident_created_by'] as num?)
             ?.toInt(),
@@ -84,6 +86,8 @@ Map<String, dynamic> _$CurrentIncidentModelToJson(
   'current_incident_x_axis': instance.currentIncidentXAxis,
   'current_incident_y_axis': instance.currentIncidentYAxis,
   'current_incident_notes': instance.currentIncidentNotes,
+  'manager_id': instance.managerId,
+  'manager_name': instance.managerName,
   'missions': instance.currentIncidentWithMissions,
   'incident_type_name': instance.currentIncidentTypeName,
   'branch_id': instance.branchId,
@@ -134,6 +138,10 @@ Map<String, dynamic> _$CurrentIncidentWithMissionsToJson(
 CurrentIncidentPhoto _$CurrentIncidentPhotoFromJson(
   Map<String, dynamic> json,
 ) => CurrentIncidentPhoto(
+  currentIncidentStatusId: (json['current_incident_status_id'] as num?)
+      ?.toInt(),
+  xAxis: (json['x_axis'] as num?)?.toDouble(),
+  yAxis: (json['y_axis'] as num?)?.toDouble(),
   currentIncidentId: (json['current_incident_id'] as num?)?.toInt(),
   currentIncidentPhotoUploadedAt:
       json['current_incident_photo_uploaded_at'] == null
@@ -150,6 +158,9 @@ CurrentIncidentPhoto _$CurrentIncidentPhotoFromJson(
 Map<String, dynamic> _$CurrentIncidentPhotoToJson(
   CurrentIncidentPhoto instance,
 ) => <String, dynamic>{
+  'current_incident_status_id': instance.currentIncidentStatusId,
+  'x_axis': instance.xAxis,
+  'y_axis': instance.yAxis,
   'current_incident_id': instance.currentIncidentId,
   'current_incident_photo_uploaded_at': instance.currentIncidentPhotoUploadedAt
       ?.toIso8601String(),

@@ -35,10 +35,7 @@ class MobileIncidentsListScreen extends StatelessWidget {
       appBar: AppBar(
         elevation: 0,
         automaticallyImplyActions: false,
-        leading: Icon(
-          Icons.warning_amber_rounded,
-          color: Colors.white,
-        ),
+        leading: Icon(Icons.warning_amber_rounded, color: Colors.white),
         backgroundColor: appColor,
         title: const Text(
           'إدارة الأزمات',
@@ -73,67 +70,61 @@ class MobileIncidentsListScreen extends StatelessWidget {
               );
             },
           ),
-        
         ],
       ),
 
       // 👇 IMPORTANT: Listen to BOTH cubits
       body: BlocBuilder<IncidentMapCubit, IncidentMapState>(
         builder: (context, incidentState) {
-
           final incidents = incidentState is IncidentMapLoaded
               ? incidentState.incidents
               : <CurrentIncidentModel>[];
 
           return BlocBuilder<DashboardCubit, DashboardState>(
             builder: (context, dashboardState) {
-
               final dashboardCubit = context.watch<DashboardCubit>();
 
-              final filteredIncidents =
-                  dashboardCubit.filterIncidents(incidents);
+              final filteredIncidents = dashboardCubit.filterIncidents(
+                incidents,
+              );
 
               return Column(
                 children: [
                   /// Stats Card (show filtered count)
-                  _MobileStatsCard(
-                    totalIncidents: filteredIncidents.length,
-                  ),
+                  _MobileStatsCard(totalIncidents: filteredIncidents.length),
 
                   /// List
                   Expanded(
                     child: filteredIncidents.isEmpty
-                        ?  _EmptyStateWidget()
+                        ? _EmptyStateWidget()
                         : ListView.builder(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          itemCount: filteredIncidents.length,
-                          itemBuilder: (context, index) {
-                            final incident =
-                                filteredIncidents[index];
-                        
-                            return _MobileIncidentCard(
-                              incident: incident,
-                              onTap: () {
-                              incidentID = incident.currentIncidentId ?? 0;
-                        
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        BlocProvider.value(
-                                      value: dashboardCubit,
-                                      child:
-                                          const MobileIncidentDetailsScreen(),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            itemCount: filteredIncidents.length,
+                            itemBuilder: (context, index) {
+                              final incident = filteredIncidents[index];
+
+                              return _MobileIncidentCard(
+                                incident: incident,
+                                onTap: () {
+                                  incidentID = incident.currentIncidentId ?? 0;
+
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => BlocProvider.value(
+                                        value: dashboardCubit,
+                                        child:
+                                            const MobileIncidentDetailsScreen(),
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
                   ),
                 ],
               );
@@ -147,9 +138,13 @@ class MobileIncidentsListScreen extends StatelessWidget {
           context.pushNamed(Routes.addIncidentMobile);
         },
         backgroundColor: appColor,
-        icon: const Icon(Icons.add,color: Colors.white),
-        label: Text('إضافة أزمة جديدة',
-          style:TextStyles.size16(color: Colors.white, fontWeight: FontWeight.bold)
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: Text(
+          'إضافة أزمة جديدة',
+          style: TextStyles.size16(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -170,12 +165,6 @@ class MobileIncidentsListScreen extends StatelessWidget {
     );
   }
 }
-
-
-
-    
-  
-
 
 // Mobile Stats Card
 class _MobileStatsCard extends StatelessWidget {
@@ -232,10 +221,7 @@ class _MobileStatsCard extends StatelessWidget {
                 ),
                 const Text(
                   'إجمالي الأزمات',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.white70),
                 ),
               ],
             ),
@@ -279,10 +265,7 @@ class _MobileIncidentCard extends StatelessWidget {
   final CurrentIncidentModel incident;
   final VoidCallback onTap;
 
-  const _MobileIncidentCard({
-    required this.incident,
-    required this.onTap,
-  });
+  const _MobileIncidentCard({required this.incident, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -353,15 +336,12 @@ class _MobileIncidentCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: secondaryTextColor,
-                    ),
+                    Icon(Icons.chevron_right, color: secondaryTextColor),
                   ],
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Description
                 Text(
                   incident.currentIncidentTypeName ?? 'لا يوجد وصف',
@@ -373,9 +353,9 @@ class _MobileIncidentCard extends StatelessWidget {
                     height: 1.4,
                   ),
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Footer Row
                 Row(
                   children: [
@@ -412,9 +392,9 @@ class _MobileIncidentCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     const Spacer(),
-                    
+
                     // Status Badge
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -490,10 +470,7 @@ class _EmptyStateWidget extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'لم يتم العثور على أي أزمات',
-            style: TextStyle(
-              fontSize: 14,
-              color: secondaryTextColor,
-            ),
+            style: TextStyle(fontSize: 14, color: secondaryTextColor),
           ),
         ],
       ),
@@ -523,7 +500,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<DashboardCubit>();
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
@@ -571,34 +548,34 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // Status Filter
             _buildFilterSection(
               title: 'الحالة',
               icon: Icons.sync_alt,
               child: _buildStatusFilter(),
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Severity Filter
             _buildFilterSection(
               title: 'درجة الخطورة',
               icon: Icons.priority_high,
               child: _buildSeverityFilter(),
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Branch Filter
             _buildFilterSection(
               title: 'الفرع',
               icon: Icons.location_city,
               child: _buildBranchFilter(),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Apply Button
             SizedBox(
               width: double.infinity,
@@ -618,10 +595,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 ),
                 child: const Text(
                   'تطبيق الفلتر',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -832,16 +806,16 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
   const MobileIncidentDetailsScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    return  MultiBlocProvider(
+    return MultiBlocProvider(
       providers: [
         // Creating the cubits here in the MultiBlocProvider
-       
-      
         BlocProvider<EditIncidentCubit>(
-          create: (context) => EditIncidentCubit(editIncidentRepo: getIt<EditIncidentRepo>()),
+          create: (context) =>
+              EditIncidentCubit(editIncidentRepo: getIt<EditIncidentRepo>()),
         ),
         BlocProvider<UpdateStatuesCubit>(
-          create: (context) => UpdateStatuesCubit(updateStatuesRepo: getIt<UpdateStatuesRepo>()),
+          create: (context) =>
+              UpdateStatuesCubit(updateStatuesRepo: getIt<UpdateStatuesRepo>()),
         ),
       ],
       child: MultiBlocListener(
@@ -960,157 +934,159 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
               );
             },
           ),
+
           // ================= MAP → DASHBOARD SYNC =================
-         
         ],
-      child:BlocBuilder<IncidentMapCubit, IncidentMapState>(
-  builder: (context, state) {
-    final incidents = state is IncidentMapLoaded
-        ? state.incidents
-        : <CurrentIncidentModel>[];
-    final incident = incidents.firstWhere(
-      (i) => i.currentIncidentId == incidentID,
-      orElse: () => CurrentIncidentModel(),
-    );
+        child: BlocBuilder<IncidentMapCubit, IncidentMapState>(
+          builder: (context, state) {
+            final incidents = state is IncidentMapLoaded
+                ? state.incidents
+                : <CurrentIncidentModel>[];
+            final incident = incidents.firstWhere(
+              (i) => i.currentIncidentId == incidentID,
+              orElse: () => CurrentIncidentModel(),
+            );
 
-    return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Navigate to FileUploadScreen with incident ID and user ID
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FileUploadScreen(
-                incidentId: incident.currentIncidentId ?? 0,
-                userId: 1, 
-              ),
-            ),
-          );
-        },
-        backgroundColor: appColor,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(
-          'إضافة صور الأزمة',
-          style: TextStyles.size16(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: CustomScrollView(
-        slivers: [
-          // Collapsible App Bar
-          _MobileSliverAppBar(incident: incident),
-
-          // Content
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                const SizedBox(height: 8),
-
-                // Quick Actions Row
-                _QuickActionsRow(incident: incident),
-
-                const SizedBox(height: 16),
-
-                // Stats Cards
-                _MobileStatsRow(incident: incident),
-
-                const SizedBox(height: 16),
-
-                // Description Section
-                _MobileSection(
-                  title: 'وصف الأزمة',
-                  icon: Icons.description_outlined,
-                  child: Text(
-                    incident.currentIncidentDescription ?? 'لا يوجد وصف متاح',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: primaryTextColor,
-                      height: 1.6,
+            return Scaffold(
+              floatingActionButton: FloatingActionButton.extended(
+                onPressed: () {
+                  // Navigate to FileUploadScreen with incident ID and user ID
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FileUploadScreen(
+                        incidentId: incident.currentIncidentId ?? 0,
+                        userId: 1,
+                      ),
                     ),
+                  );
+                },
+                backgroundColor: appColor,
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: Text(
+                  'إضافة صور الأزمة',
+                  style: TextStyles.size16(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+              ),
+              backgroundColor: const Color(0xFFF8F9FA),
+              body: CustomScrollView(
+                slivers: [
+                  // Collapsible App Bar
+                  _MobileSliverAppBar(incident: incident),
 
-                const SizedBox(height: 16),
+                  // Content
+                  SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
 
-                // Missions Section
-                _MobileMissionsSection(incident: incident),
+                        // Quick Actions Row
+                        _QuickActionsRow(incident: incident),
 
-                const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                // Metadata Section
-                _MobileMetadataSection(incident: incident),
+                        // Stats Cards
+                        _MobileStatsRow(incident: incident),
 
-                const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                // Timeline Section
-                _MobileTimelineSection(incident: incident),
-
-                const SizedBox(height: 16),
-
-                // Location Section
-                if (incident.currentIncidentXAxis != null &&
-                    incident.currentIncidentYAxis != null)
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: AppMapSection(
-                      lat: incident.currentIncidentXAxis!,
-                      lng: incident.currentIncidentYAxis!,
-                    ),
-                  ),
-
-                const SizedBox(height: 16),
-
-                // Notes Section
-                if (incident.currentIncidentNotes != null)
-                  _MobileSection(
-                    title: 'ملاحظات',
-                    icon: Icons.sticky_note_2_outlined,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: warningColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: warningColor.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: warningColor,
-                            size: 20,
+                        // Description Section
+                        _MobileSection(
+                          title: 'وصف الأزمة',
+                          icon: Icons.description_outlined,
+                          child: Text(
+                            incident.currentIncidentDescription ??
+                                'لا يوجد وصف متاح',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: primaryTextColor,
+                              height: 1.6,
+                            ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              incident.currentIncidentNotes!,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: primaryTextColor,
-                                height: 1.5,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Missions Section
+                        _MobileMissionsSection(incident: incident),
+
+                        const SizedBox(height: 16),
+
+                        // Metadata Section
+                        _MobileMetadataSection(incident: incident),
+
+                        const SizedBox(height: 16),
+
+                        // Timeline Section
+                        _MobileTimelineSection(incident: incident),
+
+                        const SizedBox(height: 16),
+
+                        // Location Section
+                        if (incident.currentIncidentXAxis != null &&
+                            incident.currentIncidentYAxis != null)
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: AppMapSection(
+                              lat: incident.currentIncidentXAxis!,
+                              lng: incident.currentIncidentYAxis!,
+                            ),
+                          ),
+
+                        const SizedBox(height: 16),
+
+                        // Notes Section
+                        if (incident.currentIncidentNotes != null)
+                          _MobileSection(
+                            title: 'ملاحظات',
+                            icon: Icons.sticky_note_2_outlined,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: warningColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: warningColor.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    color: warningColor,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      incident.currentIncidentNotes!,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: primaryTextColor,
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        ],
-                      ),
+
+                        const SizedBox(height: 24),
+                      ],
                     ),
                   ),
-
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
-        ],
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
-  },
-)
-    ));
   }
 }
 
@@ -1145,7 +1121,17 @@ class _MobileSliverAppBar extends StatelessWidget {
             ),
           ),
         ),
-     
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: IconButton(
+            icon: const Icon(
+              Icons.person_add_alt_outlined,
+              color: Colors.white,
+            ),
+            onPressed: () =>
+                context.pushNamed(Routes.missionAssign, arguments: incident),
+          ),
+        ),
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
@@ -1260,10 +1246,7 @@ class _MobileStatusChip extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
@@ -1490,8 +1473,6 @@ class _MobileStatsRowState extends State<_MobileStatsRow> {
     });
   }
 
-  
-
   @override
   Widget build(BuildContext context) {
     final missions = widget.incident.currentIncidentWithMissions ?? [];
@@ -1588,17 +1569,11 @@ class _MobileStatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 12,
-              color: secondaryTextColor,
-            ),
+            style: TextStyle(fontSize: 12, color: secondaryTextColor),
           ),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 11,
-              color: disabledTextColor,
-            ),
+            style: TextStyle(fontSize: 11, color: disabledTextColor),
           ),
         ],
       ),
@@ -1691,8 +1666,11 @@ class _MobileMissionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final missions = [...(incident.currentIncidentWithMissions ?? [])]
-      ..sort((a, b) => (a.currentIncidentMissionOrder ?? 0)
-          .compareTo(b.currentIncidentMissionOrder ?? 0));
+      ..sort(
+        (a, b) => (a.currentIncidentMissionOrder ?? 0).compareTo(
+          b.currentIncidentMissionOrder ?? 0,
+        ),
+      );
 
     return _MobileSection(
       title: 'المهام',
@@ -1717,10 +1695,7 @@ class _MobileMissionItem extends StatelessWidget {
   final CurrentIncidentWithMissions mission;
   final int incidentId;
 
-  const _MobileMissionItem({
-    required this.mission,
-    required this.incidentId,
-  });
+  const _MobileMissionItem({required this.mission, required this.incidentId});
 
   @override
   Widget build(BuildContext context) {
@@ -1756,16 +1731,17 @@ class _MobileMissionItem extends StatelessWidget {
               ),
             ),
           ),
-          
+
           const SizedBox(width: 12),
-          
+
           // Mission Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  mission.missionName ?? 'مهمة #${mission.currentIncidentMissionId}',
+                  mission.missionName ??
+                      'مهمة #${mission.currentIncidentMissionId}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -1794,7 +1770,7 @@ class _MobileMissionItem extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Edit Button
           IconButton(
             icon: const Icon(Icons.edit, size: 20),
@@ -1877,10 +1853,7 @@ class _MobileMetadataRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: TextStyle(
-              fontSize: 13,
-              color: secondaryTextColor,
-            ),
+            style: TextStyle(fontSize: 13, color: secondaryTextColor),
           ),
         ),
         Text(
@@ -2001,18 +1974,12 @@ class _MobileTimelineItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     time.timeAgoArabic(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: secondaryTextColor,
-                    ),
+                    style: TextStyle(fontSize: 12, color: secondaryTextColor),
                   ),
                   if (userId != null)
                     Text(
                       'بواسطة: #$userId',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: disabledTextColor,
-                      ),
+                      style: TextStyle(fontSize: 11, color: disabledTextColor),
                     ),
                 ],
               ),
@@ -2025,4 +1992,3 @@ class _MobileTimelineItem extends StatelessWidget {
 }
 
 // Mobile Location Section
-

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_mission_cubit.dart';
@@ -22,6 +23,9 @@ import 'package:incidents_managment/core/future/actions/ui/screens/missions/rela
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_cubit.dart';
 import 'package:incidents_managment/core/future/home/ui/screens/home.dart';
+import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/all_active_user_cubit.dart';
+import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/mission_assign_cubit.dart';
+import 'package:incidents_managment/core/future/mission_assigen/ui/screens/mission_assign.dart';
 import 'package:incidents_managment/core/future/mobile/ui/screens/add_photo/add_image.dart';
 import 'package:incidents_managment/core/future/mobile/ui/screens/home/home.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
@@ -146,6 +150,35 @@ class AppRouter {
             child: const MobileIncidentsListScreen(),
           ),
         );
+      case Routes.missionAssign:
+        return MaterialPageRoute(
+          builder: (_) {
+            print("Creating BlocProviders");
+
+            final allActiveUserCubit = getIt<AllActiveUserCubit>();
+
+            // If you have another cubit, initialize it here
+            final anotherCubit = getIt<MissionAssignCubit>();
+
+            // get passed data
+            final incident = settings.arguments as CurrentIncidentModel;
+
+            // call APIs
+            allActiveUserCubit.allActiveUsers();
+            // anotherCubit.loadSomething(); // if needed
+
+            return MultiBlocProvider(
+              providers: [
+                BlocProvider<AllActiveUserCubit>(
+                  create: (_) => allActiveUserCubit,
+                ),
+                BlocProvider<MissionAssignCubit>(create: (_) => anotherCubit),
+              ],
+              child: MissionAssignScreen(incident: incident),
+            );
+          },
+        );
+
       default:
         return MaterialPageRoute(builder: (_) => const CrisisDashboard());
     }

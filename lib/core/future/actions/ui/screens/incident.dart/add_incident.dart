@@ -65,9 +65,12 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          IncidentTypeDropdown(onChanged: (value) {
-            selectedTypeId = value;
-          }, selectedValue: selectedTypeId,),
+          IncidentTypeDropdown(
+            onChanged: (value) {
+              selectedTypeId = value;
+            },
+            selectedValue: selectedTypeId,
+          ),
           const SizedBox(height: 20),
           CustomDropdownFormField(
             items: [
@@ -122,15 +125,27 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
                   orElse: () => 'إرسال البلاغ',
                 ),
                 onPressed: () {
-                  context.read<AddIncidentCubit>().submitIncident(model:  CurrentIncidentModel(
-                    currentIncidentTypeId: selectedTypeId!,
-                    currentIncidentSeverity: selectedSeverity!,
-                    branchId: selectedBranchId!,
-                    currentIncidentXAxis: context.read<MapCubit>().state.selectedLocation.latitude,
-                    currentIncidentYAxis: context.read<MapCubit>().state.selectedLocation.longitude,
-                    currentIncidentDescription: descriptionController.text,
-                    currentIncidentNotes: notesController.text.isEmpty ? null : notesController.text,
-                  ),);
+                  context.read<AddIncidentCubit>().submitIncident(
+                    model: CurrentIncidentModel(
+                      currentIncidentTypeId: selectedTypeId!,
+                      currentIncidentSeverity: selectedSeverity!,
+                      branchId: selectedBranchId!,
+                      currentIncidentXAxis: context
+                          .read<MapCubit>()
+                          .state
+                          .selectedLocation
+                          .latitude,
+                      currentIncidentYAxis: context
+                          .read<MapCubit>()
+                          .state
+                          .selectedLocation
+                          .longitude,
+                      currentIncidentDescription: descriptionController.text,
+                      currentIncidentNotes: notesController.text.isEmpty
+                          ? null
+                          : notesController.text,
+                    ),
+                  );
                 },
               );
             },
@@ -139,5 +154,4 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
       ),
     );
   }
-
 }

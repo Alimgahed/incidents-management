@@ -8,10 +8,9 @@ class Routes {
   static const String addIncidentMobile = '/add_incident_mobile';
   static const String addImageScreen = '/add_Image_Screen';
 
-
   static const String editMissions = '/edit_missions';
   static const String crisisDashboardScreen = '/crisis_dashboard';
   static const String incidentMap = '/incident_map';
-    static const String mobileHome = '/mobile_home';
-
+  static const String mobileHome = '/mobile_home';
+  static const String missionAssign = '/mission_assign';
 }

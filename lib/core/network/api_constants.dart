@@ -9,4 +9,7 @@ class ApiConstants {
   static const addcurrentincdient = "/add-current-incident";
   static const editcurrentincdient = "/edit-current-incident/{id}";
   static const editcurrentmissions = "/edit-current-mission/{id1}/{id2}/{id3}";
+  static const missionUserAssign =
+      "/mission-user-assign/{current_incident_mission_id}";
+  static const allActiveUsers = "/all-active-users";
 }

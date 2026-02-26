@@ -11,6 +11,8 @@ import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_state.dart';
 import 'package:incidents_managment/core/helpers/date_format.dart';
 import 'package:incidents_managment/core/helpers/responsive.dart';
+import 'package:incidents_managment/core/helpers/routing.dart';
+import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -253,6 +255,17 @@ class _IncidentHeroHeader extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.person_add_alt_outlined,
+              color: Colors.white,
+              size: 28,
+            ),
+            tooltip: 'تعيين مسؤول',
+            onPressed: () {
+              context.pushNamed(Routes.missionAssign, arguments: incident);
+            },
           ),
           IconButton(
             icon: const Icon(

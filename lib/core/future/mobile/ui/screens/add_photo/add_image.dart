@@ -10,12 +10,8 @@ import 'package:incidents_managment/core/future/mobile/ui/widgets/add_image_widg
 class FileUploadScreen extends StatelessWidget {
   final int? incidentId;
   final int? userId;
-  
-  const FileUploadScreen({
-    super.key,
-     this.incidentId,
-     this.userId,
-  });
+
+  const FileUploadScreen({super.key, this.incidentId, this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +29,8 @@ class FileUploadScreen extends StatelessWidget {
         ],
       ),
       body: BlocProvider(
-        create: (context) => FileUploadCubit(repository: FileUploadRepository()),
+        create: (context) =>
+            FileUploadCubit(repository: FileUploadRepository()),
         child: BlocConsumer<FileUploadCubit, FileUploadState>(
           listener: (context, state) {
             state.maybeWhen(
@@ -101,10 +98,7 @@ class FileUploadScreen extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryColor,
-            AppTheme.primaryLight,
-          ],
+          colors: [AppTheme.primaryColor, AppTheme.primaryLight],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -135,16 +129,16 @@ class FileUploadScreen extends StatelessWidget {
           Text(
             'رفع صور الأزمة',
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
+              color: Colors.white,
+              fontSize: 24,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'شارك الصور بشكل آمن',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withOpacity(0.9),
-                ),
+              color: Colors.white.withOpacity(0.9),
+            ),
           ),
         ],
       ),
@@ -155,12 +149,12 @@ class FileUploadScreen extends StatelessWidget {
     return state.maybeWhen(
       initial: () => UploadButtonSection(
         onPickFile: () => context.read<FileUploadCubit>().pickFile(),
-        onPickImageCamera: () => context
-            .read<FileUploadCubit>()
-            .pickImage(source: ImageSource.camera),
-        onPickImageGallery: () => context
-            .read<FileUploadCubit>()
-            .pickImage(source: ImageSource.gallery),
+        onPickImageCamera: () => context.read<FileUploadCubit>().pickImage(
+          source: ImageSource.camera,
+        ),
+        onPickImageGallery: () => context.read<FileUploadCubit>().pickImage(
+          source: ImageSource.gallery,
+        ),
       ),
       fileSelected: (fileName, filePath, fileSize, fileExtension) => Column(
         children: [
@@ -179,8 +173,10 @@ class FileUploadScreen extends StatelessWidget {
                   icon: const Icon(Icons.close_rounded),
                   label: const Text('إلغاء'),
                   style: OutlinedButton.styleFrom(
+                    backgroundColor: appColor,
+
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: AppTheme.borderColor),
+                    side: const BorderSide(color: appColor),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -194,15 +190,16 @@ class FileUploadScreen extends StatelessWidget {
                   onPressed: () {
                     // Upload with incident parameters
                     context.read<FileUploadCubit>().uploadFile(
-                      incidentId??0,
-                          filePath,
-                          fileName,
-                        
-                        );
+                      incidentId ?? 0,
+                      filePath,
+                      fileName,
+                    );
                   },
                   icon: const Icon(Icons.upload_rounded),
                   label: const Text('رفع'),
+
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: appColor,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -214,10 +211,8 @@ class FileUploadScreen extends StatelessWidget {
           ),
         ],
       ),
-      uploading: (progress, fileName) => UploadProgressCard(
-        progress: progress,
-        fileName: fileName,
-      ),
+      uploading: (progress, fileName) =>
+          UploadProgressCard(progress: progress, fileName: fileName),
       uploadSuccess: (message, fileName) => Column(
         children: [
           Container(
@@ -248,9 +243,9 @@ class FileUploadScreen extends StatelessWidget {
                 Text(
                   'تم الرفع بنجاح!',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppTheme.successColor,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: AppTheme.successColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -302,9 +297,9 @@ class FileUploadScreen extends StatelessWidget {
                 Text(
                   'فشل الرفع',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppTheme.errorColor,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: AppTheme.errorColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(

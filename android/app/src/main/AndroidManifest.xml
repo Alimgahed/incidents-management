@@ -4,7 +4,8 @@
     
     <!-- Camera Permission -->
     <uses-permission android:name="android.permission.CAMERA"/>
-    
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Storage Permissions for accessing images/files -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"

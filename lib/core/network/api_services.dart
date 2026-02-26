@@ -4,6 +4,8 @@ import 'package:incidents_managment/core/future/actions/data/models/current_inci
 import 'package:incidents_managment/core/future/actions/data/models/incident_missions/incident_mission.dart';
 import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
+import 'package:incidents_managment/core/future/mission_assigen/data/model/all_active_user_model.dart';
+import 'package:incidents_managment/core/future/mission_assigen/data/model/mission_assgien_model.dart';
 import 'package:incidents_managment/core/network/api_constants.dart';
 import 'package:retrofit/retrofit.dart';
 part 'api_services.g.dart';
@@ -44,4 +46,10 @@ abstract class ApiService {
     @Path("id3") int id3,
     @Body() Map<String, dynamic> data,
   );
+  @GET(ApiConstants.missionUserAssign)
+  Future<List<MissionAssgienModel>> missionUserAssign(
+    @Path("current_incident_mission_id") int currentIncidentMissionId,
+  );
+  @GET(ApiConstants.allActiveUsers)
+  Future<List<ActiveUser>> allActiveUsers();
 }
