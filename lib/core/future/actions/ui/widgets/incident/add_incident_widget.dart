@@ -105,8 +105,8 @@ class _IncidentMapWidgetState
                         'b',
                         'c'
                       ],
-                      userAgentPackageName:
-                          'com.example.app',
+                                 userAgentPackageName: 'com.example.crisis_management',
+
                     ),
                     MarkerLayer(
                       markers: [
