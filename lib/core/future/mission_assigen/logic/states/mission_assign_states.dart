@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:incidents_managment/core/future/mission_assigen/data/model/mission_assgien_model.dart';
+import 'package:incidents_managment/core/network/api_error_model.dart';
 
 part 'mission_assign_states.freezed.dart';
 
@@ -7,8 +7,8 @@ part 'mission_assign_states.freezed.dart';
 class MissionAssignState with _$MissionAssignState {
   const factory MissionAssignState.initial() = MissionAssignStateInitial;
   const factory MissionAssignState.loading() = MissionAssignStateLoading;
-  const factory MissionAssignState.loaded(List<MissionAssgienModel> data) =
+  const factory MissionAssignState.loaded(dynamic data) =
       MissionAssignStateLoaded;
-  const factory MissionAssignState.error(String message) =
+  const factory MissionAssignState.error(ApiErrorModel message) =
       MissionAssignStateError;
 }

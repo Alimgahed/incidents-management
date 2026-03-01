@@ -128,7 +128,7 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<MissionAssgienModel> data)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( dynamic data)?  loaded,TResult Function( ApiErrorModel message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case MissionAssignStateInitial() when initial != null:
 return initial();case MissionAssignStateLoading() when loading != null:
@@ -152,7 +152,7 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<MissionAssgienModel> data)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( dynamic data)  loaded,required TResult Function( ApiErrorModel message)  error,}) {final _that = this;
 switch (_that) {
 case MissionAssignStateInitial():
 return initial();case MissionAssignStateLoading():
@@ -175,7 +175,7 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<MissionAssgienModel> data)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( dynamic data)?  loaded,TResult? Function( ApiErrorModel message)?  error,}) {final _that = this;
 switch (_that) {
 case MissionAssignStateInitial() when initial != null:
 return initial();case MissionAssignStateLoading() when loading != null:
@@ -257,16 +257,10 @@ String toString() {
 
 
 class MissionAssignStateLoaded implements MissionAssignState {
-  const MissionAssignStateLoaded(final  List<MissionAssgienModel> data): _data = data;
+  const MissionAssignStateLoaded(this.data);
   
 
- final  List<MissionAssgienModel> _data;
- List<MissionAssgienModel> get data {
-  if (_data is EqualUnmodifiableListView) return _data;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_data);
-}
-
+ final  dynamic data;
 
 /// Create a copy of MissionAssignState
 /// with the given fields replaced by the non-null parameter values.
@@ -278,12 +272,12 @@ $MissionAssignStateLoadedCopyWith<MissionAssignStateLoaded> get copyWith => _$Mi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MissionAssignStateLoaded&&const DeepCollectionEquality().equals(other._data, _data));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MissionAssignStateLoaded&&const DeepCollectionEquality().equals(other.data, data));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_data));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(data));
 
 @override
 String toString() {
@@ -298,7 +292,7 @@ abstract mixin class $MissionAssignStateLoadedCopyWith<$Res> implements $Mission
   factory $MissionAssignStateLoadedCopyWith(MissionAssignStateLoaded value, $Res Function(MissionAssignStateLoaded) _then) = _$MissionAssignStateLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<MissionAssgienModel> data
+ dynamic data
 });
 
 
@@ -315,10 +309,10 @@ class _$MissionAssignStateLoadedCopyWithImpl<$Res>
 
 /// Create a copy of MissionAssignState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? data = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? data = freezed,}) {
   return _then(MissionAssignStateLoaded(
-null == data ? _self._data : data // ignore: cast_nullable_to_non_nullable
-as List<MissionAssgienModel>,
+freezed == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
+as dynamic,
   ));
 }
 
@@ -332,7 +326,7 @@ class MissionAssignStateError implements MissionAssignState {
   const MissionAssignStateError(this.message);
   
 
- final  String message;
+ final  ApiErrorModel message;
 
 /// Create a copy of MissionAssignState
 /// with the given fields replaced by the non-null parameter values.
@@ -364,7 +358,7 @@ abstract mixin class $MissionAssignStateErrorCopyWith<$Res> implements $MissionA
   factory $MissionAssignStateErrorCopyWith(MissionAssignStateError value, $Res Function(MissionAssignStateError) _then) = _$MissionAssignStateErrorCopyWithImpl;
 @useResult
 $Res call({
- String message
+ ApiErrorModel message
 });
 
 
@@ -384,7 +378,7 @@ class _$MissionAssignStateErrorCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
   return _then(MissionAssignStateError(
 null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,
+as ApiErrorModel,
   ));
 }
 

@@ -275,15 +275,16 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<List<MissionAssgienModel>> missionUserAssign(
+  Future<dynamic> missionUserAssign(
     int currentIncidentMissionId,
+    List<MissionAssgienModel> data,
   ) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
-    const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<MissionAssgienModel>>(
-      Options(method: 'GET', headers: _headers, extra: _extra)
+    final _data = data.map((e) => e.toJson()).toList();
+    final _options = _setStreamType<dynamic>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
             '/mission-user-assign/${currentIncidentMissionId}',
@@ -292,19 +293,8 @@ class _ApiService implements ApiService {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<MissionAssgienModel> _value;
-    try {
-      _value = _result.data!
-          .map(
-            (dynamic i) =>
-                MissionAssgienModel.fromJson(i as Map<String, dynamic>),
-          )
-          .toList();
-    } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, response: _result);
-      rethrow;
-    }
+    final _result = await _dio.fetch(_options);
+    final _value = _result.data;
     return _value;
   }
 

@@ -46,9 +46,10 @@ abstract class ApiService {
     @Path("id3") int id3,
     @Body() Map<String, dynamic> data,
   );
-  @GET(ApiConstants.missionUserAssign)
-  Future<List<MissionAssgienModel>> missionUserAssign(
+  @POST(ApiConstants.missionUserAssign)
+  Future<dynamic> missionUserAssign(
     @Path("current_incident_mission_id") int currentIncidentMissionId,
+    @Body() List<MissionAssgienModel> data,
   );
   @GET(ApiConstants.allActiveUsers)
   Future<List<ActiveUser>> allActiveUsers();

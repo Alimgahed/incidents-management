@@ -99,8 +99,7 @@ Map<String, dynamic> _$CurrentIncidentModelToJson(
 CurrentIncidentWithMissions _$CurrentIncidentWithMissionsFromJson(
   Map<String, dynamic> json,
 ) => CurrentIncidentWithMissions(
-  idCurrentIncidentMission: (json['id_current_incident_mission'] as num?)
-      ?.toInt(),
+  idCurrentIncidentMission: (json['id'] as num?)?.toInt(),
   currentIncidentId: (json['current_incident_id'] as num?)?.toInt(),
   currentIncidentMissionId: (json['current_incident_mission_id'] as num?)
       ?.toInt(),
@@ -122,7 +121,7 @@ CurrentIncidentWithMissions _$CurrentIncidentWithMissionsFromJson(
 Map<String, dynamic> _$CurrentIncidentWithMissionsToJson(
   CurrentIncidentWithMissions instance,
 ) => <String, dynamic>{
-  'id_current_incident_mission': instance.idCurrentIncidentMission,
+  'id': instance.idCurrentIncidentMission,
   'current_incident_id': instance.currentIncidentId,
   'current_incident_mission_id': instance.currentIncidentMissionId,
   'current_incident_mission_order': instance.currentIncidentMissionOrder,

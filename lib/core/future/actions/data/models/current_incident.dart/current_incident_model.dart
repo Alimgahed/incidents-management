@@ -77,7 +77,7 @@ class CurrentIncidentModel {
 
 @JsonSerializable()
 class CurrentIncidentWithMissions {
-  @JsonKey(name: 'id_current_incident_mission')
+  @JsonKey(name: 'id')
   final int? idCurrentIncidentMission;
   @JsonKey(name: 'current_incident_id')
   final int? currentIncidentId;
