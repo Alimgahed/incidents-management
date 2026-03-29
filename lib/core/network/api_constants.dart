@@ -12,4 +12,6 @@ class ApiConstants {
   static const missionUserAssign =
       "/mission-user-assign/{current_incident_mission_id}";
   static const allActiveUsers = "/all-active-users";
+  static const register = "/register";
+  static const login = "/login";
 }

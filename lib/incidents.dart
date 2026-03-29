@@ -1,32 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/routing/app_router.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class Incidents extends StatelessWidget {
-  const Incidents({super.key, required this.appRouter});
+  const Incidents({
+    super.key, 
+    required this.appRouter, 
+    required this.isLoggedIn,
+  });
+  
   final AppRouter appRouter;
+  final bool isLoggedIn;
 
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    final initialRoute = isMobile
-        ? Routes.mobileHome
-        : Routes.crisisDashboardScreen;
+    
+    // Choose starting screen correctly based on login status and platform
+    final initialRoute = isLoggedIn 
+        ? (isMobile ? Routes.mobileHome : Routes.crisisDashboardScreen) 
+        : Routes.login;
 
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (_, __) {
-        return BlocProvider(
-          create: (context) =>
-              IncidentMapCubit(), // Initialize the IncidentMapCubit here
-          child: MaterialApp(
+        return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'Incidents Management',
             theme: AppTheme.lightTheme,
@@ -56,8 +59,7 @@ class Incidents extends StatelessWidget {
                 ),
               );
             },
-          ),
-        );
+          );
       },
     );
   }

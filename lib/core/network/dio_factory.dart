@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 
 import 'package:incidents_managment/core/network/api_constants.dart';
+import 'package:incidents_managment/core/helpers/shared_preference.dart';
+import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
 
 class DioFactory {
   DioFactory._();
@@ -26,10 +28,13 @@ class DioFactory {
     _dio!.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          options.headers.addAll({
-            // "Authorization": token,
-            // "refresh_token": refreshToken,
-          });
+          final token = await SharedPreferencesHelper.getData<String>(
+            SharedPreferenceKeys.userToken,
+          );
+
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
 
           return handler.next(options);
         },

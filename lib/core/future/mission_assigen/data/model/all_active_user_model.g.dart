@@ -21,6 +21,7 @@ ActiveUser _$ActiveUserFromJson(Map<String, dynamic> json) => ActiveUser(
       .toList(),
   userId: (json['user_id'] as num?)?.toInt(),
   username: json['username'] as String?,
+  password: json['password'] as String?,
 );
 
 Map<String, dynamic> _$ActiveUserToJson(ActiveUser instance) =>
@@ -37,6 +38,7 @@ Map<String, dynamic> _$ActiveUserToJson(ActiveUser instance) =>
       'user_classes': instance.userClasses?.map((e) => e.toJson()).toList(),
       'user_id': instance.userId,
       'username': instance.username,
+      'password': instance.password,
     };
 
 UserClass _$UserClassFromJson(Map<String, dynamic> json) => UserClass(

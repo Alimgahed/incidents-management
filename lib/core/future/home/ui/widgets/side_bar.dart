@@ -5,10 +5,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_states.dart';
+import 'package:incidents_managment/core/helpers/routing.dart';
+import 'package:incidents_managment/core/routing/routes.dart';
+import 'package:incidents_managment/core/helpers/shared_preference.dart';
+import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
 
 Widget buildSidebar(BuildContext context) {
   return Container(
@@ -114,11 +117,11 @@ Widget buildNavItem({
         borderRadius: BorderRadius.circular(8),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          padding:  EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
                 ? Colors.white
-                  : color ?? Colors.white.withValues(alpha: 0.3),
+                : color ?? Colors.white.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isSelected
@@ -130,7 +133,7 @@ Widget buildNavItem({
             children: [
               Icon(icon, color: isSelected ? appColor : Colors.white, size: 22),
               const SizedBox(width: 12),
-              Expanded(   
+              Expanded(
                 child: Text(
                   label,
                   maxLines: 2,
@@ -167,134 +170,208 @@ Widget buildNavItem({
 // USER PROFILE
 // ============================================================================
 Widget _buildUserProfile() {
-  return Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.1),
-      border: Border(
-        top: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
-      ),
-    ),
-    child: Row(
-      children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: Colors.white.withValues(alpha: 0.2),
-          child: const Icon(Icons.person, color: Colors.white, size: 20),
+  return const UserProfileWidget();
+}
+
+class UserProfileWidget extends StatefulWidget {
+  const UserProfileWidget({super.key});
+
+  @override
+  State<UserProfileWidget> createState() => _UserProfileWidgetState();
+}
+
+class _UserProfileWidgetState extends State<UserProfileWidget> {
+  bool _isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final token = await SharedPreferencesHelper.getData<String>(
+        SharedPreferenceKeys.userToken);
+    if (mounted) {
+      setState(() {
+        _isLoggedIn = token != null && token.isNotEmpty;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                'المسؤول',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
+            child: const Icon(Icons.person, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'المسؤول',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  'مشرف',
+                  style: TextStyle(color: Colors.white70, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert,
+              color: Colors.white.withValues(alpha: 0.7),
+              size: 18,
+            ),
+            color: const Color(0xFF2C5F8D),
+            onOpened: _checkLoginStatus, // Refresh state before opening menu
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person, color: Colors.white, size: 16),
+                    SizedBox(width: 8),
+                    Text(
+                      'الملف الشخصي',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                'مشرف',
-                style: TextStyle(color: Colors.white70, fontSize: 10),
+              const PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: Colors.white, size: 16),
+                    SizedBox(width: 8),
+                    Text(
+                      'الإعدادات',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
-        PopupMenuButton<String>(
-          icon: Icon(
-            Icons.more_vert,
-            color: Colors.white.withValues(alpha: 0.7),
-            size: 18,
-          ),
-          color: const Color(0xFF2C5F8D),
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'profile',
-              child: Row(
-                children: [
-                  Icon(Icons.person, color: Colors.white, size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    'الملف الشخصي',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'settings',
-              child: Row(
-                children: [
-                  Icon(Icons.settings, color: Colors.white, size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    'الإعدادات',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'logout',
-              child: Row(
-                children: [
-                  Icon(Icons.logout, color: Colors.red, size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    'تسجيل الخروج',
-                    style: TextStyle(color: Colors.red, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          onSelected: (value) {
-            switch (value) {
-              case 'profile':
-                Get.snackbar(
-                  'الملف الشخصي',
-                  'سيتم فتح الملف الشخصي قريباً',
-                  backgroundColor: Colors.blue,
-                  colorText: Colors.white,
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-                break;
-              case 'logout':
-                Get.dialog(
-                  AlertDialog(
-                    title: const Text('تسجيل الخروج'),
-                    content: const Text('هل أنت متأكد من تسجيل الخروج؟'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Get.back(),
-                        child: const Text('إلغاء'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Get.back();
-                          Get.snackbar(
-                            'تم تسجيل الخروج',
-                            'تم تسجيل الخروج بنجاح',
-                            backgroundColor: Colors.green,
-                            colorText: Colors.white,
-                            snackPosition: SnackPosition.BOTTOM,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                        ),
-                        child: const Text('تسجيل الخروج'),
+              if (!_isLoggedIn) ...[
+                const PopupMenuItem(
+                  value: 'registration',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_add, color: Colors.white, size: 16),
+                      SizedBox(width: 8),
+                      Text(
+                        'تسجيل مستخدم جديد',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
                       ),
                     ],
                   ),
-                );
-                break;
-            }
-          },
-        ),
-      ],
-    ),
-  );
+                ),
+                const PopupMenuItem(
+                  value: 'login',
+                  child: Row(
+                    children: [
+                      Icon(Icons.login, color: Colors.white, size: 16),
+                      SizedBox(width: 8),
+                      Text(
+                        'تسجيل الدخول',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.red, size: 16),
+                      SizedBox(width: 8),
+                      Text(
+                        'تسجيل الخروج',
+                        style: TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+            onSelected: (value) async {
+              switch (value) {
+                case 'login':
+                  await context.pushNamed(Routes.login);
+                  _checkLoginStatus(); // Update if login was successful
+                  break;
+                case 'profile':
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('سيتم فتح الملف الشخصي قريباً', style: TextStyle(color: Colors.white)),
+                      backgroundColor: Colors.blue,
+                    ),
+                  );
+                  break;
+                case 'registration':
+                  context.pushNamed(Routes.registration);
+                  break;
+                case 'logout':
+                  showDialog(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('تسجيل الخروج'),
+                      content: const Text('هل أنت متأكد من تسجيل الخروج؟'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('إلغاء'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            Navigator.pop(dialogContext);
+                            await SharedPreferencesHelper.removeData(
+                                SharedPreferenceKeys.userToken);
+                            _checkLoginStatus(); // Update state to logged out
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم تسجيل الخروج بنجاح', style: TextStyle(color: Colors.white)),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              context.pushNamed(Routes.login);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                          child: const Text('تسجيل الخروج'),
+                        ),
+                      ],
+                    ),
+                  );
+                  break;
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }

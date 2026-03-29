@@ -10,6 +10,12 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_mission_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/edit_incident.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/update_statues.dart';
+import 'package:incidents_managment/core/future/auth/data/repo/login/login.dart';
+import 'package:incidents_managment/core/future/auth/data/repo/registration/registration_get.dart';
+import 'package:incidents_managment/core/future/auth/data/repo/registration/registration_post.dart';
+import 'package:incidents_managment/core/future/auth/logic/cubit/login_cubit.dart';
+import 'package:incidents_managment/core/future/auth/logic/cubit/registraion_post_cubit.dart';
+import 'package:incidents_managment/core/future/auth/logic/cubit/registration_get_cubit.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/repo/all_active_user_repo.dart';
@@ -59,6 +65,9 @@ Future<void> setup() async {
   getIt.registerLazySingleton<AddIncidentTypeRepo>(
     () => AddIncidentTypeRepo(apiService: getIt<ApiService>()),
   );
+    getIt.registerLazySingleton<RegistrationGet>(
+    () => RegistrationGet(apiService: getIt<ApiService>()),
+  );
 
   getIt.registerLazySingleton<AddMissionRepo>(
     () => AddMissionRepo(apiService: getIt<ApiService>()),
@@ -86,6 +95,12 @@ Future<void> setup() async {
   // ⚠️ FIXED: Changed from LazySingleton to Factory
   getIt.registerFactory<AddIncidentMissionCubit>(
     () => AddIncidentMissionCubit(repository: getIt<AddIncidentMissionRepo>()),
+  );
+  getIt.registerFactory<RegistrationGetCubit>(
+    () => RegistrationGetCubit(registrationGet: getIt<RegistrationGet>()),
+  );
+  getIt.registerFactory<RegistrationPostCubit>(
+    () => RegistrationPostCubit(registrationPost: getIt<RegistrationPost>()),
   );
 
   getIt.registerFactory<AllIncidentTypeCubit>(
@@ -127,10 +142,19 @@ Future<void> setup() async {
     () =>
         AllIncidentClasses(allIncidentClassRepo: getIt<AllIncidentClassRepo>()),
   );
+  getIt.registerFactory<LoginCubit>(
+    () => LoginCubit(loginRepo: getIt<LoginRepo>()),
+  ); 
+  getIt.registerLazySingleton<LoginRepo>(
+    () => LoginRepo(apiService: getIt<ApiService>()),
+  );
   getIt.registerFactory<AllActiveUserCubit>(
     () => AllActiveUserCubit(allActiveUserRepo: getIt<AllActiveUserRepo>()),
   );
   getIt.registerFactory<MissionAssignCubit>(
     () => MissionAssignCubit(missionAssignRepo: getIt<MissionAssignRepo>()),
+  );
+  getIt.registerLazySingleton<RegistrationPost>(
+    () => RegistrationPost(apiService: getIt<ApiService>()),
   );
 }

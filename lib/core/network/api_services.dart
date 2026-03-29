@@ -4,6 +4,9 @@ import 'package:incidents_managment/core/future/actions/data/models/current_inci
 import 'package:incidents_managment/core/future/actions/data/models/incident_missions/incident_mission.dart';
 import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
+import 'package:incidents_managment/core/future/auth/data/model/login_model.dart';
+import 'package:incidents_managment/core/future/auth/data/model/login_response_model.dart';
+import 'package:incidents_managment/core/future/auth/data/model/registration_model.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/model/all_active_user_model.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/model/mission_assgien_model.dart';
 import 'package:incidents_managment/core/network/api_constants.dart';
@@ -53,4 +56,10 @@ abstract class ApiService {
   );
   @GET(ApiConstants.allActiveUsers)
   Future<List<ActiveUser>> allActiveUsers();
+  @POST(ApiConstants.register)
+  Future<dynamic> register(@Body() ActiveUser data);
+  @GET(ApiConstants.register)
+  Future<RegistrationModel> getregister();
+  @POST(ApiConstants.login)
+  Future<LoginResponseModel> login(@Body() LoginModel loginModel);
 }

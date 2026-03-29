@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "818149125918",
+    "project_id": "risk-manamgment",
+    "storage_bucket": "risk-manamgment.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:818149125918:android:3ec3d8c4347ae64795230f",
+        "android_client_info": {
+          "package_name": "com.example.crisis_management"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGZbja5Sg_nXKANy955_jCPZmkI03oOP8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:818149125918:android:e180003c80768c6795230f",
+        "android_client_info": {
+          "package_name": "com.example.incidents_managment"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGZbja5Sg_nXKANy955_jCPZmkI03oOP8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

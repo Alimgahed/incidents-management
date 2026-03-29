@@ -12,5 +12,7 @@ class Routes {
   static const String crisisDashboardScreen = '/crisis_dashboard';
   static const String incidentMap = '/incident_map';
   static const String mobileHome = '/mobile_home';
+  static const String registration = '/registration';
   static const String missionAssign = '/mission_assign';
+  static const String login = '/login';
 }

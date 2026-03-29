@@ -67,6 +67,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
             .setReconnectionAttempts(_maxReconnectAttempts)
             .setReconnectionDelay(3000)
             .enableAutoConnect()
+            .disableMultiplex() // Force new connection, bypasses dead cache
             .build(),
       );
 

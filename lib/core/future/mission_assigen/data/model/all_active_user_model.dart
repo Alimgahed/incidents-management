@@ -40,6 +40,9 @@ class ActiveUser {
   @JsonKey(name: 'username')
   final String? username;
 
+  @JsonKey(name: 'password')
+  final String? password;
+
   ActiveUser({
     this.authorityLevelId,
     this.authorityName,
@@ -53,6 +56,7 @@ class ActiveUser {
     this.userClasses,
     this.userId,
     this.username,
+    this.password,
   });
 
   factory ActiveUser.fromJson(Map<String, dynamic> json) =>

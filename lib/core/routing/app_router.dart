@@ -20,8 +20,14 @@ import 'package:incidents_managment/core/future/actions/ui/screens/missions/add_
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/all_missions.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/edit_missions.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/relation_incident_mission.dart';
+import 'package:incidents_managment/core/future/auth/logic/cubit/login_cubit.dart';
+import 'package:incidents_managment/core/future/auth/logic/cubit/registration_get_cubit.dart';
+import 'package:incidents_managment/core/future/auth/logic/cubit/registraion_post_cubit.dart';
+import 'package:incidents_managment/core/future/auth/ui/screens/login.dart';
+import 'package:incidents_managment/core/future/auth/ui/screens/registration.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_cubit.dart';
+import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/home/ui/screens/home.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/all_active_user_cubit.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/mission_assign_cubit.dart';
@@ -141,20 +147,38 @@ class AppRouter {
           ),
         );
       case Routes.crisisDashboardScreen:
-        return MaterialPageRoute(builder: (_) => const CrisisDashboard());
-      case Routes.mobileHome:
         return MaterialPageRoute(
           builder: (_) => BlocProvider(
-            create: (context) => DashboardCubit(),
-
+            create: (context) => getIt<IncidentMapCubit>(),
+            child: const CrisisDashboard(),
+          ),
+        );
+      case Routes.mobileHome:
+        return MaterialPageRoute(
+          builder: (_) => MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (context) => DashboardCubit()),
+              BlocProvider(create: (context) => getIt<IncidentMapCubit>()),
+            ],
             child: const MobileIncidentsListScreen(),
+          ),
+        );
+      case Routes.registration:
+        return MaterialPageRoute(
+          builder: (_) => MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create: (context) =>
+                    getIt<RegistrationGetCubit>()..getregister(),
+              ),
+              BlocProvider(create: (context) => getIt<RegistrationPostCubit>()),
+            ],
+            child: const RegistrationScreen(),
           ),
         );
       case Routes.missionAssign:
         return MaterialPageRoute(
           builder: (_) {
-            print("Creating BlocProviders");
-
             final allActiveUserCubit = getIt<AllActiveUserCubit>();
 
             // If you have another cubit, initialize it here
@@ -177,6 +201,14 @@ class AppRouter {
               child: MissionAssignScreen(incident: incident),
             );
           },
+        );
+      case Routes.login:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (context) => getIt<LoginCubit>(),
+
+            child: const LoginScreen(),
+          ),
         );
 
       default:
