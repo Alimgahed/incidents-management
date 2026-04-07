@@ -8,11 +8,14 @@ import 'package:incidents_managment/incidents.dart';
 import 'package:incidents_managment/core/helpers/shared_preference.dart';
 import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
 
+import 'package:incidents_managment/core/network/fcm_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await FcmService.initialize();
   await setup();
   
   // Resolve auth status before building widget tree

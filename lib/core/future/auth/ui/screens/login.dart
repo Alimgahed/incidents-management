@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:incidents_managment/core/network/fcm_service.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/auth/data/model/login_model.dart';
 import 'package:incidents_managment/core/future/auth/logic/cubit/login_cubit.dart';
@@ -31,12 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      String? fcmToken;
-      try {
-        fcmToken = await FirebaseMessaging.instance.getToken();
-      } catch (e) {
-        debugPrint('Failed to get FCM token: $e');
-      }
+      final fcmToken = await FcmService.getToken();
 
       final loginModel = LoginModel(
         username: _usernameController.text.trim(),
