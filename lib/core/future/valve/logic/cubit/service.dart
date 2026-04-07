@@ -13,7 +13,7 @@ class ProximityResult {
 }
 
 class ProximityService {
-  static const double _alarmRadiusMeters = 5.0;
+  static const double _alarmRadiusMeters = 100.0;
 
   /// Returns the nearest valve within the alarm radius, or null if none.
   ProximityResult? checkProximity({

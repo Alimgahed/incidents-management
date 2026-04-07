@@ -2,7 +2,6 @@
 
 import 'package:incidents_managment/core/future/valve/data/model/valve.dart';
 
-
 abstract class ValveRepository {
   Future<List<ValveModel>> fetchValves();
 }
@@ -21,22 +20,22 @@ class LocalValveRepository implements ValveRepository {
       ValveModel(
         id: 'valve-001',
         name: 'محبس رئيسي - شارع الحرية',
-        latitude: 28.0871,
-        longitude: 30.7501,
+        latitude: 27.9168,
+        longitude: 34.3310,
         description: 'محبس مياه رئيسي قطر 300 مم',
       ),
       ValveModel(
         id: 'valve-002',
         name: 'محبس فرعي - شارع النيل',
-        latitude: 28.0902,
-        longitude: 30.7534,
+        latitude: 27.9145,
+        longitude: 34.3285,
         description: 'محبس فرعي قطر 150 مم',
       ),
       ValveModel(
         id: 'valve-003',
         name: 'محبس توزيع - منطقة أبو قرقاص',
-        latitude: 28.0843,
-        longitude: 30.7468,
+        latitude: 28.10899,
+        longitude: 30.74862,
         description: 'محبس توزيع قطر 100 مم',
       ),
       ValveModel(

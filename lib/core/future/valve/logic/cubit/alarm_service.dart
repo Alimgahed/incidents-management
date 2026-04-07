@@ -19,8 +19,9 @@ class AlarmService {
 
     // Play alarm sound on loop
     // Place an alarm.mp3 file in assets/sounds/
+    await _player.setVolume(1.0);
     await _player.setReleaseMode(ReleaseMode.loop);
-    await _player.play(AssetSource('sounds/alarm.mp3'));
+    await _player.play(AssetSource('sounds/alarm.ogg'));
   }
 
   Future<void> stopAlarm() async {

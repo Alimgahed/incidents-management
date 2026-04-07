@@ -5,6 +5,7 @@
     <!-- Camera Permission -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Storage Permissions for accessing images/files -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
@@ -23,6 +24,7 @@
         android:label="incidents_managment"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
         android:requestLegacyExternalStorage="true">
         <activity
             android:name=".MainActivity"

@@ -99,8 +99,8 @@ class ValveProximityCubit extends Cubit<ProximityState> {
 
   void _startLocationStream() {
     const settings = LocationSettings(
-      accuracy: LocationAccuracy.best,
-      distanceFilter: 1, // emit only when moved ≥ 1 metre
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5, // emit only when moved ≥ 5 metres to ignore GPS jitter
     );
 
     _positionSubscription =

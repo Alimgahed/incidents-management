@@ -79,7 +79,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                     userAgentPackageName: 'incidents_managment',
                   ),
                   MarkerLayer(
-                    markers: _buildValveMarkers(state),
+                    markers: _buildValveMarkers(context, state),
                   ),
                   CircleLayer(
                     circles: _buildProximityCircles(state),
@@ -171,20 +171,72 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     );
   }
 
-  List<Marker> _buildValveMarkers(ProximityState state) {
+  List<Marker> _buildValveMarkers(BuildContext context, ProximityState state) {
+    double? userLat;
+    double? userLng;
+
+    if (state is ProximitySafe) {
+      userLat = state.userLat;
+      userLng = state.userLng;
+    } else if (state is ProximityAlert) {
+      userLat = state.userLat;
+      userLng = state.userLng;
+    }
+
     final valves = _valvesFromState(state);
-    return valves
+    final List<Marker> markers = valves
         .map((valve) => Marker(
               point: LatLng(valve.latitude, valve.longitude),
               width: 40,
               height: 40,
-              child: const Icon(
-                Icons.location_on,
-                color: Colors.blue,
-                size: 32,
+              child: GestureDetector(
+                onTap: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  if (userLat != null && userLng != null) {
+                    final dist = const Distance().distance(
+                      LatLng(userLat, userLng),
+                      LatLng(valve.latitude, valve.longitude),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${valve.name}\nالمسافة: ${dist.toStringAsFixed(1)} متر'),
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${valve.name}\nجاري تحديد الموقع...'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                child: const Icon(
+                  Icons.water_drop,
+                  color: Colors.blue,
+                  size: 32,
+                ),
               ),
             ))
         .toList();
+
+    if (userLat != null && userLng != null) {
+      markers.add(
+        Marker(
+          point: LatLng(userLat, userLng),
+          width: 50,
+          height: 50,
+          child: const Icon(
+            Icons.person_pin_circle,
+            color: Colors.green,
+            size: 40,
+          ),
+        ),
+      );
+    }
+
+    return markers;
   }
 
   List<CircleMarker> _buildProximityCircles(ProximityState state) {
@@ -194,7 +246,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     return valves
         .map((valve) => CircleMarker(
               point: LatLng(valve.latitude, valve.longitude),
-              radius: 5,
+              radius: 100,
               useRadiusInMeter: true,
               color: valve.id == alertValveId
                   ? Colors.red.withOpacity(0.35)
