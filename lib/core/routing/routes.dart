@@ -15,4 +15,5 @@ class Routes {
   static const String registration = '/registration';
   static const String missionAssign = '/mission_assign';
   static const String login = '/login';
+  static const String valveMap = '/valve_map';
 }

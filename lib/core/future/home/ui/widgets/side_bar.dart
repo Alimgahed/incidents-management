@@ -355,7 +355,7 @@ class _UserProfileWidgetState extends State<UserProfileWidget> {
                                   backgroundColor: Colors.green,
                                 ),
                               );
-                              context.pushNamed(Routes.login);
+                              context.pushNamedAndRemoveUntil(Routes.login);
                             }
                           },
                           style: ElevatedButton.styleFrom(

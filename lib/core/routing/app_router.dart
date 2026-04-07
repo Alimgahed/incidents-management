@@ -34,6 +34,8 @@ import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/miss
 import 'package:incidents_managment/core/future/mission_assigen/ui/screens/mission_assign.dart';
 import 'package:incidents_managment/core/future/mobile/ui/screens/add_photo/add_image.dart';
 import 'package:incidents_managment/core/future/mobile/ui/screens/home/home.dart';
+import 'package:incidents_managment/core/future/valve/logic/cubit/valve_cubit.dart';
+import 'package:incidents_managment/core/future/valve/ui/map_screen.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 
 class AppRouter {
@@ -210,9 +212,23 @@ class AppRouter {
             child: const LoginScreen(),
           ),
         );
+      case Routes.valveMap:
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (context) => getIt<ValveProximityCubit>(),
+            child: const MapScreen(),
+          ),
+        );
 
       default:
-        return MaterialPageRoute(builder: (_) => const CrisisDashboard());
+        // On web, initial URL is '/' — redirect to the proper named route
+        // which wraps CrisisDashboard with required BlocProviders.
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            create: (context) => getIt<IncidentMapCubit>(),
+            child: const CrisisDashboard(),
+          ),
+        );
     }
   }
 }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/incident.dart/add_incident.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/incident.dart/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/all_missions.dart';
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/relation_incident_mission.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_states.dart';
+import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dash_board.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/map_widget.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/side_bar.dart';

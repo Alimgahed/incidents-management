@@ -24,6 +24,10 @@ import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/all_
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/mission_assign_cubit.dart';
 import 'package:incidents_managment/core/future/mobile/data/repo/file_upload_repo.dart';
 import 'package:incidents_managment/core/future/mobile/logic/file_upload_cubit.dart';
+import 'package:incidents_managment/core/future/valve/data/repo/valve_repo.dart';
+import 'package:incidents_managment/core/future/valve/logic/cubit/alarm_service.dart';
+import 'package:incidents_managment/core/future/valve/logic/cubit/service.dart';
+import 'package:incidents_managment/core/future/valve/logic/cubit/valve_cubit.dart';
 import 'package:incidents_managment/future/actions/data/repos/all_incident_type_repo.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/missions_repo/add_mission_repo.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/missions_repo/edit_mission_repo.dart';
@@ -101,6 +105,18 @@ Future<void> setup() async {
   );
   getIt.registerFactory<RegistrationPostCubit>(
     () => RegistrationPostCubit(registrationPost: getIt<RegistrationPost>()),
+  );
+  getIt.registerFactory<ValveProximityCubit>(
+    () => ValveProximityCubit(valveRepository: getIt<ValveRepository>(), proximityService: getIt<ProximityService>(), alarmService: getIt<AlarmService>()),
+  );
+  getIt.registerLazySingleton<ValveRepository>(
+    () => LocalValveRepository(),
+  );
+  getIt.registerLazySingleton<ProximityService>(
+    () => ProximityService(),
+  );
+  getIt.registerLazySingleton<AlarmService>(
+    () => AlarmService(),
   );
 
   getIt.registerFactory<AllIncidentTypeCubit>(

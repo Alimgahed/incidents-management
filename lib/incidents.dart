@@ -4,7 +4,6 @@ import 'package:incidents_managment/core/routing/app_router.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
 class Incidents extends StatelessWidget {
   const Incidents({
     super.key, 
@@ -17,18 +16,19 @@ class Incidents extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    
-    // Choose starting screen correctly based on login status and platform
-    final initialRoute = isLoggedIn 
-        ? (isMobile ? Routes.mobileHome : Routes.crisisDashboardScreen) 
-        : Routes.login;
-
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
       splitScreenMode: true,
-      builder: (_, __) {
+      builder: (context, __) {
+        // MediaQuery is now available because ScreenUtilInit provides it
+        final isMobile = MediaQuery.of(context).size.width < 600;
+
+        // Choose starting screen correctly based on login status and platform
+        final initialRoute = isLoggedIn
+            ? (isMobile ? Routes.mobileHome : Routes.crisisDashboardScreen)
+            : Routes.login;
+
         return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'Incidents Management',
