@@ -35,7 +35,7 @@ class Incidents extends StatelessWidget {
           title: 'Incidents Management',
           theme: AppTheme.lightTheme,
           onGenerateRoute: appRouter.generateRoute,
-          initialRoute: Routes.valveMap,
+          initialRoute:initialRoute,
           // Set the app's locale to Arabic
           locale: const Locale('ar', 'AE'), // Arabic (UAE) locale
           supportedLocales: const [Locale('en', 'US'), Locale('ar', 'AE')],

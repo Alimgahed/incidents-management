@@ -13,11 +13,11 @@ class LoginRepo {
   Future<ApiResult<LoginResponseModel>> login(LoginModel loginModel) async {
     try {
       final response = await apiService.login(loginModel);
-      
+
       // Cache token
       if (response.token != null) {
         await SharedPreferencesHelper.saveData(
-          SharedPreferenceKeys.userToken, 
+          SharedPreferenceKeys.userToken,
           response.token!,
         );
       }

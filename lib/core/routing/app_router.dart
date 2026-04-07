@@ -221,12 +221,10 @@ class AppRouter {
         );
 
       default:
-        // On web, initial URL is '/' — redirect to the proper named route
-        // which wraps CrisisDashboard with required BlocProviders.
         return MaterialPageRoute(
           builder: (_) => BlocProvider(
-            create: (context) => getIt<IncidentMapCubit>(),
-            child: const CrisisDashboard(),
+            create: (context) => getIt<LoginCubit>(),
+            child: const LoginScreen(),
           ),
         );
     }

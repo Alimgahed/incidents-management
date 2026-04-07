@@ -25,28 +25,31 @@ class DashboardView extends StatefulWidget {
 
 class _DashboardViewState extends State<DashboardView> {
   late final DashboardCubit _dashboardCubit;
-  late final IncidentMapCubit _incidentMapCubit;
 
   @override
   void initState() {
     super.initState();
     _dashboardCubit = DashboardCubit();
-    _incidentMapCubit = IncidentMapCubit();
+    // Trigger socket initialization only when the dashboard screen is loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<IncidentMapCubit>().initialize();
+      }
+    });
   }
 
   @override
   void dispose() {
     _dashboardCubit.close();
-    _incidentMapCubit.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Use the IncidentMapCubit already provided by AppRouter (parent BlocProvider)
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: _dashboardCubit),
-        BlocProvider.value(value: _incidentMapCubit),
         BlocProvider(
           create: (context) =>
               EditIncidentCubit(editIncidentRepo: getIt<EditIncidentRepo>()),
