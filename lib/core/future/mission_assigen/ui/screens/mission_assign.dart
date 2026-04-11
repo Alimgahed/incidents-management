@@ -781,7 +781,7 @@ class _MissionAssignView extends StatelessWidget {
               )
             : null,
       ),
-      value: value,
+      initialValue: value,
       isExpanded: true,
       icon: const Icon(Icons.keyboard_arrow_down, color: appColor),
       items: items

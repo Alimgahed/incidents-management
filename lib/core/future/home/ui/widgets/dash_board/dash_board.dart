@@ -206,14 +206,31 @@ class _DashboardViewState extends State<DashboardView> {
                 ? mapState.incidents
                 : <CurrentIncidentModel>[];
 
-            return  Row(
-              children: [
-                SizedBox(
-                  width: 80.w,
-                  child: IncidentsList(allIncidents: allIncidents),
-                ),
-                Expanded(flex: 4, child: IncidentDetailsPanel()),
-              ],
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth <= 600) {
+                  return Column(
+                    children: [
+                      SizedBox(
+                        height: 250, // Fixed height on mobile so both fit
+                        width: double.infinity,
+                        child: IncidentsList(allIncidents: allIncidents),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(child: IncidentDetailsPanel()),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    SizedBox(
+                      width: 80.w,
+                      child: IncidentsList(allIncidents: allIncidents),
+                    ),
+                    Expanded(flex: 4, child: IncidentDetailsPanel()),
+                  ],
+                );
+              },
             );
           },
         ),

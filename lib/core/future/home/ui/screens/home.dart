@@ -17,59 +17,74 @@ class CrisisDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => HomeCubit(),
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
-        body: SafeArea(
-          child: Row(
-            children: [
-              if (MediaQuery.of(context).size.width > 600)
-                buildSidebar(context),
+      child: Builder(
+        builder: (context) {
+          final isMobile = MediaQuery.of(context).size.width <= 600;
+          return Scaffold(
+            backgroundColor: const Color(0xFFF5F7FA),
+            appBar: isMobile
+                ? AppBar(
+                    elevation: 0,
+                    backgroundColor: const Color(0xFF1E3A5F),
+                    foregroundColor: Colors.white,
+                    title: const Text('إدارة الأزمات', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    centerTitle: true,
+                  )
+                : null,
+            drawer: isMobile ? Drawer(child: buildSidebar(context)) : null,
+            body: SafeArea(
+              child: Row(
+                children: [
+                  if (!isMobile) buildSidebar(context),
 
-              /// MAIN CONTENT
-              Expanded(
-                child: BlocBuilder<HomeCubit, HomeStates>(
-                  buildWhen: (p, c) => c is HomeChanged,
-                  builder: (context, state) {
-                    final index = context.select(
-                      (HomeCubit c) => c.selectedIndex,
-                    );
+                  /// MAIN CONTENT
+                  Expanded(
+                    child: BlocBuilder<HomeCubit, HomeStates>(
+                      buildWhen: (p, c) => c is HomeChanged,
+                      builder: (context, state) {
+                        final index = context.select(
+                          (HomeCubit c) => c.selectedIndex,
+                        );
 
-                    // Lazy-loaded IndexedStack
-                    return IndexedStack(
-                      index: index,
-                      children: List.generate(8, (i) {
-                        switch (i) {
+                        // Optimizing memory by not building all screens at once
+                        Widget activeScreen;
+                        switch (index) {
                           case 0:
-                            return const DashboardView();
+                            activeScreen = const DashboardView();
+                            break;
                           case 1:
-                            return const IncidentsMapScreen();
+                            activeScreen = const IncidentsMapScreen();
+                            break;
                           case 4:
-                            return i == index
-                                ? const AddIncidentScreen()
-                                : const SizedBox.shrink();
+                            activeScreen = const AddIncidentScreen();
+                            break;
                           case 5:
-                            return i == index
-                                ? const AllIncidentType()
-                                : const SizedBox.shrink();
+                            activeScreen = const AllIncidentType();
+                            break;
                           case 6:
-                            return i == index
-                                ? const AllMissions()
-                                : const SizedBox.shrink();
+                            activeScreen = const AllMissions();
+                            break;
                           case 7:
-                            return i == index
-                                ? const Addincidentmission()
-                                : const SizedBox.shrink();
+                            activeScreen = const Addincidentmission();
+                            break;
                           default:
-                            return const SizedBox.shrink();
+                            activeScreen = const Center(child: Text("هذه الشاشة غير متوفرة حالياً"));
                         }
-                      }),
-                    );
-                  },
-                ),
+
+                        // Close drawer automatically upon mobile navigation
+                        if (isMobile && Scaffold.of(context).isDrawerOpen) {
+                          Scaffold.of(context).closeDrawer();
+                        }
+                        
+                        return activeScreen;
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        }
       ),
     );
   }
