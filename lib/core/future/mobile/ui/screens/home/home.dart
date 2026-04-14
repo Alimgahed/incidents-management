@@ -26,8 +26,24 @@ import 'package:incidents_managment/core/theming/styling.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:incidents_managment/core/future/mobile/ui/widgets/mobile_drawer.dart';
 
-class MobileIncidentsListScreen extends StatelessWidget {
+class MobileIncidentsListScreen extends StatefulWidget {
   const MobileIncidentsListScreen({super.key});
+
+  @override
+  State<MobileIncidentsListScreen> createState() => _MobileIncidentsListScreenState();
+}
+
+class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Trigger socket initialization only when the mobile home screen is loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<IncidentMapCubit>().initialize();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

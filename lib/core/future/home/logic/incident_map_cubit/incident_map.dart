@@ -5,6 +5,8 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
+import 'package:incidents_managment/core/helpers/shared_preference.dart';
+import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
 
 // Provide a lightweight copyWith for CurrentIncidentModel in case the model
 // does not define one; this attempts to use toJson/fromJson if present,
@@ -50,28 +52,40 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   // 🔊 SAME SOUND USED IN DASHBOARD CONTROLLER
   static const String alertSoundUrl =
       'https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg';
-
-  IncidentMapCubit() : super(IncidentMapInitial()) {
-    _initSocket();
-  }
+  IncidentMapCubit() : super(IncidentMapInitial());
 
   // ===========================================================================
   // SOCKET INITIALIZATION
   // ===========================================================================
-  void _initSocket() {
+  Future<void> initialize() async {
     try {
+      // 1. Get token from storage
+      final token = await SharedPreferencesHelper.getData<String>(SharedPreferenceKeys.userToken);
+      
+      // 2. ONLY connect if token exists
+      if (token == null || token.trim().isEmpty) {
+        return;
+      }
+      
+      // 3. Configure socket with auth
       _socket = io.io(
         'http://172.16.0.31:5000',
         io.OptionBuilder()
             .setTransports(['websocket'])
             .setReconnectionAttempts(_maxReconnectAttempts)
             .setReconnectionDelay(3000)
-            .enableAutoConnect()
+            .disableAutoConnect() // Don't connect until listeners are ready
             .disableMultiplex() // Force new connection, bypasses dead cache
+            .setAuth({'token': token}) // Pass token in auth object
+            .setExtraHeaders({'Authorization': 'Bearer $token'}) // And in headers just in case
             .build(),
       );
 
+      // 3. Attach listeners BEFORE connecting to avoid race condition
       _setupSocketListeners();
+
+      // 4. Now connect manually
+      _socket?.connect();
     } catch (e) {
       emit(IncidentMapError(message: 'فشل في إنشاء اتصال Socket.IO'));
     }
@@ -92,7 +106,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     });
 
     _socket?.onError((_) {
-      emit(IncidentMapError(message: 'خطأ في الاتصال بالخادم'));
+       emit(IncidentMapError(message: 'خطأ في الاتصال بالخادم'));
     });
 
     _socket?.on('incident_snapshot', _handleIncidentSnapshot);

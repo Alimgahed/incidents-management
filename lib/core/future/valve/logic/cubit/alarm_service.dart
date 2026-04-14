@@ -12,7 +12,7 @@ class AlarmService {
     _isPlaying = true;
 
     // Continuous vibration pattern: 500 ms on, 500 ms off
-    final canVibrate = await Vibration.hasVibrator() ?? false;
+    final canVibrate = await Vibration.hasVibrator();
     if (canVibrate) {
       Vibration.vibrate(pattern: [0, 500, 500, 500, 500, 500], repeat: 0);
     }

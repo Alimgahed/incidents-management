@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
 
 class FilePreviewCard extends StatelessWidget {
