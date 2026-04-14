@@ -22,37 +22,57 @@ class AllMissions extends StatelessWidget {
         ),
         BlocProvider(create: (_) => getIt<AddMissionCubit>()),
       ],
-      child: Stack(
-        children: [
-          Column(
-            children: [
-              _SearchAndFilterBar(),
-              Expanded(
-                child: BlocBuilder<AllMissionsCubit, GetAllMissionState>(
-                  builder: (context, state) {
-                    return state.when(
-                      initial: () => BuildEmptyState(
-                        title: 'لا توجد مهام حالياً',
-                        message: 'ابدأ بإضافة مهمة جديدة',
-                      ),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('جميع المهام'),
+          centerTitle: true,
+          backgroundColor: appColor,
+          iconTheme: const IconThemeData(color: Colors.white),
+          titleTextStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: SizedBox.expand(
+              child: Stack(
+                children: [
+                Column(
+                  children: [
+                    _SearchAndFilterBar(),
+                    Expanded(
+                      child: BlocBuilder<AllMissionsCubit, GetAllMissionState>(
+                        builder: (context, state) {
+                          return state.when(
+                            initial: () => BuildEmptyState(
+                              title: 'لا توجد مهام حالياً',
+                              message: 'ابدأ بإضافة مهمة جديدة',
+                            ),
 
-                      loading: () => const Loadding(),
-                      loaded: (missions) => _MissionsList(missions: missions),
-                      error: (message) => Error(),
-                    );
-                  },
+                            loading: () => const Loadding(),
+                            loaded: (missions) => _MissionsList(missions: missions),
+                            error: (message) => Error(),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                CustomFloatingButton(
+                  routeName: Routes.addMissions,
+                  text: "إضافة مهمة جديدة",
+                ),
+              ],
+            ),
           ),
-          CustomFloatingButton(
-            routeName: Routes.addMissions,
-            text: "إضافة مهمة جديدة",
-          ),
-        ],
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ============= SEARCH AND FILTER BAR =============
