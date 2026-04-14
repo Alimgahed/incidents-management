@@ -17,7 +17,7 @@ class FileUploadCubit extends Cubit<FileUploadState> {
   /// ==========================
   Future<void> pickFile() async {
     try {
-      FilePickerResult? result = await FilePicker.pickFiles(
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.any,
       );
 

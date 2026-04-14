@@ -25,12 +25,14 @@ class Globalheader extends StatelessWidget {
           child: Icon(icon, color: appColor, size: 20),
         ),
         const SizedBox(width: 12),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: appColor,
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: appColor,
+            ),
           ),
         ),
       ],
@@ -340,7 +342,10 @@ class Error extends StatelessWidget {
         children: [
           Icon(Icons.error_outline, color: Colors.red, size: 20),
           SizedBox(width: 8),
-          Text('خطأ في تحميل البيانات', style: TextStyle(color: Colors.red)),
+          Expanded(
+            child: Text('خطأ في تحميل البيانات',
+                style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -516,12 +521,15 @@ class CustomFloatingButton extends StatelessWidget {
             child: Row(
               children: [
                 const Icon(Icons.add, color: Colors.white),
-                Text(
-                  text,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                Flexible(
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

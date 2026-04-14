@@ -108,7 +108,7 @@ class _LoadedView extends StatelessWidget {
   }
 
   double _calculateAspectRatio(double width, int crossAxisCount) {
-    if (crossAxisCount == 1) return 2.5;
+    if (crossAxisCount == 1) return 2.1;
     if (crossAxisCount == 2) return 1.4;
     return 1;
   }
@@ -193,7 +193,6 @@ class _IncidentTypeCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
                         Icons.category_rounded,

@@ -65,11 +65,15 @@ class MissionCard extends StatelessWidget {
                         color: Colors.grey.shade600,
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        'التصنيف: ${mission.className}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
+                      Expanded(
+                        child: Text(
+                          'التصنيف: ${mission.className}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
