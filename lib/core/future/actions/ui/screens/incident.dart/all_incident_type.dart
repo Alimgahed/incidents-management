@@ -15,16 +15,29 @@ class AllIncidentType extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
-      child: BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
-        builder: (context, state) {
-          return state.when(
-            initial: () => const SizedBox.shrink(),
-            loading: () => const Loadding(),
-            loaded: (incidentTypes) =>
-                _LoadedView(incidentTypes: incidentTypes),
-            error: (message) => Error(),
-          );
-        },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('أنواع الأزمات'),
+          centerTitle: true,
+          backgroundColor: appColor,
+          iconTheme: const IconThemeData(color: Colors.white),
+          titleTextStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        body: BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
+          builder: (context, state) {
+            return state.when(
+              initial: () => const SizedBox.shrink(),
+              loading: () => const Loadding(),
+              loaded: (incidentTypes) =>
+                  _LoadedView(incidentTypes: incidentTypes),
+              error: (message) => Error(),
+            );
+          },
+        ),
       ),
     );
   }
@@ -37,8 +50,9 @@ class _LoadedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
+    return SizedBox.expand(
+      child: Stack(
+        children: [
         // Main content
         RefreshIndicator(
           color: appColor,
@@ -97,8 +111,9 @@ class _LoadedView extends StatelessWidget {
           text: "أضافة نوع ازمة",
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   int _calculateCrossAxisCount(double width) {
     if (width > 1200) return 6;
@@ -108,8 +123,8 @@ class _LoadedView extends StatelessWidget {
   }
 
   double _calculateAspectRatio(double width, int crossAxisCount) {
-    if (crossAxisCount == 1) return 2.1;
-    if (crossAxisCount == 2) return 1.4;
+    if (crossAxisCount == 1) return 1.6;
+    if (crossAxisCount == 2) return 1.3;
     return 1;
   }
 }
@@ -156,7 +171,7 @@ class _IncidentTypeCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
@@ -170,7 +185,7 @@ class _IncidentTypeCard extends StatelessWidget {
                     size: 28,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Text(
                   incidentType.incidentTypeName,
                   style: const TextStyle(

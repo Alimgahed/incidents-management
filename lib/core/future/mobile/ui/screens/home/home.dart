@@ -53,6 +53,7 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
         elevation: 0,
         automaticallyImplyLeading: true,
         backgroundColor: appColor,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           'إدارة الأزمات',
           style: TextStyle(
@@ -106,7 +107,10 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                 incidents,
               );
 
-              return Column(
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Column(
                 children: [
                   /// Stats Card (show filtered count)
                   RepaintBoundary(
@@ -151,7 +155,9 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                           ),
                   ),
                 ],
-              );
+              ),
+            ),
+          );
             },
           );
         },
