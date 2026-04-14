@@ -21,6 +21,7 @@ class Incidents extends StatelessWidget {
       designSize: const Size(375, 812),
       minTextAdapt: true,
       splitScreenMode: true,
+      useInheritedMediaQuery: true,
       builder: (context, __) {
         // MediaQuery is now available because ScreenUtilInit provides it
         final isMobile = MediaQuery.of(context).size.width < 600;
@@ -35,7 +36,7 @@ class Incidents extends StatelessWidget {
           title: 'Incidents Management',
           theme: AppTheme.lightTheme,
           onGenerateRoute: appRouter.generateRoute,
-          initialRoute: Routes.valveMap,
+          initialRoute: initialRoute,
           // Set the app's locale to Arabic
           locale: const Locale('ar', 'AE'), // Arabic (UAE) locale
           supportedLocales: const [Locale('en', 'US'), Locale('ar', 'AE')],

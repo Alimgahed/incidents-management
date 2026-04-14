@@ -24,6 +24,7 @@ import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/theming/styling.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
+import 'package:incidents_managment/core/future/mobile/ui/widgets/mobile_drawer.dart';
 
 class MobileIncidentsListScreen extends StatelessWidget {
   const MobileIncidentsListScreen({super.key});
@@ -34,8 +35,7 @@ class MobileIncidentsListScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         elevation: 0,
-        automaticallyImplyActions: false,
-        leading: Icon(Icons.warning_amber_rounded, color: Colors.white),
+        automaticallyImplyLeading: true,
         backgroundColor: appColor,
         title: const Text(
           'إدارة الأزمات',
@@ -48,7 +48,7 @@ class MobileIncidentsListScreen extends StatelessWidget {
         actions: [
           BlocBuilder<DashboardCubit, DashboardState>(
             builder: (context, state) {
-              final cubit = context.watch<DashboardCubit>();
+              final cubit = context.read<DashboardCubit>();
               final hasFilters = cubit.hasActiveFilters;
 
               return Stack(
@@ -72,6 +72,8 @@ class MobileIncidentsListScreen extends StatelessWidget {
           ),
         ],
       ),
+      drawer: const MobileDrawer(), // Added drawer
+
 
       // 👇 IMPORTANT: Listen to BOTH cubits
       body: BlocBuilder<IncidentMapCubit, IncidentMapState>(
@@ -82,7 +84,7 @@ class MobileIncidentsListScreen extends StatelessWidget {
 
           return BlocBuilder<DashboardCubit, DashboardState>(
             builder: (context, dashboardState) {
-              final dashboardCubit = context.watch<DashboardCubit>();
+              final dashboardCubit = context.read<DashboardCubit>();
 
               final filteredIncidents = dashboardCubit.filterIncidents(
                 incidents,
@@ -91,13 +93,17 @@ class MobileIncidentsListScreen extends StatelessWidget {
               return Column(
                 children: [
                   /// Stats Card (show filtered count)
-                  _MobileStatsCard(totalIncidents: filteredIncidents.length),
+                  RepaintBoundary(
+                    child: _MobileStatsCard(totalIncidents: filteredIncidents.length),
+                  ),
 
                   /// List
                   Expanded(
                     child: filteredIncidents.isEmpty
                         ? _EmptyStateWidget()
                         : ListView.builder(
+                            addAutomaticKeepAlives: false,
+                            addRepaintBoundaries: true,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 8,
@@ -106,22 +112,24 @@ class MobileIncidentsListScreen extends StatelessWidget {
                             itemBuilder: (context, index) {
                               final incident = filteredIncidents[index];
 
-                              return _MobileIncidentCard(
-                                incident: incident,
-                                onTap: () {
-                                  incidentID = incident.currentIncidentId ?? 0;
+                              return RepaintBoundary(
+                                child: _MobileIncidentCard(
+                                  incident: incident,
+                                  onTap: () {
+                                    incidentID = incident.currentIncidentId ?? 0;
 
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => BlocProvider.value(
-                                        value: dashboardCubit,
-                                        child:
-                                            const MobileIncidentDetailsScreen(),
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => BlocProvider.value(
+                                          value: dashboardCubit,
+                                          child:
+                                              const MobileIncidentDetailsScreen(),
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
+                                    );
+                                  },
+                                ),
                               );
                             },
                           ),

@@ -97,10 +97,15 @@ class ValveProximityCubit extends Cubit<ProximityState> {
     return permission;
   }
 
-  void _startLocationStream() {
-    const settings = LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 5, // emit only when moved ≥ 5 metres to ignore GPS jitter
+  void _startLocationStream({
+    LocationAccuracy accuracy = LocationAccuracy.medium,
+    int distanceFilter = 20,
+  }) {
+    _positionSubscription?.cancel();
+
+    final settings = LocationSettings(
+      accuracy: accuracy,
+      distanceFilter: distanceFilter,
     );
 
     _positionSubscription =
@@ -117,7 +122,18 @@ class ValveProximityCubit extends Cubit<ProximityState> {
       valves: _valves,
     );
 
-    if (result != null) {
+    final bool isNear = _proximityService.isWithinAlarmRadius(result.distanceMeters);
+
+    // Adaptive GPS Logic:
+    // If very far (> 300m), we use lower accuracy. 
+    // If near (< 200m), we switch to high accuracy.
+    if (result.distanceMeters < 200 && _positionSubscription != null) {
+      // Logic to check if we're already high accuracy could be added, 
+      // but for simplicity we'll check the current distance.
+      // If we move from far to near, we restart with better settings.
+    }
+
+    if (isNear) {
       // Near a valve → alarm
       _alarmService.startAlarm();
       emit(ProximityAlert(
@@ -127,6 +143,9 @@ class ValveProximityCubit extends Cubit<ProximityState> {
         distanceMeters: result.distanceMeters,
         valves: _valves,
       ));
+      
+      // Upgrade to high precision if not already
+      _upgradeSecurityIfNecessary();
     } else {
       // Safe zone
       _alarmService.stopAlarm();
@@ -135,6 +154,33 @@ class ValveProximityCubit extends Cubit<ProximityState> {
         userLng: position.longitude,
         valves: _valves,
       ));
+
+      // Downgrade if very far
+      if (result.distanceMeters > 300) {
+        _downgradeSecurityIfNecessary();
+      }
+    }
+  }
+
+  bool _isHighAccuracy = false;
+
+  void _upgradeSecurityIfNecessary() {
+    if (!_isHighAccuracy) {
+      _isHighAccuracy = true;
+      _startLocationStream(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
+      );
+    }
+  }
+
+  void _downgradeSecurityIfNecessary() {
+    if (_isHighAccuracy) {
+      _isHighAccuracy = false;
+      _startLocationStream(
+        accuracy: LocationAccuracy.medium,
+        distanceFilter: 20,
+      );
     }
   }
 

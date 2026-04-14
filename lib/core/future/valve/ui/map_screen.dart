@@ -33,7 +33,6 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    context.read<ValveProximityCubit>().stopTracking();
     super.dispose();
   }
 

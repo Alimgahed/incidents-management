@@ -10,8 +10,16 @@ import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dash_
 import 'package:incidents_managment/core/future/home/ui/widgets/map_widget.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/side_bar.dart';
 
-class CrisisDashboard extends StatelessWidget {
+class CrisisDashboard extends StatefulWidget {
   const CrisisDashboard({super.key});
+
+  @override
+  State<CrisisDashboard> createState() => _CrisisDashboardState();
+}
+
+class _CrisisDashboardState extends State<CrisisDashboard> {
+  // To keep track of which tabs have been initialized (built)
+  final List<bool> _isBuilt = List.generate(8, (i) => i == 0 || i == 1); // Always build dashboard and map initially
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +31,7 @@ class CrisisDashboard extends StatelessWidget {
           child: Row(
             children: [
               if (MediaQuery.of(context).size.width > 600)
-                buildSidebar(context),
+                const RepaintBoundary(child: SidebarWrapper()),
 
               /// MAIN CONTENT
               Expanded(
@@ -34,31 +42,30 @@ class CrisisDashboard extends StatelessWidget {
                       (HomeCubit c) => c.selectedIndex,
                     );
 
-                    // Lazy-loaded IndexedStack
+                    // Mark this index as built
+                    if (index < _isBuilt.length) {
+                      _isBuilt[index] = true;
+                    }
+
                     return IndexedStack(
                       index: index,
                       children: List.generate(8, (i) {
+                        // Lazy load: if not built yet, show empty
+                        if (!_isBuilt[i]) return const SizedBox.shrink();
+
                         switch (i) {
                           case 0:
                             return const DashboardView();
                           case 1:
                             return const IncidentsMapScreen();
                           case 4:
-                            return i == index
-                                ? const AddIncidentScreen()
-                                : const SizedBox.shrink();
+                            return const AddIncidentScreen();
                           case 5:
-                            return i == index
-                                ? const AllIncidentType()
-                                : const SizedBox.shrink();
+                            return const AllIncidentType();
                           case 6:
-                            return i == index
-                                ? const AllMissions()
-                                : const SizedBox.shrink();
+                            return const AllMissions();
                           case 7:
-                            return i == index
-                                ? const Addincidentmission()
-                                : const SizedBox.shrink();
+                            return const Addincidentmission();
                           default:
                             return const SizedBox.shrink();
                         }
@@ -72,5 +79,14 @@ class CrisisDashboard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class SidebarWrapper extends StatelessWidget {
+  const SidebarWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return buildSidebar(context);
   }
 }

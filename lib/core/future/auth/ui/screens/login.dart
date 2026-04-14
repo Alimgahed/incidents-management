@@ -51,9 +51,12 @@ class _LoginScreenState extends State<LoginScreen> {
       listener: (context, state) {
         state.whenOrNull(
           loaded: (data) {
-            
-
-            context.pushNamedAndRemoveUntil(Routes.crisisDashboardScreen);
+            final isMobile = MediaQuery.of(context).size.width < 600;
+            if (isMobile) {
+              context.pushNamedAndRemoveUntil(Routes.mobileHome);
+            } else {
+              context.pushNamedAndRemoveUntil(Routes.crisisDashboardScreen);
+            }
           },
           error: (message) {
             ErrorDialog.show(
@@ -71,6 +74,9 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Center(
+              child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -122,6 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
+            ),
+            ),
             ),
           ),
         ),

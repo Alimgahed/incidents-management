@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:incidents_managment/core/network/api_constants.dart';
 import 'package:incidents_managment/core/helpers/shared_preference.dart';
@@ -41,17 +42,19 @@ class DioFactory {
       ),
     );
 
-    // Add LogInterceptor for network debugging
-    _dio!.interceptors.add(
-      LogInterceptor(
-        request: true,
-        requestHeader: true,
-        requestBody: true,
-        responseHeader: true,
-        responseBody: true,
-        error: true,
-      ),
-    );
+    // Add LogInterceptor for network debugging (debug mode only)
+    if (kDebugMode) {
+      _dio!.interceptors.add(
+        LogInterceptor(
+          request: true,
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: true,
+          responseBody: true,
+          error: true,
+        ),
+      );
+    }
 
     return _dio!;
   }

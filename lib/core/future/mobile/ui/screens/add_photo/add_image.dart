@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
+import 'package:incidents_managment/core/theming/app_theme.dart';
 import 'package:incidents_managment/core/future/mobile/data/repo/file_upload_repo.dart';
 import 'package:incidents_managment/core/future/mobile/logic/file_upload_cubit.dart';
 import 'package:incidents_managment/core/future/mobile/logic/file_upload_state.dart';
