@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
       listener: (context, state) {
         state.whenOrNull(
           loaded: (data) {
-            final isMobile = MediaQuery.of(context).size.width < 400;
+            final isMobile = MediaQuery.of(context).size.width < 600;
             if (isMobile) {
               context.pushNamedAndRemoveUntil(Routes.mobileHome);
             } else {
@@ -75,61 +75,61 @@ class _LoginScreenState extends State<LoginScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
               child: Center(
-              child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Center(
-                      child: Icon(
-                        Icons.lock_person_outlined,
-                        size: 80,
-                        color: appColor,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    _buildSectionTitle('بيانات الدخول'),
-                    const SizedBox(height: 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Center(
+                          child: Icon(
+                            Icons.lock_person_outlined,
+                            size: 80,
+                            color: appColor,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        _buildSectionTitle('بيانات الدخول'),
+                        const SizedBox(height: 24),
 
-                    CustomTextFormField(
-                      controller: _usernameController,
-                      labelText: 'اسم المستخدم',
-                      hintText: 'أدخل اسم المستخدم لتسجيل الدخول',
-                      iconData: Icons.badge_outlined,
-                    ),
-                    const SizedBox(height: 16),
+                        CustomTextFormField(
+                          controller: _usernameController,
+                          labelText: 'اسم المستخدم',
+                          hintText: 'أدخل اسم المستخدم لتسجيل الدخول',
+                          iconData: Icons.badge_outlined,
+                        ),
+                        const SizedBox(height: 16),
 
-                    CustomTextFormField(
-                      controller: _passwordController,
-                      labelText: 'كلمة المرور',
-                      hintText: 'أدخل كلمة المرور',
-                      iconData: Icons.lock_outline,
-                      obscureText: true,
-                      enableTogglePassword: true,
-                    ),
-                    const SizedBox(height: 48),
+                        CustomTextFormField(
+                          controller: _passwordController,
+                          labelText: 'كلمة المرور',
+                          hintText: 'أدخل كلمة المرور',
+                          iconData: Icons.lock_outline,
+                          obscureText: true,
+                          enableTogglePassword: true,
+                        ),
+                        const SizedBox(height: 48),
 
-                    BlocBuilder<LoginCubit, LoginState>(
-                      builder: (context, state) {
-                        final isLoading = state.maybeWhen(
-                          loading: () => true,
-                          orElse: () => false,
-                        );
-                        return CustomButton(
-                          text: 'دخول',
-                          isLoading: isLoading,
-                          onPressed: _submitForm,
-                        );
-                      },
+                        BlocBuilder<LoginCubit, LoginState>(
+                          builder: (context, state) {
+                            final isLoading = state.maybeWhen(
+                              loading: () => true,
+                              orElse: () => false,
+                            );
+                            return CustomButton(
+                              text: 'دخول',
+                              isLoading: isLoading,
+                              onPressed: _submitForm,
+                            );
+                          },
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-            ),
             ),
           ),
         ),

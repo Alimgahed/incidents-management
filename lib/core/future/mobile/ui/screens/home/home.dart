@@ -141,10 +141,12 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => BlocProvider.value(
-                                          value: dashboardCubit,
-                                          child:
-                                              const MobileIncidentDetailsScreen(),
+                                        builder: (_) => MultiBlocProvider(
+                                          providers: [
+                                            BlocProvider.value(value: dashboardCubit),
+                                            BlocProvider.value(value: context.read<IncidentMapCubit>()),
+                                          ],
+                                          child: const MobileIncidentDetailsScreen(),
                                         ),
                                       ),
                                     );

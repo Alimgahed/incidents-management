@@ -1,3 +1,4 @@
+// Version: 1.0.1
 importScripts("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js");
 
@@ -11,15 +12,17 @@ const firebaseConfig = {
   measurementId: "G-VTB7GB84Y0"
 };
 
+console.log('[firebase-messaging-sw.js] Initializing...');
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Optional: Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  const notificationTitle = payload.notification?.title ?? 'Notification';
+  
+  const notificationTitle = payload.notification?.title || 'Notification';
   const notificationOptions = {
     body: payload.notification?.body,
+    icon: '/icons/Icon-192.png',
   };
 
   return self.registration.showNotification(

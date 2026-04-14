@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart'; // Required for SnackBar, Column, etc.
+import 'package:get/get.dart';
 
 class FcmService {
   static final FirebaseMessaging _fcm = FirebaseMessaging.instance;
@@ -9,20 +11,55 @@ class FcmService {
   static Future<void> initialize() async {
     try {
       // 1. Handle Background Messages (When app is closed/background)
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      if (!kIsWeb) {
+        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      }
 
       // 2. Handle Foreground Messages (When app is open and active)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('--- FCM Message Received in Foreground ---');
-        debugPrint('Title: ${message.notification?.title}');
-        debugPrint('Body: ${message.notification?.body}');
-        
-        // You can add logic here to show a SnackBar or a Dialog
-        // Example: Get.snackbar(message.notification?.title ?? "Notification", message.notification?.body ?? "");
+        debugPrint('--- [DEBUG] FCM Message Received in Foreground ---');
+        debugPrint('Message ID: ${message.messageId}');
+        debugPrint('Notification Title: ${message.notification?.title}');
+        debugPrint('Notification Body: ${message.notification?.body}');
+        debugPrint('Data Payload: ${message.data}');
+
+        // Show a visual notification in the app
+        if (message.notification != null) {
+          final title = message.notification?.title ?? "إشعار جديد";
+          final body = message.notification?.body ?? "";
+          
+          // Using Get.snackbar ensures the notification is shown globally
+          // without needing the context to be exactly attached to the current Scaffold.
+          Get.snackbar(
+            title,
+            body,
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.white,
+            colorText: Colors.black,
+            borderRadius: 10,
+            margin: const EdgeInsets.all(10),
+            duration: const Duration(seconds: 5),
+            isDismissible: true,
+            icon: const Icon(Icons.notifications_active, color: Colors.blueAccent),
+            mainButton: TextButton(
+              onPressed: () {
+                // Handle navigation if needed
+                Get.closeCurrentSnackbar();
+              },
+              child: const Text('عرض', style: TextStyle(color: Colors.blueAccent)),
+            ),
+          );
+        }
+      }, onError: (error) {
+        debugPrint('--- [ERROR] FCM Foreground Listener Error: $error ---');
       });
 
       // Request permission on startup
       await requestNotificationPermissions();
+      
+      // Crucial for Web: We must generate/refresh the token on every app start. 
+      // If we skip this when already logged in, Web FCM will not bind properly.
+      await getToken();
     } catch (e) {
       debugPrint('FCM Initialization Error: $e');
     }
@@ -39,11 +76,11 @@ class FcmService {
       );
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('User granted permission');
+        debugPrint('FCM: User granted permission (authorized)');
       } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-        debugPrint('User granted provisional permission');
+        debugPrint('FCM: User granted provisional permission');
       } else {
-        debugPrint('User declined or has not accepted permission');
+        debugPrint('FCM: User declined or has not accepted permission. Status: ${settings.authorizationStatus}');
       }
     } catch (e) {
       debugPrint('Error requesting notification permissions: $e');
@@ -60,7 +97,13 @@ class FcmService {
       
       if (kIsWeb) {
         debugPrint('FCM: Requesting Web token with VAPID key...');
-        token = await _fcm.getToken(vapidKey: _vapidKey);
+        try {
+          token = await _fcm.getToken(vapidKey: _vapidKey);
+          debugPrint('FCM: Web token retrieved: ${token?.substring(0, 10)}...');
+        } catch (webError) {
+          debugPrint('FCM ERROR specifically on Web getToken: $webError');
+          // Fallback or rethrow? Let's just log for now
+        }
       } else {
         token = await _fcm.getToken();
       }

@@ -9,12 +9,19 @@ import 'package:incidents_managment/core/helpers/shared_preference.dart';
 import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
 
 import 'package:incidents_managment/core/network/fcm_service.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+
+// Global Key for showing SnackBars from anywhere
+final GlobalKey<ScaffoldMessengerState> messengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // Initialize Analytics
+  FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+  
   await FcmService.initialize();
   await setup();
   

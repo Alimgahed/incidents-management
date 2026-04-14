@@ -113,24 +113,27 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
 
                     const SizedBox(height: 16),
 
-                /// ================= BRANCH =================
-                CustomDropdownFormField(
-                  value: selectedBranchId,
-                  hintText: 'الفرع',
-                  items: const [
-                    DropdownMenuItem(value: 333, child: Text('المنيا')),
-                    DropdownMenuItem(value: 373, child: Text('المنيا الجديدة')),
-                    DropdownMenuItem(value: 173, child: Text('سمالوط')),
-                    DropdownMenuItem(value: 133, child: Text('مطاي')),
-                    DropdownMenuItem(value: 93, child: Text('بني مزار')),
-                    DropdownMenuItem(value: 53, child: Text('مغاغة')),
-                    DropdownMenuItem(value: 13, child: Text('العدوة')),
-                    DropdownMenuItem(value: 253, child: Text('أبو قرقاص')),
-                    DropdownMenuItem(value: 293, child: Text('ملاوي')),
-                    DropdownMenuItem(value: 333, child: Text('ديرمواس')),
-                  ],
-                  onChanged: (v) => setState(() => selectedBranchId = v),
-                ),
+                    /// ================= BRANCH =================
+                    CustomDropdownFormField(
+                      value: selectedBranchId,
+                      hintText: 'الفرع',
+                      items: const [
+                        DropdownMenuItem(value: 213, child: Text('المنيا')),
+                        DropdownMenuItem(
+                          value: 373,
+                          child: Text('المنيا الجديدة'),
+                        ),
+                        DropdownMenuItem(value: 173, child: Text('سمالوط')),
+                        DropdownMenuItem(value: 133, child: Text('مطاي')),
+                        DropdownMenuItem(value: 93, child: Text('بني مزار')),
+                        DropdownMenuItem(value: 53, child: Text('مغاغة')),
+                        DropdownMenuItem(value: 13, child: Text('العدوة')),
+                        DropdownMenuItem(value: 253, child: Text('أبو قرقاص')),
+                        DropdownMenuItem(value: 293, child: Text('ملاوي')),
+                        DropdownMenuItem(value: 333, child: Text('ديرمواس')),
+                      ],
+                      onChanged: (v) => setState(() => selectedBranchId = v),
+                    ),
 
                     const SizedBox(height: 16),
 

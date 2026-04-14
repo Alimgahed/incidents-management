@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:incidents_managment/core/routing/app_router.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:incidents_managment/main.dart'; // Import to access messengerKey
 
 class Incidents extends StatelessWidget {
   const Incidents({
@@ -31,7 +33,8 @@ class Incidents extends StatelessWidget {
             ? (isMobile ? Routes.mobileHome : Routes.crisisDashboardScreen)
             : Routes.login;
 
-        return MaterialApp(
+        return GetMaterialApp(
+          scaffoldMessengerKey: messengerKey,
           debugShowCheckedModeBanner: false,
           title: 'Incidents Management',
           theme: AppTheme.lightTheme,
