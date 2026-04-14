@@ -749,16 +749,16 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
 
   Widget _buildBranchFilter() {
     const branches = [
-      {'id': 333, 'label': 'المنيا'},
-      {'id': 2, 'label': 'المنيا الجديدة'},
-      {'id': 3, 'label': 'سمالوط'},
-      {'id': 4, 'label': 'مطاي'},
-      {'id': 5, 'label': 'بني مزار'},
-      {'id': 6, 'label': 'مغاغة'},
-      {'id': 7, 'label': 'العدوة'},
-      {'id': 8, 'label': 'أبو قرقاص'},
-      {'id': 9, 'label': 'ملاوي'},
-      {'id': 10, 'label': 'ديرمواس'},
+      {'id': 213, 'label': 'المنيا'},
+      {'id': 373, 'label': 'المنيا الجديدة'},
+      {'id': 173, 'label': 'سمالوط'},
+      {'id': 133, 'label': 'مطاي'},
+      {'id': 93, 'label': 'بني مزار'},
+      {'id': 53, 'label': 'مغاغة'},
+      {'id': 13, 'label': 'العدوة'},
+      {'id': 253, 'label': 'أبو قرقاص'},
+      {'id': 293, 'label': 'ملاوي'},
+      {'id': 333, 'label': 'ديرمواس'},
     ];
 
     return Container(
