@@ -91,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        _buildSectionTitle('بيانات الدخول'),
+                        _buildSectionTitle('تسجيل الدخول'),
                         const SizedBox(height: 24),
 
                         CustomTextFormField(

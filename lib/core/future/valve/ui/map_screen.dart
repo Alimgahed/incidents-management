@@ -185,7 +185,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     final valves = _valvesFromState(state);
     final List<Marker> markers = valves
         .map((valve) => Marker(
-              point: LatLng(valve.latitude, valve.longitude),
+              point: LatLng(valve.lat!, valve.long!),
               width: 40,
               height: 40,
               child: GestureDetector(
@@ -194,21 +194,20 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                   if (userLat != null && userLng != null) {
                     final dist = const Distance().distance(
                       LatLng(userLat, userLng),
-                      LatLng(valve.latitude, valve.longitude),
+                      LatLng(valve.lat!, valve.long!),
                     );
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('${valve.name}\nالمسافة: ${dist.toStringAsFixed(1)} متر'),
+                        content: Text('${valve.valveType?.nameAr ?? 'محبس'}\nالمسافة: ${dist.toStringAsFixed(1)} متر'),
                         duration: const Duration(seconds: 3),
+                        action: SnackBarAction(
+                          label: 'التفاصيل',
+                          onPressed: () => _showValveDetails(context, valve),
+                        ),
                       ),
                     );
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${valve.name}\nجاري تحديد الموقع...'),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
+                    _showValveDetails(context, valve);
                   }
                 },
                 child: const Icon(
@@ -244,7 +243,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
     return valves
         .map((valve) => CircleMarker(
-              point: LatLng(valve.latitude, valve.longitude),
+              point: LatLng(valve.lat ?? 0, valve.long ?? 0),
               radius: 100,
               useRadiusInMeter: true,
               color: valve.id == alertValveId
@@ -270,6 +269,138 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     } else if (state is ProximityAlert) {
       _mapController.move(LatLng(state.userLat, state.userLng), 16);
     }
+  }
+
+  void _showValveDetails(BuildContext context, ValveModel valve) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.water_drop, color: Colors.blue, size: 32),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                valve.valveType?.nameAr ?? 'محبس مياه',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (valve.id != null)
+                                Text(
+                                  'كود المحبس: ${valve.id}',
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if (valve.status != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: (valve.status == 'Good' || valve.status == 'جيد')
+                                  ? Colors.green.withOpacity(0.1)
+                                  : Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              valve.status!,
+                              style: TextStyle(
+                                color: (valve.status == 'Good' || valve.status == 'جيد')
+                                    ? Colors.green[700]
+                                    : Colors.orange[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const Divider(height: 32),
+                    if (valve.position != null) _buildDetailRow(Icons.settings_remote, 'الوضع الحالي', valve.position!),
+                    if (valve.diameter != null) _buildDetailRow(Icons.straighten, 'القطر', '${valve.diameter} مم'),
+                    if (valve.pipeDiameter != null) _buildDetailRow(Icons.plumbing, 'قطر الماسورة', '${valve.pipeDiameter} مم'),
+                    if (valve.depth != null) _buildDetailRow(Icons.layers, 'العمق', '${valve.depth} م'),
+                    if (valve.numOfTurns != null) _buildDetailRow(Icons.rotate_right, 'عدد اللفات', '${valve.numOfTurns}'),
+                    if (valve.direction != null) _buildDetailRow(Icons.explore, 'الاتجاه', valve.direction!),
+                    if (valve.inServiceYear != null) _buildDetailRow(Icons.calendar_today, 'سنة التركيب', '${valve.inServiceYear}'),
+                    if (valve.lat != null && valve.long != null)
+                      _buildDetailRow(Icons.location_on, 'الإحداثيات', '${valve.lat?.toStringAsFixed(6)}, ${valve.long?.toStringAsFixed(6)}'),
+                    if (valve.valveType?.abbreviation != null)
+                      _buildDetailRow(Icons.badge, 'الاختصار', valve.valveType!.abbreviation!),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1565C0),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('إغلاق', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.blueGrey[400]),
+          const SizedBox(width: 12),
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -306,4 +437,4 @@ class _StatusChip extends StatelessWidget {
       ),
     );
   }
-}
+}

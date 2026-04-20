@@ -36,7 +36,7 @@ class Incidents extends StatelessWidget {
         return GetMaterialApp(
           scaffoldMessengerKey: messengerKey,
           debugShowCheckedModeBanner: false,
-          title: 'Incidents Management',
+          title: 'Risk Management',
           theme: AppTheme.lightTheme,
           onGenerateRoute: appRouter.generateRoute,
           initialRoute: initialRoute,

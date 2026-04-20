@@ -9,9 +9,10 @@ import 'package:incidents_managment/core/future/valve/data/repo/valve_repo.dart'
 import 'package:incidents_managment/core/future/valve/logic/cubit/alarm_service.dart';
 import 'package:incidents_managment/core/future/valve/logic/cubit/service.dart';
 import 'package:incidents_managment/core/future/valve/logic/state/valve_state.dart';
+import 'package:incidents_managment/core/network/api_result.dart';
 
 class ValveProximityCubit extends Cubit<ProximityState> {
-  final ValveRepository _valveRepository;
+  final ValveRepo _valveRepository;
   final ProximityService _proximityService;
   final AlarmService _alarmService;
 
@@ -19,7 +20,7 @@ class ValveProximityCubit extends Cubit<ProximityState> {
   List<ValveModel> _valves = [];
 
   ValveProximityCubit({
-    required ValveRepository valveRepository,
+    required ValveRepo valveRepository,
     required ProximityService proximityService,
     required AlarmService alarmService,
   })  : _valveRepository = valveRepository,
@@ -39,7 +40,11 @@ class ValveProximityCubit extends Cubit<ProximityState> {
 
     // 2. Load valve locations
     try {
-      _valves = await _valveRepository.fetchValves();
+      final result = await _valveRepository.allValves();
+      _valves = result.when(
+        success: (valves) => valves,
+        error: (error) => [],
+      );
     } catch (e) {
       emit(ProximityError('فشل تحميل بيانات المحابس: $e'));
       return;

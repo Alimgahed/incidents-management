@@ -1,6 +1,6 @@
 {
-    "name": "incidents_managment",
-    "short_name": "incidents_managment",
+    "name": "Risk Management",
+    "short_name": "Risk Management",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

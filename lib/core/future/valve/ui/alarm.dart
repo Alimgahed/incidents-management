@@ -58,7 +58,7 @@ class AlarmBanner extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  valve.name,
+                  valve.valveType?.nameAr ?? 'محبس مياه',
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
@@ -75,21 +75,6 @@ class AlarmBanner extends StatelessWidget {
               ),
             ],
           ),
-          if (valve.description != null) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.info_outline, color: Colors.white70, size: 18),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    valve.description!,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ],
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,

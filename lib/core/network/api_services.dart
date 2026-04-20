@@ -9,10 +9,10 @@ import 'package:incidents_managment/core/future/auth/data/model/login_response_m
 import 'package:incidents_managment/core/future/auth/data/model/registration_model.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/model/all_active_user_model.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/model/mission_assgien_model.dart';
+import 'package:incidents_managment/core/future/valve/data/model/valve.dart';
 import 'package:incidents_managment/core/network/api_constants.dart';
 import 'package:retrofit/retrofit.dart';
 part 'api_services.g.dart';
-
 @RestApi(baseUrl: ApiConstants.baseUrl)
 abstract class ApiService {
   factory ApiService(Dio dio, {String baseUrl}) = _ApiService;
@@ -62,4 +62,6 @@ abstract class ApiService {
   Future<RegistrationModel> getregister();
   @POST(ApiConstants.login)
   Future<LoginResponseModel> login(@Body() LoginModel loginModel);
+  @GET(ApiConstants.allValves)
+  Future<List<ValveModel>> allValves();
 }

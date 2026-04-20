@@ -69,7 +69,7 @@ Future<void> setup() async {
   getIt.registerLazySingleton<AddIncidentTypeRepo>(
     () => AddIncidentTypeRepo(apiService: getIt<ApiService>()),
   );
-    getIt.registerLazySingleton<RegistrationGet>(
+  getIt.registerLazySingleton<RegistrationGet>(
     () => RegistrationGet(apiService: getIt<ApiService>()),
   );
 
@@ -107,17 +107,18 @@ Future<void> setup() async {
     () => RegistrationPostCubit(registrationPost: getIt<RegistrationPost>()),
   );
   getIt.registerFactory<ValveProximityCubit>(
-    () => ValveProximityCubit(valveRepository: getIt<ValveRepository>(), proximityService: getIt<ProximityService>(), alarmService: getIt<AlarmService>()),
+    () => ValveProximityCubit(
+      valveRepository: getIt<ValveRepo>(),
+      proximityService: getIt<ProximityService>(),
+      alarmService: getIt<AlarmService>(),
+    ),
   );
-  getIt.registerLazySingleton<ValveRepository>(
-    () => LocalValveRepository(),
+
+  getIt.registerLazySingleton<ValveRepo>(
+    () => ValveRepo(apiService: getIt<ApiService>()),
   );
-  getIt.registerLazySingleton<ProximityService>(
-    () => ProximityService(),
-  );
-  getIt.registerLazySingleton<AlarmService>(
-    () => AlarmService(),
-  );
+  getIt.registerLazySingleton<ProximityService>(() => ProximityService());
+  getIt.registerLazySingleton<AlarmService>(() => AlarmService());
 
   getIt.registerFactory<AllIncidentTypeCubit>(
     () =>
@@ -160,7 +161,7 @@ Future<void> setup() async {
   );
   getIt.registerFactory<LoginCubit>(
     () => LoginCubit(loginRepo: getIt<LoginRepo>()),
-  ); 
+  );
   getIt.registerLazySingleton<LoginRepo>(
     () => LoginRepo(apiService: getIt<ApiService>()),
   );

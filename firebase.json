@@ -1,1 +1,53 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"risk-manamgment","appId":"1:818149125918:android:e180003c80768c6795230f","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"risk-manamgment","configurations":{"android":"1:818149125918:android:e180003c80768c6795230f","ios":"1:818149125918:ios:c9c9c5c0f3b7c96795230f","macos":"1:818149125918:ios:c9c9c5c0f3b7c96795230f","web":"1:818149125918:web:2c287dc473370f3e95230f","windows":"1:818149125918:web:28ee7fbc68785d3495230f"}}}}}}
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/firebase-messaging-sw.js",
+        "headers": [
+          {
+            "key": "Service-Worker-Allowed",
+            "value": "/"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Strict-Transport-Security",
+            "value": "max-age=31536000; includeSubDomains; preload"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "SAMEORIGIN"
+          },
+          {
+            "key": "X-XSS-Protection",
+            "value": "1; mode=block"
+          }
+        ]
+      }
+    ]
+  },
+  "flutter": {"platforms":{"android":{"default":{"projectId":"risk-manamgment","appId":"1:818149125918:android:e180003c80768c6795230f","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"risk-manamgment","configurations":{"android":"1:818149125918:android:e180003c80768c6795230f","ios":"1:818149125918:ios:c9c9c5c0f3b7c96795230f","macos":"1:818149125918:ios:c9c9c5c0f3b7c96795230f","web":"1:818149125918:web:2c287dc473370f3e95230f","windows":"1:818149125918:web:28ee7fbc68785d3495230f"}}}}}
+}
