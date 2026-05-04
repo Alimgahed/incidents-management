@@ -1357,8 +1357,8 @@ void showEditDialog(
                             typeId: incident.currentIncidentTypeId!,
                             branchId: incident.branchId!,
                             location: LatLng(
-                              incident.currentIncidentXAxis!,
-                              incident.currentIncidentYAxis!,
+                              incident.currentIncidentXAxis ?? 0,
+                              incident.currentIncidentYAxis ?? 0,
                             ),
                             description:
                                 incident.currentIncidentDescription ?? '',
