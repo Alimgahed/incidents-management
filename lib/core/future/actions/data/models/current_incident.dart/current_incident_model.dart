@@ -1,6 +1,12 @@
+import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
+
 part 'current_incident_model.g.dart';
 
+// NOTE: CurrentIncidentModel intentionally does NOT extend Equatable because
+// `currentIncidentWithMissions` is a mutable (non-final) field that is written
+// by DashboardCubit._copyIncident via the cascade operator. Making it Equatable
+// with a mutable field would give false equality results.
 @JsonSerializable()
 class CurrentIncidentModel {
   @JsonKey(name: 'current_incident_id')
@@ -47,6 +53,7 @@ class CurrentIncidentModel {
   final String? username;
   @JsonKey(name: 'photos')
   final List<CurrentIncidentPhoto>? photos;
+
   CurrentIncidentModel({
     this.currentIncidentId,
     this.currentIncidentDescription,
@@ -70,13 +77,14 @@ class CurrentIncidentModel {
     this.username,
     this.photos,
   });
+
   factory CurrentIncidentModel.fromJson(Map<String, dynamic> json) =>
       _$CurrentIncidentModelFromJson(json);
   Map<String, dynamic> toJson() => _$CurrentIncidentModelToJson(this);
 }
 
 @JsonSerializable()
-class CurrentIncidentWithMissions {
+class CurrentIncidentWithMissions extends Equatable {
   @JsonKey(name: 'id')
   final int? idCurrentIncidentMission;
   @JsonKey(name: 'current_incident_id')
@@ -93,7 +101,8 @@ class CurrentIncidentWithMissions {
   final DateTime? currentIncidentMissionStatusUpdatedAt;
   @JsonKey(name: 'mission_name')
   final String? missionName;
-  CurrentIncidentWithMissions({
+
+  const CurrentIncidentWithMissions({
     this.idCurrentIncidentMission,
     this.currentIncidentId,
     this.currentIncidentMissionId,
@@ -103,13 +112,26 @@ class CurrentIncidentWithMissions {
     this.currentIncidentMissionStatusUpdatedAt,
     this.missionName,
   });
+
   factory CurrentIncidentWithMissions.fromJson(Map<String, dynamic> json) =>
       _$CurrentIncidentWithMissionsFromJson(json);
   Map<String, dynamic> toJson() => _$CurrentIncidentWithMissionsToJson(this);
+
+  @override
+  List<Object?> get props => [
+        idCurrentIncidentMission,
+        currentIncidentId,
+        currentIncidentMissionId,
+        currentIncidentMissionOrder,
+        currentIncidentMissionStatus,
+        currentIncidentMissionStatusUpdatedBy,
+        currentIncidentMissionStatusUpdatedAt,
+        missionName,
+      ];
 }
 
 @JsonSerializable()
-class CurrentIncidentPhoto {
+class CurrentIncidentPhoto extends Equatable {
   @JsonKey(name: 'current_incident_status_id')
   final int? currentIncidentStatusId;
   @JsonKey(name: 'x_axis')
@@ -131,7 +153,7 @@ class CurrentIncidentPhoto {
   @JsonKey(name: 'id')
   final int? id;
 
-  CurrentIncidentPhoto({
+  const CurrentIncidentPhoto({
     this.currentIncidentStatusId,
     this.xAxis,
     this.yAxis,
@@ -143,7 +165,22 @@ class CurrentIncidentPhoto {
     this.filePath,
     this.id,
   });
+
   factory CurrentIncidentPhoto.fromJson(Map<String, dynamic> json) =>
       _$CurrentIncidentPhotoFromJson(json);
   Map<String, dynamic> toJson() => _$CurrentIncidentPhotoToJson(this);
+
+  @override
+  List<Object?> get props => [
+        currentIncidentStatusId,
+        xAxis,
+        yAxis,
+        currentIncidentId,
+        currentIncidentPhotoUploadedAt,
+        currentIncidentPhotoUploadedBy,
+        description,
+        userName,
+        filePath,
+        id,
+      ];
 }

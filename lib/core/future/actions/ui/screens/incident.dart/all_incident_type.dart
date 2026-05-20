@@ -415,7 +415,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
           else
             ConstrainedBox(
               constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.5,
+                maxHeight: MediaQuery.sizeOf(context).height * 0.5,
               ),
               child: ListView.separated(
                 shrinkWrap: true,

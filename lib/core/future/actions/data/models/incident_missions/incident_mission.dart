@@ -1,24 +1,28 @@
+import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
+
 part 'incident_mission.g.dart';
 
 @JsonSerializable()
-class IncidentMission {
+class IncidentMission extends Equatable {
   @JsonKey(name: 'incident_type')
   final int? incidentTypeId;
   @JsonKey(name: 'missions')
   final List<Missions> missions;
-  IncidentMission({this.incidentTypeId, required this.missions});
 
-  // Factory method for deserialization
+  const IncidentMission({this.incidentTypeId, required this.missions});
+
   factory IncidentMission.fromJson(Map<String, dynamic> json) =>
       _$IncidentMissionFromJson(json);
 
-  // Method for serialization
   Map<String, dynamic> toJson() => _$IncidentMissionToJson(this);
+
+  @override
+  List<Object?> get props => [incidentTypeId, missions];
 }
 
 @JsonSerializable()
-class Missions {
+class Missions extends Equatable {
   @JsonKey(name: 'mission_id')
   final int? missionId;
   @JsonKey(name: 'mission_class_name')
@@ -27,16 +31,19 @@ class Missions {
   final String? missionName;
   @JsonKey(name: 'mission_order')
   final int? order;
-  Missions({
+
+  const Missions({
     this.missionId,
     this.missionClassName,
     this.missionName,
     this.order,
   });
-  // Factory method for deserialization
+
   factory Missions.fromJson(Map<String, dynamic> json) =>
       _$MissionsFromJson(json);
 
-  // Method for serialization
   Map<String, dynamic> toJson() => _$MissionsToJson(this);
+
+  @override
+  List<Object?> get props => [missionId, missionClassName, missionName, order];
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
@@ -7,6 +8,21 @@ import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/in
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
+
+// ---------------------------------------------------------------------------
+// Top-level isolate helpers (must live outside the class for compute())
+// ---------------------------------------------------------------------------
+
+/// Parses a raw socket snapshot list into typed models on a background isolate.
+/// Using [List.generate] pre-allocates the backing array to the exact capacity
+/// needed, avoiding repeated reallocation that a growable list would incur.
+List<CurrentIncidentModel> _parseIncidentList(List<dynamic> data) {
+  return List<CurrentIncidentModel>.generate(
+    data.length,
+    (i) => CurrentIncidentModel.fromJson(data[i] as Map<String, dynamic>),
+    growable: false,
+  );
+}
 
 // Provide a lightweight copyWith for CurrentIncidentModel in case the model
 // does not define one; this attempts to use toJson/fromJson if present,
@@ -170,14 +186,19 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   // ===========================================================================
   // INCIDENT HANDLERS
   // ===========================================================================
-  void _handleIncidentSnapshot(dynamic data) {
+  /// Parses the full incident snapshot off the main isolate via [compute] to
+  /// avoid jank on large payloads. [List.generate] inside the helper
+  /// pre-allocates the backing array to the exact capacity needed.
+  Future<void> _handleIncidentSnapshot(dynamic data) async {
     try {
       if (data is! List) {
         emit(IncidentMapError(message: 'تنسيق بيانات غير صحيح'));
         return;
       }
 
-      incidentss = data.map((e) => CurrentIncidentModel.fromJson(e)).toList();
+      // Defensively copy to a plain List<dynamic> so it can be sent across
+      // isolate boundaries safely (socket.io may return a non-growable view).
+      incidentss = await compute(_parseIncidentList, List<dynamic>.from(data));
 
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     } catch (e) {
@@ -188,7 +209,10 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   void _handleIncidentCreated(dynamic data) {
     final newIncident = CurrentIncidentModel.fromJson(data);
 
-    incidentss = [...incidentss, newIncident];
+    // Pre-allocate to exact capacity (incidentss.length + 1) to avoid
+    // the intermediate growable list that spread syntax produces.
+    final updated = List<CurrentIncidentModel>.of(incidentss)..add(newIncident);
+    incidentss = updated;
     emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
 
     // 🚨 PLAY SAME ALERT SOUND (7 SECONDS)
@@ -203,14 +227,22 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     );
 
     if (index != -1) {
-      incidentss = List.from(incidentss)..[index] = updatedIncident;
+      // List.of pre-allocates to known capacity; direct index assignment
+      // avoids a second allocation from cascade notation.
+      final updated = List<CurrentIncidentModel>.of(incidentss);
+      updated[index] = updatedIncident;
+      incidentss = updated;
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     }
   }
 
   void _handleIncidentDeleted(dynamic data) {
     final id = data is Map ? data['id'] : data;
-    incidentss = incidentss.where((i) => i.currentIncidentId != id).toList();
+    // where().toList() can't be pre-sized but growable:false signals to the
+    // runtime that the resulting list won't be further mutated.
+    incidentss = incidentss
+        .where((i) => i.currentIncidentId != id)
+        .toList(growable: false);
 
     emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
   }

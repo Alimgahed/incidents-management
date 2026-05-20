@@ -1,5 +1,9 @@
 class ApiConstants {
   static const baseUrl = "http://172.16.0.31:5000";
+
+  /// Authenticated incident photo stream (requires `Authorization` header).
+  static String viewIncidentPhotoUrl(int photoId) =>
+      '$baseUrl/view-incident-photo/$photoId';
   static const allIncidentTypes = "/all-incident-types";
   static const addincidentType = "/add-incident-type";
   static const addMissions = "/new-mission";

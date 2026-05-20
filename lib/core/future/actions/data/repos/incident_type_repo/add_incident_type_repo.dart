@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
+import 'package:incidents_managment/core/helpers/lookup_cache.dart';
 import 'package:incidents_managment/core/network/api_error_model.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
@@ -12,6 +13,8 @@ class AddIncidentTypeRepo {
   Future<ApiResult> addIncidentType(IncidentType incidentType) async {
     try {
       final response = await apiService.addIncidentType(incidentType);
+      // Bust the incident-types cache so the next read fetches fresh data.
+      await LookupCacheService.invalidate('lookup_incident_types');
       return ApiResult.success(response);
     } on DioException catch (e) {
       // Backend returned an error response

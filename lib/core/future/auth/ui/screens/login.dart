@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
       listener: (context, state) {
         state.whenOrNull(
           loaded: (data) {
-            final isMobile = MediaQuery.of(context).size.width < 600;
+            final isMobile = MediaQuery.sizeOf(context).width < 600;
             if (isMobile) {
               context.pushNamedAndRemoveUntil(Routes.mobileHome);
             } else {

@@ -1,14 +1,17 @@
+import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
+
 part 'registration_model.g.dart';
+
 @JsonSerializable()
-class RegistrationModel {
+class RegistrationModel extends Equatable {
   @JsonKey(name: 'auth_levels')
   final List<AuthLevel> authLevels;
 
   final List<Group> groups;
   final List<Sector> sectors;
 
-  RegistrationModel({
+  const RegistrationModel({
     required this.authLevels,
     required this.groups,
     required this.sectors,
@@ -18,23 +21,29 @@ class RegistrationModel {
       _$RegistrationModelFromJson(json);
 
   Map<String, dynamic> toJson() => _$RegistrationModelToJson(this);
+
+  @override
+  List<Object?> get props => [authLevels, groups, sectors];
 }
 
 @JsonSerializable()
-class AuthLevel {
+class AuthLevel extends Equatable {
   final int id;
   final String description;
 
-  AuthLevel({required this.id, required this.description});
+  const AuthLevel({required this.id, required this.description});
 
   factory AuthLevel.fromJson(Map<String, dynamic> json) =>
       _$AuthLevelFromJson(json);
 
   Map<String, dynamic> toJson() => _$AuthLevelToJson(this);
+
+  @override
+  List<Object?> get props => [id, description];
 }
 
 @JsonSerializable()
-class Group {
+class Group extends Equatable {
   @JsonKey(name: 'group_id')
   final int groupId;
 
@@ -44,7 +53,7 @@ class Group {
   @JsonKey(name: 'group_notification')
   final String groupNotification;
 
-  Group({
+  const Group({
     required this.groupId,
     required this.groupName,
     required this.groupNotification,
@@ -53,10 +62,13 @@ class Group {
   factory Group.fromJson(Map<String, dynamic> json) => _$GroupFromJson(json);
 
   Map<String, dynamic> toJson() => _$GroupToJson(this);
+
+  @override
+  List<Object?> get props => [groupId, groupName, groupNotification];
 }
 
 @JsonSerializable()
-class Sector {
+class Sector extends Equatable {
   final int id;
   final String name;
 
@@ -78,7 +90,7 @@ class Sector {
   @JsonKey(name: 'to_y_axis')
   final double? toYAxis;
 
-  Sector({
+  const Sector({
     required this.id,
     required this.name,
     this.authorityLevelId,
@@ -92,4 +104,16 @@ class Sector {
   factory Sector.fromJson(Map<String, dynamic> json) => _$SectorFromJson(json);
 
   Map<String, dynamic> toJson() => _$SectorToJson(this);
+
+  @override
+  List<Object?> get props => [
+        id,
+        name,
+        authorityLevelId,
+        parentSectorManagementId,
+        fromXAxis,
+        fromYAxis,
+        toXAxis,
+        toYAxis,
+      ];
 }

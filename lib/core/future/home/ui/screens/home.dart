@@ -6,6 +6,8 @@ import 'package:incidents_managment/core/future/actions/ui/screens/missions/all_
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/relation_incident_mission.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_states.dart';
+import 'package:incidents_managment/core/future/home/ui/screens/active_teams_screen.dart';
+import 'package:incidents_managment/core/future/home/ui/screens/analytics_overview_screen.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dash_board.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/map_widget.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/side_bar.dart';
@@ -30,7 +32,7 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
       create: (_) => HomeCubit(),
       child: Builder(
         builder: (context) {
-          final isMobile = MediaQuery.of(context).size.width <= 600;
+          final isMobile = MediaQuery.sizeOf(context).width <= 600;
           return Scaffold(
             backgroundColor: const Color(0xFFF5F7FA),
             appBar: isMobile
@@ -91,6 +93,10 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                                 return const DashboardView();
                               case 1:
                                 return const IncidentsMapScreen();
+                              case 2:
+                                return const ActiveTeamsScreen();
+                              case 3:
+                                return const AnalyticsOverviewScreen();
                               case 4:
                                 return const AddIncidentScreen();
                               case 5:

@@ -17,11 +17,13 @@ class FcmService {
 
       // 2. Handle Foreground Messages (When app is open and active)
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('--- [DEBUG] FCM Message Received in Foreground ---');
-        debugPrint('Message ID: ${message.messageId}');
-        debugPrint('Notification Title: ${message.notification?.title}');
-        debugPrint('Notification Body: ${message.notification?.body}');
-        debugPrint('Data Payload: ${message.data}');
+        if (kDebugMode) {
+          debugPrint('--- [DEBUG] FCM Message Received in Foreground ---');
+          debugPrint('Message ID: ${message.messageId}');
+          debugPrint('Notification Title: ${message.notification?.title}');
+          debugPrint('Notification Body: ${message.notification?.body}');
+          debugPrint('Data Payload: ${message.data}');
+        }
 
         // Show a visual notification in the app
         if (message.notification != null) {
@@ -51,17 +53,17 @@ class FcmService {
           );
         }
       }, onError: (error) {
-        debugPrint('--- [ERROR] FCM Foreground Listener Error: $error ---');
+        if (kDebugMode) debugPrint('--- [ERROR] FCM Foreground Listener Error: $error ---');
       });
 
       // Request permission on startup
       await requestNotificationPermissions();
-      
-      // Crucial for Web: We must generate/refresh the token on every app start. 
+
+      // Crucial for Web: We must generate/refresh the token on every app start.
       // If we skip this when already logged in, Web FCM will not bind properly.
       await getToken();
     } catch (e) {
-      debugPrint('FCM Initialization Error: $e');
+      if (kDebugMode) debugPrint('FCM Initialization Error: $e');
     }
   }
 
@@ -75,15 +77,17 @@ class FcmService {
         sound: true,
       );
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('FCM: User granted permission (authorized)');
-      } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-        debugPrint('FCM: User granted provisional permission');
-      } else {
-        debugPrint('FCM: User declined or has not accepted permission. Status: ${settings.authorizationStatus}');
+      if (kDebugMode) {
+        if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+          debugPrint('FCM: User granted permission (authorized)');
+        } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
+          debugPrint('FCM: User granted provisional permission');
+        } else {
+          debugPrint('FCM: User declined or has not accepted permission. Status: ${settings.authorizationStatus}');
+        }
       }
     } catch (e) {
-      debugPrint('Error requesting notification permissions: $e');
+      if (kDebugMode) debugPrint('Error requesting notification permissions: $e');
     }
   }
 
@@ -92,24 +96,23 @@ class FcmService {
   /// Get FCM Token with retry and Web support
   static Future<String?> getToken() async {
     try {
-      debugPrint('FCM: Attempting to get token...');
+      if (kDebugMode) debugPrint('FCM: Attempting to get token...');
       String? token;
-      
+
       if (kIsWeb) {
-        debugPrint('FCM: Requesting Web token with VAPID key...');
+        if (kDebugMode) debugPrint('FCM: Requesting Web token with VAPID key...');
         try {
           token = await _fcm.getToken(vapidKey: _vapidKey);
-          debugPrint('FCM: Web token retrieved: ${token?.substring(0, 10)}...');
+          if (kDebugMode) debugPrint('FCM: Web token retrieved: ${token?.substring(0, 10)}...');
         } catch (webError) {
-          debugPrint('FCM ERROR specifically on Web getToken: $webError');
-          // Fallback or rethrow? Let's just log for now
+          if (kDebugMode) debugPrint('FCM ERROR specifically on Web getToken: $webError');
         }
       } else {
         token = await _fcm.getToken();
       }
-      
+
       if (token == null || token.isEmpty) {
-        debugPrint('FCM Token is empty, retrying in 2 seconds...');
+        if (kDebugMode) debugPrint('FCM Token is empty, retrying in 2 seconds...');
         await Future.delayed(const Duration(seconds: 2));
         if (kIsWeb) {
           token = await _fcm.getToken(vapidKey: _vapidKey);
@@ -118,14 +121,16 @@ class FcmService {
         }
       }
 
-      if (token != null) {
-        debugPrint('FCM SUCCESS! Token: $token');
-      } else {
-        debugPrint('FCM FAILURE: Could not retrieve token.');
+      if (kDebugMode) {
+        if (token != null) {
+          debugPrint('FCM SUCCESS! Token: $token');
+        } else {
+          debugPrint('FCM FAILURE: Could not retrieve token.');
+        }
       }
       return token;
     } catch (e) {
-      debugPrint('FCM ERROR getting token: $e');
+      if (kDebugMode) debugPrint('FCM ERROR getting token: $e');
       return null;
     }
   }
@@ -133,5 +138,5 @@ class FcmService {
 
 /// Must be a top-level function
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('Handling a background message: ${message.messageId}');
+  if (kDebugMode) debugPrint('Handling a background message: ${message.messageId}');
 }

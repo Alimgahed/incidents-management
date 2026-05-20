@@ -19,7 +19,8 @@ class DioFactory {
         baseUrl: ApiConstants.baseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
-        sendTimeout: const Duration(seconds: 15),
+        // Web (dio_web_adapter): sendTimeout is only valid when the request has a body.
+        sendTimeout: kIsWeb ? null : const Duration(seconds: 15),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

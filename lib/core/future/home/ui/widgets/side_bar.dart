@@ -89,7 +89,7 @@ Widget _buildNavigation(BuildContext context) {
         buildNavItem(icon: Icons.category, label: 'أنواع الأزمات', index: 5),
         buildNavItem(icon: Icons.list_alt, label: 'جميع المهام', index: 6),
         buildNavItem(
-          icon: Icons.category,
+          icon: Icons.link,
           label: 'إضافة مهام الأزمة',
           index: 7,
         ),

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
+import 'package:incidents_managment/core/helpers/lookup_cache.dart';
 import 'package:incidents_managment/core/network/api_error_model.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
@@ -12,6 +13,8 @@ class AddMissionRepo {
   Future<ApiResult> addMission(AllMissionModel mission) async {
     try {
       final response = await apiService.addMission(mission);
+      // Bust the missions cache so the next read fetches fresh data.
+      await LookupCacheService.invalidate('lookup_missions');
       return ApiResult.success(response);
     } on DioException catch (e) {
       // Backend returned an error response

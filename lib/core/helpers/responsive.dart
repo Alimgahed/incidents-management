@@ -4,33 +4,33 @@ import 'package:flutter/material.dart';
 class ResponsiveHelper {
   /// Get screen width
   static double screenWidth(BuildContext context) =>
-      MediaQuery.of(context).size.width;
+      MediaQuery.sizeOf(context).width;
 
   /// Get screen height
   static double screenHeight(BuildContext context) =>
-      MediaQuery.of(context).size.height;
+      MediaQuery.sizeOf(context).height;
 
   /// Determine if the device is mobile (width < 600)
   static bool isMobile(BuildContext context) =>
-      MediaQuery.of(context).size.width < 600;
+      MediaQuery.sizeOf(context).width < 600;
 
   /// Determine if the device is tablet (width >= 600 && width < 1024)
   static bool isTablet(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.sizeOf(context).width;
     return width >= 600 && width < 1024;
   }
 
   /// Determine if the device is desktop (width >= 1024)
   static bool isDesktop(BuildContext context) =>
-      MediaQuery.of(context).size.width >= 1024;
+      MediaQuery.sizeOf(context).width >= 1024;
 
   /// Determine if the device is in landscape mode
   static bool isLandscape(BuildContext context) =>
-      MediaQuery.of(context).orientation == Orientation.landscape;
+      MediaQuery.orientationOf(context) == Orientation.landscape;
 
   /// Determine if the device is in portrait mode
   static bool isPortrait(BuildContext context) =>
-      MediaQuery.of(context).orientation == Orientation.portrait;
+      MediaQuery.orientationOf(context) == Orientation.portrait;
 
   /// Get responsive padding based on screen size
   static EdgeInsets responsivePadding(BuildContext context) {
@@ -108,12 +108,12 @@ class ResponsiveHelper {
 
   /// Get device padding (SafeArea equivalent for specific directions)
   static EdgeInsets getDevicePadding(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
+    final padding = MediaQuery.paddingOf(context);
     return EdgeInsets.only(
-      top: mediaQuery.padding.top,
-      bottom: mediaQuery.padding.bottom,
-      left: mediaQuery.padding.left,
-      right: mediaQuery.padding.right,
+      top: padding.top,
+      bottom: padding.bottom,
+      left: padding.left,
+      right: padding.right,
     );
   }
 }

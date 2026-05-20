@@ -111,13 +111,20 @@ class SecureStorageService {
   /// Clear all secure data on logout/session expiry
   Future<void> clearAll() async {
     if (kIsWeb) {
-      await SharedPreferencesHelper.removeData(_keyUserToken);
-      await SharedPreferencesHelper.removeData(_keyRefreshToken);
-      await SharedPreferencesHelper.removeData(_keyUserData);
+      // Batch all three removes into a single Future.wait — avoids three
+      // sequential microtask hops through the SP helper.
+      final prefs = SharedPreferencesHelper.instance;
+      await Future.wait([
+        prefs.remove(_keyUserToken),
+        prefs.remove(_keyRefreshToken),
+        prefs.remove(_keyUserData),
+      ]);
     } else {
-      await _secureStorage.delete(key: _keyUserToken);
-      await _secureStorage.delete(key: _keyRefreshToken);
-      await _secureStorage.delete(key: _keyUserData);
+      await Future.wait([
+        _secureStorage.delete(key: _keyUserToken),
+        _secureStorage.delete(key: _keyRefreshToken),
+        _secureStorage.delete(key: _keyUserData),
+      ]);
     }
   }
 }

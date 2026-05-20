@@ -16,7 +16,7 @@ import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_state.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
-import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_details.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_detail_dialogs.dart';
 import 'package:incidents_managment/core/future/mobile/ui/screens/add_photo/add_image.dart';
 import 'package:incidents_managment/core/gloable/gloable.dart';
 import 'package:incidents_managment/core/helpers/date_format.dart';

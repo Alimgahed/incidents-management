@@ -1,70 +1,146 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:incidents_managment/firebase_options.dart';
-import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/helpers/startup_service.dart';
+import 'package:incidents_managment/core/network/fcm_service.dart';
 import 'package:incidents_managment/core/routing/app_router.dart';
 import 'package:incidents_managment/incidents.dart';
 
-import 'package:incidents_managment/core/helpers/shared_preference.dart';
-import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
+// Global key for showing SnackBars from anywhere in the app.
+final GlobalKey<ScaffoldMessengerState> messengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
-import 'package:incidents_managment/core/network/fcm_service.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
-
-
-
-// Global Key for showing SnackBars from anywhere
-final GlobalKey<ScaffoldMessengerState> messengerKey = GlobalKey<ScaffoldMessengerState>();
-
-void main() async {
-  final Stopwatch stopwatch = Stopwatch()..start();
-
+/// Entry point.
+///
+/// [runApp] is called **immediately** after the binding is initialized so the
+/// Flutter engine can hand off from the native launch screen to Flutter as fast
+/// as possible. All heavy async work (Firebase, DI, token read) runs inside
+/// [_AppBootstrapState] behind a lightweight splash frame.
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  _setupErrorHandlers();
+  runApp(const _AppBootstrap());
+}
 
-  // Suppress harmless hot-restart EngineFlutterView errors (commonly thrown by flutter_map)
+// ── Error handlers ────────────────────────────────────────────────────────────
+
+/// Suppresses harmless hot-restart errors produced by flutter_map when the
+/// EngineFlutterView is disposed before the map widget finishes painting.
+void _setupErrorHandlers() {
   final originalOnError = FlutterError.onError;
   FlutterError.onError = (FlutterErrorDetails details) {
-    if (details.exceptionAsString().contains('Trying to render a disposed EngineFlutterView')) {
+    if (details
+        .exceptionAsString()
+        .contains('Trying to render a disposed EngineFlutterView')) {
       return;
     }
-    if (originalOnError != null) {
-      originalOnError(details);
-    }
+    originalOnError?.call(details);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    if (error.toString().contains('Trying to render a disposed EngineFlutterView')) {
+    if (error
+        .toString()
+        .contains('Trying to render a disposed EngineFlutterView')) {
       return true;
     }
     return false;
   };
+}
 
-  // Firebase must be initialized before DI (some services depend on it)
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+// ── Bootstrap widget ──────────────────────────────────────────────────────────
 
-  // Initialize Analytics (non-blocking, fire-and-forget)
-  FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+/// Drives the startup sequence. Shows [_AppSplash] while
+/// [StartupService.initialize] runs, then replaces it with [Incidents].
+class _AppBootstrap extends StatefulWidget {
+  const _AppBootstrap();
 
-  // DI setup + token read can run after Firebase
-  await setup();
+  @override
+  State<_AppBootstrap> createState() => _AppBootstrapState();
+}
 
-  // Resolve auth status before building widget tree
-  final token = await SharedPreferencesHelper.getData<String>(SharedPreferenceKeys.userToken);
-  final isLoggedIn = token != null && token.toString().trim().isNotEmpty;
+class _AppBootstrapState extends State<_AppBootstrap> {
+  AppStartupResult? _result;
 
-  if (kDebugMode) {
-    stopwatch.stop();
-    debugPrint('⏱ Initialization took ${stopwatch.elapsedMilliseconds}ms');
+  @override
+  void initState() {
+    super.initState();
+    _start();
   }
 
-  runApp(Incidents(appRouter: AppRouter(), isLoggedIn: isLoggedIn));
+  Future<void> _start() async {
+    final stopwatch = Stopwatch()..start();
 
-  // Defer FCM initialization to after the first frame to reduce cold-start time.
-  // FCM token retrieval is not needed for the initial UI render.
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    FcmService.initialize();
-  });
+    final result = await StartupService.initialize();
+
+    if (kDebugMode) {
+      stopwatch.stop();
+      debugPrint('⏱ Initialization took ${stopwatch.elapsedMilliseconds}ms');
+    }
+
+    if (!mounted) return;
+
+    setState(() => _result = result);
+
+    // Defer FCM init to the first frame of the real app — token retrieval is
+    // not needed for the initial UI render and would slow the first paint.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FcmService.initialize();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = _result;
+    if (result == null) return const _AppSplash();
+    return Incidents(appRouter: AppRouter(), isLoggedIn: result.isLoggedIn);
+  }
+}
+
+// ── Splash screen ─────────────────────────────────────────────────────────────
+
+/// Shown between the native launch screen and the first real screen.
+/// Keeps the user oriented while Firebase + DI + token initialise in the
+/// background. Intentionally minimal — no heavy assets, no animations.
+class _AppSplash extends StatelessWidget {
+  const _AppSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Color(0xFFFFFFFF),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.crisis_alert_rounded,
+                size: 72,
+                color: Color(0xFF1565C0),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'إدارة الأزمات',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1565C0),
+                  decoration: TextDecoration.none,
+                ),
+              ),
+              SizedBox(height: 40),
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Color(0xFF1565C0),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -1,9 +1,10 @@
+import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'all_active_user_model.g.dart';
 
 @JsonSerializable(explicitToJson: true)
-class ActiveUser {
+class ActiveUser extends Equatable {
   @JsonKey(name: 'authority_level_id')
   final int? authorityLevelId;
 
@@ -43,7 +44,7 @@ class ActiveUser {
   @JsonKey(name: 'password')
   final String? password;
 
-  ActiveUser({
+  const ActiveUser({
     this.authorityLevelId,
     this.authorityName,
     this.empCode,
@@ -63,10 +64,27 @@ class ActiveUser {
       _$ActiveUserFromJson(json);
 
   Map<String, dynamic> toJson() => _$ActiveUserToJson(this);
+
+  @override
+  List<Object?> get props => [
+        authorityLevelId,
+        authorityName,
+        empCode,
+        empName,
+        groupId,
+        groupName,
+        isActive,
+        sectorManagementId,
+        sectorManagementName,
+        userClasses,
+        userId,
+        username,
+        password,
+      ];
 }
 
 @JsonSerializable(explicitToJson: true)
-class UserClass {
+class UserClass extends Equatable {
   @JsonKey(name: 'class_id')
   final int? classId;
 
@@ -83,7 +101,7 @@ class UserClass {
   @JsonKey(name: 'sector_management')
   final SectorManagement? sectorManagement;
 
-  UserClass({
+  const UserClass({
     this.classId,
     this.id,
     this.sectorManagementId,
@@ -95,26 +113,32 @@ class UserClass {
       _$UserClassFromJson(json);
 
   Map<String, dynamic> toJson() => _$UserClassToJson(this);
+
+  @override
+  List<Object?> get props => [classId, id, sectorManagementId, classInfo, sectorManagement];
 }
 
 @JsonSerializable()
-class ClassInfo {
+class ClassInfo extends Equatable {
   @JsonKey(name: 'class_id')
   final int? classId;
 
   @JsonKey(name: 'class_name')
   final String? className;
 
-  ClassInfo({this.classId, this.className});
+  const ClassInfo({this.classId, this.className});
 
   factory ClassInfo.fromJson(Map<String, dynamic> json) =>
       _$ClassInfoFromJson(json);
 
   Map<String, dynamic> toJson() => _$ClassInfoToJson(this);
+
+  @override
+  List<Object?> get props => [classId, className];
 }
 
 @JsonSerializable()
-class SectorManagement {
+class SectorManagement extends Equatable {
   @JsonKey(name: 'authority_level_id')
   final int? authorityLevelId;
 
@@ -139,7 +163,7 @@ class SectorManagement {
   @JsonKey(name: 'to_y_axis')
   final double? toYAxis;
 
-  SectorManagement({
+  const SectorManagement({
     this.authorityLevelId,
     this.fromXAxis,
     this.fromYAxis,
@@ -154,4 +178,16 @@ class SectorManagement {
       _$SectorManagementFromJson(json);
 
   Map<String, dynamic> toJson() => _$SectorManagementToJson(this);
+
+  @override
+  List<Object?> get props => [
+        authorityLevelId,
+        fromXAxis,
+        fromYAxis,
+        id,
+        name,
+        parentSectorManagementId,
+        toXAxis,
+        toYAxis,
+      ];
 }

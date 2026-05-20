@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 
@@ -47,6 +49,11 @@ class AuthenticatedImage extends StatelessWidget {
         return CachedNetworkImage(
           imageUrl: imageUrl,
           httpHeaders: headers,
+          // On web, HtmlImage loads via <img> URL only — custom headers are ignored.
+          // HttpGet uses the cache manager fetch path so Authorization is sent.
+          imageRenderMethodForWeb: kIsWeb && headers.isNotEmpty
+              ? ImageRenderMethodForWeb.HttpGet
+              : ImageRenderMethodForWeb.HtmlImage,
           fit: fit,
           width: width,
           height: height,

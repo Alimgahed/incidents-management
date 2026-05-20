@@ -38,7 +38,7 @@ class Incidents extends StatelessWidget {
       useInheritedMediaQuery: true,
       builder: (context, _) {
         // MediaQuery is now available because ScreenUtilInit provides it
-        final isMobile = MediaQuery.of(context).size.width < 600;
+        final isMobile = MediaQuery.sizeOf(context).width < 600;
 
         // Choose starting screen correctly based on login status and platform
         final initialRoute = isLoggedIn

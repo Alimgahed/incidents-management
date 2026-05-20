@@ -1,23 +1,27 @@
+import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'login_response_model.g.dart';
 
 @JsonSerializable()
-class LoginResponseModel {
+class LoginResponseModel extends Equatable {
   @JsonKey(name: 'current_user')
   final CurrentUser? currentUser;
   final String? token;
 
-  LoginResponseModel({this.currentUser, this.token});
+  const LoginResponseModel({this.currentUser, this.token});
 
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) =>
       _$LoginResponseModelFromJson(json);
 
   Map<String, dynamic> toJson() => _$LoginResponseModelToJson(this);
+
+  @override
+  List<Object?> get props => [currentUser, token];
 }
 
 @JsonSerializable()
-class CurrentUser {
+class CurrentUser extends Equatable {
   @JsonKey(name: 'authority_level_id')
   final int? authorityLevelId;
   @JsonKey(name: 'authority_name')
@@ -40,9 +44,9 @@ class CurrentUser {
   final int? userId;
   final String? username;
   @JsonKey(name: 'user_classes')
-  final List<dynamic>? userClasses; // Assuming it can be a list of dynamic items
+  final List<dynamic>? userClasses;
 
-  CurrentUser({
+  const CurrentUser({
     this.authorityLevelId,
     this.authorityName,
     this.empCode,
@@ -61,4 +65,20 @@ class CurrentUser {
       _$CurrentUserFromJson(json);
 
   Map<String, dynamic> toJson() => _$CurrentUserToJson(this);
+
+  @override
+  List<Object?> get props => [
+        authorityLevelId,
+        authorityName,
+        empCode,
+        empName,
+        groupId,
+        groupName,
+        isActive,
+        sectorManagementId,
+        sectorManagementName,
+        userId,
+        username,
+        userClasses,
+      ];
 }

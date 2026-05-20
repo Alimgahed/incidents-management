@@ -13,6 +13,7 @@ import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_state.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dashboard_kpi_strip.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_details.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incient_list.dart';
 
@@ -205,33 +206,48 @@ class _DashboardViewState extends State<DashboardView> {
             final allIncidents = mapState is IncidentMapLoaded
                 ? mapState.incidents
                 : <CurrentIncidentModel>[];
+            final connected = context.read<IncidentMapCubit>().isConnected;
 
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final bool isNarrow = constraints.maxWidth < 900;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                  child: DashboardKpiStrip(
+                    incidents: allIncidents,
+                    connected: connected,
+                  ),
+                ),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final bool isNarrow = constraints.maxWidth < 900;
 
-                if (isNarrow) {
-                  return Column(
-                    children: [
-                      SizedBox(
-                        height: constraints.maxWidth <= 600 ? 250 : 400,
-                        child: IncidentsList(allIncidents: allIncidents),
-                      ),
-                      const Expanded(child: IncidentDetailsPanel()),
-                    ],
-                  );
-                }
+                      if (isNarrow) {
+                        return Column(
+                          children: [
+                            SizedBox(
+                              height: constraints.maxWidth <= 600 ? 250 : 400,
+                              child: IncidentsList(allIncidents: allIncidents),
+                            ),
+                            const Expanded(child: IncidentDetailsPanel()),
+                          ],
+                        );
+                      }
 
-                return Row(
-                  children: [
-                    SizedBox(
-                      width: 80.w,
-                      child: IncidentsList(allIncidents: allIncidents),
-                    ),
-                    const Expanded(flex: 4, child: IncidentDetailsPanel()),
-                  ],
-                );
-              },
+                      return Row(
+                        children: [
+                          SizedBox(
+                            width: 80.w,
+                            child: IncidentsList(allIncidents: allIncidents),
+                          ),
+                          const Expanded(flex: 4, child: IncidentDetailsPanel()),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
             );
           },
         ),

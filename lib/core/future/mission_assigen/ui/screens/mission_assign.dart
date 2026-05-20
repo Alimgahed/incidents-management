@@ -30,7 +30,7 @@ class _MissionAssignView extends StatelessWidget {
   const _MissionAssignView({required this.incident});
 
   bool _isWideScreen(BuildContext context) =>
-      MediaQuery.of(context).size.width >= 800;
+      MediaQuery.sizeOf(context).width >= 800;
 
   List<MissionAssgienModel> _buildPayload(int missionId, Set<dynamic> users) {
     return users
@@ -903,7 +903,7 @@ class _MissionAssignView extends StatelessWidget {
                 16,
                 _isWideScreen(context)
                     ? 12
-                    : MediaQuery.of(context).padding.bottom + 12,
+                    : MediaQuery.paddingOf(context).bottom + 12,
               ),
               decoration: BoxDecoration(
                 color: Colors.white,
