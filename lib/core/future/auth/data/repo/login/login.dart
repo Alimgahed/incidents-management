@@ -4,8 +4,9 @@ import 'package:incidents_managment/core/future/auth/data/model/login_response_m
 import 'package:incidents_managment/core/network/api_error_model.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
-import 'package:incidents_managment/core/helpers/shared_preference.dart';
-import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/security/secure_storage_service.dart';
+import 'package:incidents_managment/core/security/session_manager.dart';
 
 class LoginRepo {
   final ApiService apiService;
@@ -14,12 +15,12 @@ class LoginRepo {
     try {
       final response = await apiService.login(loginModel);
 
-      // Cache token
+      // Securely cache token and current user profile
       if (response.token != null) {
-        await SharedPreferencesHelper.saveData(
-          SharedPreferenceKeys.userToken,
-          response.token!,
-        );
+        await getIt<SecureStorageService>().saveUserToken(response.token!);
+      }
+      if (response.currentUser != null) {
+        await getIt<SessionManager>().setCurrentUser(response.currentUser!);
       }
       return ApiResult.success(response);
     } on DioException catch (e) {

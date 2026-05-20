@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-Widget buildHeader(controller) {
+Widget buildHeader(dynamic controller) {
   return Container(
     padding: const EdgeInsets.all(24),
     decoration: const BoxDecoration(

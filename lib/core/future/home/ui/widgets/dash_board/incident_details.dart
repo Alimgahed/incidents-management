@@ -16,7 +16,7 @@ import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:incidents_managment/core/security/authenticated_image.dart';
 import 'package:intl/intl.dart';
 
 class IncidentDetailsPanel extends StatelessWidget {
@@ -137,13 +137,13 @@ class _EmptyIncidentState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: appColor.withOpacity(0.05),
+                color: appColor.withAlpha(13),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.inbox_outlined,
                 size: 80,
-                color: appColor.withOpacity(0.3),
+                color: appColor.withAlpha(77),
               ),
             ),
             const SizedBox(height: 24),
@@ -181,14 +181,14 @@ class _IncidentHeroHeader extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [appColor, appColor.withOpacity(0.8)],
+          colors: [appColor, appColor.withAlpha(204)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: appColor.withOpacity(0.2),
+            color: appColor.withAlpha(51),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -199,7 +199,7 @@ class _IncidentHeroHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withAlpha(51),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -302,7 +302,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withAlpha(26),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -516,7 +516,7 @@ class _StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withAlpha(26),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -587,9 +587,9 @@ class _NotesCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: warningColor.withOpacity(0.05),
+          color: warningColor.withAlpha(13),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: warningColor.withOpacity(0.2)),
+          border: Border.all(color: warningColor.withAlpha(51)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -759,7 +759,7 @@ class _MissionItem extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: appColor.withOpacity(0.1),
+              color: appColor.withAlpha(26),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(
@@ -798,7 +798,7 @@ class _MissionItem extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.12),
+                    color: statusColor.withAlpha(31),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -817,7 +817,7 @@ class _MissionItem extends StatelessWidget {
           // Change Status Button
           Container(
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.1),
+              color: accentColor.withAlpha(26),
               borderRadius: BorderRadius.circular(10),
             ),
             child: IconButton(
@@ -914,7 +914,7 @@ class _TimelineItem extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
+                  color: accentColor.withAlpha(26),
                   shape: BoxShape.circle,
                   border: Border.all(color: accentColor, width: 2),
                 ),
@@ -990,7 +990,7 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withAlpha(5),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1020,7 +1020,7 @@ class _SectionCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.1),
+                    color: accentColor.withAlpha(26),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1069,7 +1069,7 @@ void showStatusSelector(
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: appColor.withOpacity(0.1),
+                        color: appColor.withAlpha(26),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.edit, color: appColor, size: 24),
@@ -1256,7 +1256,7 @@ void showEditDialog(
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: appColor.withOpacity(0.1),
+                        color: appColor.withAlpha(26),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.edit, color: appColor, size: 24),
@@ -1410,7 +1410,7 @@ class IncidentPhotosGrid extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      color: AppTheme.primaryColor.withAlpha(26),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -1448,10 +1448,10 @@ class IncidentPhotosGrid extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentColor.withOpacity(0.1),
+                  color: AppTheme.accentColor.withAlpha(26),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppTheme.accentColor.withOpacity(0.3),
+                    color: AppTheme.accentColor.withAlpha(77),
                   ),
                 ),
                 child: Text(
@@ -1505,7 +1505,7 @@ class IncidentPhotosGrid extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppTheme.textTertiary.withOpacity(0.1),
+              color: AppTheme.textTertiary.withAlpha(26),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -1565,7 +1565,7 @@ class _PhotoGridItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withAlpha(20),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1577,11 +1577,11 @@ class _PhotoGridItem extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 // Image
-                CachedNetworkImage(
+                AuthenticatedImage(
                   imageUrl:
                       'http://172.16.0.31:5000/view-incident-photo/${photo.id}',
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
+                  placeholder: Container(
                     color: AppTheme.backgroundColor,
                     child: const Center(
                       child: CircularProgressIndicator(
@@ -1590,18 +1590,18 @@ class _PhotoGridItem extends StatelessWidget {
                       ),
                     ),
                   ),
-                  errorWidget: (context, url, error) => Container(
+                  errorWidget: Container(
                     color: AppTheme.backgroundColor,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                      children: const [
                         Icon(
                           Icons.broken_image_rounded,
                           size: 48,
                           color: AppTheme.textTertiary,
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
+                        SizedBox(height: 8),
+                        Text(
                           'فشل التحميل',
                           style: TextStyle(
                             fontSize: 12,
@@ -1622,7 +1622,7 @@ class _PhotoGridItem extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.6),
+                          Colors.black.withAlpha(153),
                         ],
                         stops: const [0.6, 1.0],
                       ),
@@ -1690,7 +1690,7 @@ class _PhotoGridItem extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withAlpha(128),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -1727,27 +1727,27 @@ class FullScreenPhotoView extends StatelessWidget {
               child: InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4.0,
-                child: CachedNetworkImage(
+                child: AuthenticatedImage(
                   imageUrl:
                       'http://172.16.0.31:5000/view-incident-photo/${photo.id}',
                   fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
+                  placeholder: const Center(
                     child: CircularProgressIndicator(color: Colors.white),
                   ),
-                  errorWidget: (context, url, error) => Center(
+                  errorWidget: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.broken_image_rounded,
                           size: 64,
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withAlpha(128),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'فشل تحميل الصورة',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withAlpha(179),
                             fontSize: 16,
                           ),
                         ),
@@ -1775,7 +1775,7 @@ class FullScreenPhotoView extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+                  colors: [Colors.black.withAlpha(179), Colors.transparent],
                 ),
               ),
               child: Row(
@@ -1784,7 +1784,7 @@ class FullScreenPhotoView extends StatelessWidget {
                   // Back button
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withAlpha(128),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -1801,7 +1801,7 @@ class FullScreenPhotoView extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withAlpha(128),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -1828,7 +1828,7 @@ class FullScreenPhotoView extends StatelessWidget {
                   // Menu button
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withAlpha(128),
                       shape: BoxShape.circle,
                     ),
                     child: PopupMenuButton<String>(
@@ -1928,7 +1928,7 @@ class FullScreenPhotoView extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
-                  colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                  colors: [Colors.black.withAlpha(204), Colors.transparent],
                 ),
               ),
               child: Column(
@@ -1967,9 +1967,9 @@ class FullScreenPhotoView extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withAlpha(26),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      border: Border.all(color: Colors.white.withAlpha(51)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -2000,9 +2000,9 @@ class FullScreenPhotoView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withAlpha(51),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        border: Border.all(color: Colors.white.withAlpha(77)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

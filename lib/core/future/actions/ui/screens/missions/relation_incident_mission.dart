@@ -129,8 +129,8 @@ class _AddIncidentMissionBodyState extends State<Addincidentmission> {
                   showDialog(
                     context: context,
                     barrierDismissible: false,
-                    builder: (dialogContext) => WillPopScope(
-                      onWillPop: () async => false,
+                    builder: (dialogContext) => PopScope(
+                      canPop: false,
                       child: const Center(child: CircularProgressIndicator()),
                     ),
                   );
@@ -492,7 +492,7 @@ class _SelectedMissionItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Colors.blue.withAlpha(77),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -516,7 +516,7 @@ class _SelectedMissionItem extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withAlpha(26),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -552,7 +552,7 @@ class _SelectedMissionItem extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withAlpha(51),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.close, color: Colors.white, size: 20),
@@ -599,8 +599,8 @@ class _MissionCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? Colors.blue.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.05),
+                  ? Colors.blue.withAlpha(51)
+                  : Colors.black.withAlpha(13),
               blurRadius: isSelected ? 8 : 4,
               offset: const Offset(0, 2),
             ),

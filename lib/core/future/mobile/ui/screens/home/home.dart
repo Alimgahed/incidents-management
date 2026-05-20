@@ -30,7 +30,8 @@ class MobileIncidentsListScreen extends StatefulWidget {
   const MobileIncidentsListScreen({super.key});
 
   @override
-  State<MobileIncidentsListScreen> createState() => _MobileIncidentsListScreenState();
+  State<MobileIncidentsListScreen> createState() =>
+      _MobileIncidentsListScreenState();
 }
 
 class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
@@ -90,8 +91,6 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
         ],
       ),
       drawer: const MobileDrawer(), // Added drawer
-
-
       // 👇 IMPORTANT: Listen to BOTH cubits
       body: BlocBuilder<IncidentMapCubit, IncidentMapState>(
         builder: (context, incidentState) {
@@ -107,59 +106,68 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                 incidents,
               );
 
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: Column(
-                children: [
-                  /// Stats Card (show filtered count)
-                  RepaintBoundary(
-                    child: _MobileStatsCard(totalIncidents: filteredIncidents.length),
-                  ),
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: Column(
+                    children: [
+                      /// Stats Card (show filtered count)
+                      RepaintBoundary(
+                        child: _MobileStatsCard(
+                          totalIncidents: filteredIncidents.length,
+                        ),
+                      ),
 
-                  /// List
-                  Expanded(
-                    child: filteredIncidents.isEmpty
-                        ? _EmptyStateWidget()
-                        : ListView.builder(
-                            addAutomaticKeepAlives: false,
-                            addRepaintBoundaries: true,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            itemCount: filteredIncidents.length,
-                            itemBuilder: (context, index) {
-                              final incident = filteredIncidents[index];
-
-                              return RepaintBoundary(
-                                child: _MobileIncidentCard(
-                                  incident: incident,
-                                  onTap: () {
-                                    incidentID = incident.currentIncidentId ?? 0;
-
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => MultiBlocProvider(
-                                          providers: [
-                                            BlocProvider.value(value: dashboardCubit),
-                                            BlocProvider.value(value: context.read<IncidentMapCubit>()),
-                                          ],
-                                          child: const MobileIncidentDetailsScreen(),
-                                        ),
-                                      ),
-                                    );
-                                  },
+                      /// List
+                      Expanded(
+                        child: filteredIncidents.isEmpty
+                            ? _EmptyStateWidget()
+                            : ListView.builder(
+                                addAutomaticKeepAlives: false,
+                                addRepaintBoundaries: true,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
                                 ),
-                              );
-                            },
-                          ),
+                                itemCount: filteredIncidents.length,
+                                itemBuilder: (context, index) {
+                                  final incident = filteredIncidents[index];
+
+                                  return RepaintBoundary(
+                                    child: _MobileIncidentCard(
+                                      incident: incident,
+                                      onTap: () {
+                                        incidentID =
+                                            incident.currentIncidentId ?? 0;
+
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => MultiBlocProvider(
+                                              providers: [
+                                                BlocProvider.value(
+                                                  value: dashboardCubit,
+                                                ),
+                                                BlocProvider.value(
+                                                  value: context
+                                                      .read<IncidentMapCubit>(),
+                                                ),
+                                              ],
+                                              child:
+                                                  const MobileIncidentDetailsScreen(),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          );
+                ),
+              );
             },
           );
         },
@@ -211,14 +219,14 @@ class _MobileStatsCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [appColor, appColor.withOpacity(0.8)],
+          colors: [appColor, appColor.withAlpha(204)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: appColor.withOpacity(0.3),
+            color: appColor.withAlpha(77),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -229,7 +237,7 @@ class _MobileStatsCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withAlpha(51),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -311,7 +319,7 @@ class _MobileIncidentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -333,7 +341,7 @@ class _MobileIncidentCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: getSeverityColor(severity).withOpacity(0.1),
+                        color: getSeverityColor(severity).withAlpha(26),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -398,10 +406,10 @@ class _MobileIncidentCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: getSeverityColor(severity).withOpacity(0.15),
+                        color: getSeverityColor(severity).withAlpha(38),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: getSeverityColor(severity).withOpacity(0.3),
+                          color: getSeverityColor(severity).withAlpha(77),
                         ),
                       ),
                       child: Row(
@@ -481,13 +489,13 @@ class _EmptyStateWidget extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: appColor.withOpacity(0.05),
+              color: appColor.withAlpha(13),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.inbox_outlined,
               size: 80,
-              color: appColor.withOpacity(0.3),
+              color: appColor.withAlpha(77),
             ),
           ),
           const SizedBox(height: 24),
@@ -693,7 +701,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
             fontWeight: FontWeight.w600,
             color: isSelected ? Colors.white : color,
           ),
-          backgroundColor: color.withOpacity(0.1),
+          backgroundColor: color.withAlpha(26),
           selectedColor: color,
           checkmarkColor: Colors.white,
           onSelected: (selected) {
@@ -742,7 +750,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
             fontWeight: FontWeight.w600,
             color: isSelected ? Colors.white : color,
           ),
-          backgroundColor: color.withOpacity(0.1),
+          backgroundColor: color.withAlpha(26),
           selectedColor: color,
           checkmarkColor: Colors.white,
           onSelected: (selected) {
@@ -856,8 +864,8 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
           BlocListener<DashboardCubit, DashboardState>(
             listenWhen: (_, state) => state.maybeWhen(
               error: (_) => true,
-              updateRequested: (_, __, ___) => true,
-              missionUpdateRequested: (_, __, ___) => true,
+              updateRequested: (_, _, _) => true,
+              missionUpdateRequested: (_, _, _) => true,
               orElse: () => false,
             ),
             listener: (context, state) {
@@ -1078,10 +1086,10 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: warningColor.withOpacity(0.1),
+                                color: warningColor.withAlpha(26),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: warningColor.withOpacity(0.3),
+                                  color: warningColor.withAlpha(77),
                                 ),
                               ),
                               child: Row(
@@ -1169,7 +1177,7 @@ class _MobileSliverAppBar extends StatelessWidget {
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [appColor, appColor.withOpacity(0.8)],
+              colors: [appColor, appColor.withAlpha(204)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -1186,7 +1194,7 @@ class _MobileSliverAppBar extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withAlpha(51),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -1417,7 +1425,7 @@ class _QuickActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1435,7 +1443,7 @@ class _QuickActionButton extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withAlpha(26),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, color: color, size: 24),
@@ -1567,7 +1575,7 @@ class _MobileStatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1581,7 +1589,7 @@ class _MobileStatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withAlpha(26),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -1637,7 +1645,7 @@ class _MobileSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1667,7 +1675,7 @@ class _MobileSection extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.1),
+                    color: accentColor.withAlpha(26),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1749,7 +1757,7 @@ class _MobileMissionItem extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: appColor.withOpacity(0.1),
+              color: appColor.withAlpha(26),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
@@ -1787,7 +1795,7 @@ class _MobileMissionItem extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withAlpha(26),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -1876,7 +1884,7 @@ class _MobileMetadataRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.1),
+            color: accentColor.withAlpha(26),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 18, color: accentColor),
@@ -1972,7 +1980,7 @@ class _MobileTimelineItem extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
+                  color: accentColor.withAlpha(26),
                   shape: BoxShape.circle,
                   border: Border.all(color: accentColor, width: 2),
                 ),

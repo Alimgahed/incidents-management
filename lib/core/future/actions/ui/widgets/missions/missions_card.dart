@@ -22,7 +22,7 @@ class MissionCard extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade200, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(10),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -36,7 +36,7 @@ class MissionCard extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: appColor.withOpacity(0.1),
+                color: appColor.withAlpha(26),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Center(child: Icon(Icons.tag_sharp)),

@@ -106,7 +106,7 @@ class FileUploadScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.3),
+            color: AppTheme.primaryColor.withAlpha(77),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -117,7 +117,7 @@ class FileUploadScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withAlpha(51),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -138,7 +138,7 @@ class FileUploadScreen extends StatelessWidget {
           Text(
             'شارك الصور بشكل آمن',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withAlpha(230),
             ),
           ),
         ],
@@ -219,10 +219,10 @@ class FileUploadScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: AppTheme.successColor.withOpacity(0.1),
+              color: AppTheme.successColor.withAlpha(26),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppTheme.successColor.withOpacity(0.3),
+                color: AppTheme.successColor.withAlpha(77),
                 width: 2,
               ),
             ),
@@ -273,10 +273,10 @@ class FileUploadScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: AppTheme.errorColor.withOpacity(0.1),
+              color: AppTheme.errorColor.withAlpha(26),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppTheme.errorColor.withOpacity(0.3),
+                color: AppTheme.errorColor.withAlpha(77),
                 width: 2,
               ),
             ),

@@ -13,6 +13,42 @@ class FileUploadCubit extends Cubit<FileUploadState> {
     : super(const FileUploadState.initial());
 
   /// ==========================
+  /// File Validation Helper (Extension & Size constraints)
+  /// ==========================
+  bool _validateFile(String fileName, int fileSize) {
+    final extension = fileName.split('.').last.toLowerCase();
+    
+    // 1. Limit file size to 10MB
+    const int maxBytes = 10 * 1024 * 1024;
+    if (fileSize > maxBytes) {
+      emit(const FileUploadState.uploadError(
+        error: 'حجم الملف يتجاوز الحد الأقصى المسموح به (10 ميجابايت).',
+      ));
+      return false;
+    }
+
+    // 2. Allowed extensions
+    const allowed = ['jpg', 'jpeg', 'png', 'pdf'];
+    if (!allowed.contains(extension)) {
+      emit(const FileUploadState.uploadError(
+        error: 'نوع الملف غير مدعوم. المسموح به فقط: JPG, JPEG, PNG, PDF.',
+      ));
+      return false;
+    }
+
+    // 3. Explicitly reject malicious scripts and large archives
+    const rejected = ['exe', 'php', 'sh', 'js', 'zip', 'apk'];
+    if (rejected.contains(extension)) {
+      emit(const FileUploadState.uploadError(
+        error: 'نوع الملف مرفوض لدواعي أمنية.',
+      ));
+      return false;
+    }
+
+    return true;
+  }
+
+  /// ==========================
   /// Pick Any File
   /// ==========================
   Future<void> pickFile() async {
@@ -26,6 +62,10 @@ class FileUploadCubit extends Cubit<FileUploadState> {
         final fileName = result.files.single.name;
         final fileSize = await file.length();
         final fileExtension = fileName.split('.').last;
+
+        if (!_validateFile(fileName, fileSize)) {
+          return;
+        }
 
         emit(
           FileUploadState.fileSelected(
@@ -57,6 +97,10 @@ class FileUploadCubit extends Cubit<FileUploadState> {
         final fileName = image.name;
         final fileSize = await file.length();
         final fileExtension = fileName.split('.').last;
+
+        if (!_validateFile(fileName, fileSize)) {
+          return;
+        }
 
         emit(
           FileUploadState.fileSelected(

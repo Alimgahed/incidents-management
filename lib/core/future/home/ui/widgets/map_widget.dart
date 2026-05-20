@@ -20,11 +20,12 @@ class IncidentsMapScreen extends StatefulWidget {
 
 class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
   final MapController _mapController = MapController();
-  String _selectedFilter = 'الكل';
+  final ValueNotifier<String> _filterNotifier = ValueNotifier<String>('الكل');
   List<CurrentIncidentModel> _cachedIncidents = [];
 
   @override
   void dispose() {
+    _filterNotifier.dispose();
     _mapController.dispose();
     super.dispose();
   }
@@ -204,7 +205,10 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildFilterChips(),
+          ValueListenableBuilder<String>(
+        valueListenable: _filterNotifier,
+        builder: (context, value, child) => _buildFilterChips(),
+      ),
         ],
       ),
     );
@@ -219,8 +223,8 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isConnected
-              ? Colors.green.withOpacity(0.1)
-              : Colors.red.withOpacity(0.1),
+              ? Colors.green.withAlpha(26)
+              : Colors.red.withAlpha(26),
           shape: BoxShape.circle,
         ),
         child: Icon(
@@ -236,9 +240,9 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF2C5F8D).withOpacity(0.1),
+        color: const Color(0xFF2C5F8D).withAlpha(26),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF2C5F8D).withOpacity(0.3)),
+        border: Border.all(color: const Color(0xFF2C5F8D).withAlpha(77)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -274,12 +278,12 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
     return Wrap(
       spacing: 8,
       children: filters.map((filter) {
-        final isSelected = _selectedFilter == filter;
+        final isSelected = _filterNotifier.value == filter;
         return FilterChip(
           label: Text(filter),
           selected: isSelected,
           onSelected: (_) {
-            setState(() => _selectedFilter = filter);
+            _filterNotifier.value = filter;
           },
           backgroundColor: Colors.grey[200],
           selectedColor: const Color(0xFF2C5F8D),
@@ -301,21 +305,23 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
 
     return Stack(
       children: [
-        FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: LatLng(28.0871, 30.7618),
-            initialZoom: 10,
-            minZoom: 3,
-            maxZoom: 18,
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.crisis_management',
+        RepaintBoundary(
+          child: FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: LatLng(28.0871, 30.7618),
+              initialZoom: 10,
+              minZoom: 3,
+              maxZoom: 18,
             ),
-            if (markers.isNotEmpty) MarkerLayer(markers: markers),
-          ],
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.crisis_management',
+              ),
+              if (markers.isNotEmpty) MarkerLayer(markers: markers),
+            ],
+          ),
         ),
         if (filteredIncidents.isEmpty)
           Center(
@@ -354,12 +360,12 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
   List<CurrentIncidentModel> _getFilteredIncidents(
     List<CurrentIncidentModel> incidents,
   ) {
-    if (_selectedFilter == 'الكل') {
+    if (_filterNotifier.value == 'الكل') {
       return incidents;
     }
 
     const severityMap = {'حرجة': 4, 'عالية': 3, 'متوسطة': 2, 'منخفضة': 1};
-    final targetSeverity = severityMap[_selectedFilter];
+    final targetSeverity = severityMap[_filterNotifier.value];
 
     return incidents
         .where((i) => i.currentIncidentSeverity == targetSeverity)
@@ -407,7 +413,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(0.3),
+              color: color.withAlpha(77),
             ),
           ),
         Center(
@@ -419,7 +425,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.5),
+                  color: color.withAlpha(128),
                   blurRadius: 8,
                   spreadRadius: 2,
                 ),
@@ -766,7 +772,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: _getStatusColor(status).withOpacity(0.1),
+            color: _getStatusColor(status).withAlpha(26),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -816,7 +822,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getSeverityColor(severity).withOpacity(0.2),
+                      color: _getSeverityColor(severity).withAlpha(51),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: _getSeverityColor(severity)),
                     ),
@@ -965,7 +971,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
         boxShadow: [
           if (isCompleted)
             BoxShadow(
-              color: Colors.green.withOpacity(0.1),
+              color: Colors.green.withAlpha(26),
               blurRadius: 4,
               spreadRadius: 1,
             ),
@@ -1021,8 +1027,8 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: isCompleted
-                  ? Colors.green.withOpacity(0.1)
-                  : Colors.orange.withOpacity(0.1),
+                  ? Colors.green.withAlpha(26)
+                  : Colors.orange.withAlpha(26),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isCompleted ? Colors.green : Colors.orange,

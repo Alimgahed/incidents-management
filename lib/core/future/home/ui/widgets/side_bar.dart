@@ -10,8 +10,9 @@ import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_states.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
-import 'package:incidents_managment/core/helpers/shared_preference.dart';
-import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
+
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/security/session_manager.dart';
 
 Widget buildSidebar(BuildContext context) {
   return Container(
@@ -190,17 +191,20 @@ class _UserProfileWidgetState extends State<UserProfileWidget> {
   }
 
   Future<void> _checkLoginStatus() async {
-    final token = await SharedPreferencesHelper.getData<String>(
-        SharedPreferenceKeys.userToken);
+    final isLoggedIn = await getIt<SessionManager>().isLoggedIn();
     if (mounted) {
       setState(() {
-        _isLoggedIn = token != null && token.isNotEmpty;
+        _isLoggedIn = isLoggedIn;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = getIt<SessionManager>().getCurrentUser();
+    final name = currentUser?.empName ?? currentUser?.username ?? 'المسؤول';
+    final role = currentUser?.authorityName ?? 'مشرف';
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -220,18 +224,18 @@ class _UserProfileWidgetState extends State<UserProfileWidget> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  'المسؤول',
-                  style: TextStyle(
+                  name,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
                 ),
                 Text(
-                  'مشرف',
-                  style: TextStyle(color: Colors.white70, fontSize: 10),
+                  role,
+                  style: const TextStyle(color: Colors.white70, fontSize: 10),
                 ),
               ],
             ),
@@ -345,18 +349,7 @@ class _UserProfileWidgetState extends State<UserProfileWidget> {
                         ElevatedButton(
                           onPressed: () async {
                             Navigator.pop(dialogContext);
-                            await SharedPreferencesHelper.removeData(
-                                SharedPreferenceKeys.userToken);
-                            _checkLoginStatus(); // Update state to logged out
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('تم تسجيل الخروج بنجاح', style: TextStyle(color: Colors.white)),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                              context.pushNamedAndRemoveUntil(Routes.login);
-                            }
+                            await getIt<SessionManager>().logout();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,

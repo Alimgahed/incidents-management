@@ -27,7 +27,7 @@ class FilePreviewCard extends StatelessWidget {
         border: Border.all(color: AppTheme.borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -62,7 +62,7 @@ class FilePreviewCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withOpacity(0.1),
+                            color: AppTheme.primaryColor.withAlpha(26),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -78,7 +78,7 @@ class FilePreviewCard extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentColor.withOpacity(0.2),
+                            color: AppTheme.accentColor.withAlpha(51),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -223,7 +223,7 @@ class UploadProgressCard extends StatelessWidget {
         border: Border.all(color: AppTheme.borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -249,7 +249,7 @@ class UploadProgressCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.accentColor.withOpacity(0.3),
+                        color: AppTheme.accentColor.withAlpha(77),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -489,7 +489,7 @@ class UploadButtonSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: gradientColors[0].withOpacity(0.3),
+                color: gradientColors[0].withAlpha(77),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -502,7 +502,7 @@ class UploadButtonSection extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withAlpha(77),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(icon, size: 32, color: Colors.white),
@@ -524,7 +524,7 @@ class UploadButtonSection extends StatelessWidget {
                       Text(
                         subtitle,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withAlpha(230),
                           fontSize: 13,
                         ),
                       ),
@@ -534,7 +534,7 @@ class UploadButtonSection extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withAlpha(51),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

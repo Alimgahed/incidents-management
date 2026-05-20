@@ -75,7 +75,7 @@ class IncidentCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: getSeverityColor(severity).withOpacity(0.2),
+                        color: getSeverityColor(severity).withAlpha(51),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -146,7 +146,7 @@ class IncidentsList extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withAlpha(13),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -157,22 +157,22 @@ class IncidentsList extends StatelessWidget {
             child: Column(
               children: [
                 DashboardListHeader(count: incidents.length),
-                Divider(),
+                const Divider(),
                 Expanded(
                   child: ListView.builder(
+                    cacheExtent: 500,
                     padding: const EdgeInsets.all(8),
                     itemCount: incidents.length,
-
                     itemBuilder: (context, index) {
                       final incident = incidents[index];
-                      final isSelected =
-                          cubit.selectedIncident?.currentIncidentId ==
-                          incident.currentIncidentId;
-
-                      return IncidentCard(
-                        incident: incident,
-                        isSelected: isSelected,
-                        onTap: () => cubit.selectIncident(incident),
+                      final isSelected = cubit.selectedIncident?.currentIncidentId == incident.currentIncidentId;
+                      return RepaintBoundary(
+                        key: ValueKey(incident.currentIncidentId),
+                        child: IncidentCard(
+                          incident: incident,
+                          isSelected: isSelected,
+                          onTap: () => cubit.selectIncident(incident),
+                        ),
                       );
                     },
                   ),

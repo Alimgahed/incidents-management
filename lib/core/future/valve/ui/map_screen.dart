@@ -247,8 +247,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
               radius: 100,
               useRadiusInMeter: true,
               color: valve.id == alertValveId
-                  ? Colors.red.withOpacity(0.35)
-                  : Colors.blue.withOpacity(0.15),
+                  ? Colors.red.withAlpha(89)
+                  : Colors.blue.withAlpha(38),
               borderStrokeWidth: 2,
               borderColor:
                   valve.id == alertValveId ? Colors.red : Colors.blue,
@@ -306,7 +306,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
+                            color: Colors.blue.withAlpha(26),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.water_drop, color: Colors.blue, size: 32),
@@ -336,8 +336,8 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: (valve.status == 'Good' || valve.status == 'جيد')
-                                  ? Colors.green.withOpacity(0.1)
-                                  : Colors.orange.withOpacity(0.1),
+                                  ? Colors.green.withAlpha(26)
+                                  : Colors.orange.withAlpha(26),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(

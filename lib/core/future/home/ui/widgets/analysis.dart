@@ -250,7 +250,7 @@ class _WaterCompanyAnalyticsDashboardState
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withAlpha(51),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -468,7 +468,7 @@ class _WaterCompanyAnalyticsDashboardState
         border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(10),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -1017,7 +1017,7 @@ class _WaterCompanyAnalyticsDashboardState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Colors.blue.withAlpha(77),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),

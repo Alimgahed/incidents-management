@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:incidents_managment/core/helpers/shared_preference.dart';
-import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/security/session_manager.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 
@@ -21,11 +21,10 @@ class _MobileDrawerState extends State<MobileDrawer> {
   }
 
   Future<void> _checkLoginStatus() async {
-    final token = await SharedPreferencesHelper.getData<String>(
-        SharedPreferenceKeys.userToken);
+    final isLoggedIn = await getIt<SessionManager>().isLoggedIn();
     if (mounted) {
       setState(() {
-        _isLoggedIn = token != null && token.isNotEmpty;
+        _isLoggedIn = isLoggedIn;
       });
     }
   }
@@ -133,7 +132,7 @@ class _MobileDrawerState extends State<MobileDrawer> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withAlpha(38),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.shield_rounded, color: Colors.white, size: 32),
@@ -161,7 +160,7 @@ class _MobileDrawerState extends State<MobileDrawer> {
     Color color = Colors.white,
   }) {
     return ListTile(
-      leading: Icon(icon, color: color.withOpacity(0.8), size: 24),
+      leading: Icon(icon, color: color.withAlpha(204), size: 24),
       title: Text(
         label,
         style: TextStyle(
@@ -172,40 +171,44 @@ class _MobileDrawerState extends State<MobileDrawer> {
       ),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      hoverColor: Colors.white.withOpacity(0.1),
+      hoverColor: Colors.white.withAlpha(26),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     );
   }
 
   Widget _buildFooter() {
+    final currentUser = getIt<SessionManager>().getCurrentUser();
+    final name = currentUser?.empName ?? currentUser?.username ?? 'المسؤول';
+    final role = currentUser?.authorityName ?? 'مشرف النظام';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.black12,
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
+        border: Border(top: BorderSide(color: Colors.white.withAlpha(26))),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: Colors.white.withOpacity(0.2),
+            backgroundColor: Colors.white.withAlpha(51),
             child: const Icon(Icons.person, color: Colors.white),
           ),
           const SizedBox(width: 12),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'المسؤول',
-                style: TextStyle(
+                name,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
               ),
               Text(
-                'مشرف النظام',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
+                role,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ],
           ),
@@ -235,10 +238,7 @@ class _MobileDrawerState extends State<MobileDrawer> {
     );
 
     if (confirmed == true) {
-      await SharedPreferencesHelper.removeData(SharedPreferenceKeys.userToken);
-      if (context.mounted) {
-        context.pushNamedAndRemoveUntil(Routes.login);
-      }
+      await getIt<SessionManager>().logout();
     }
   }
 }

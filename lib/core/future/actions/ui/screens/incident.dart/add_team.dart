@@ -403,7 +403,7 @@ class _MiniaWaterMapScreenState extends State<MiniaWaterMapScreen> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withAlpha(77),
                                     blurRadius: 4,
                                     offset: Offset(0, 2),
                                   ),
@@ -432,7 +432,7 @@ class _MiniaWaterMapScreenState extends State<MiniaWaterMapScreen> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withAlpha(26),
                           blurRadius: 8,
                           offset: Offset(0, 2),
                         ),
@@ -483,9 +483,9 @@ class _MiniaWaterMapScreenState extends State<MiniaWaterMapScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withAlpha(26),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withAlpha(77)),
       ),
       child: Column(
         children: [

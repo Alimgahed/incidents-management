@@ -239,7 +239,7 @@ class _MissionAssignView extends StatelessWidget {
       iconTheme: const IconThemeData(color: Colors.white),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: Colors.white.withOpacity(0.15)),
+        child: Container(height: 1, color: Colors.white.withAlpha(38)),
       ),
     );
   }
@@ -257,7 +257,7 @@ class _MissionAssignView extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: appColor.withOpacity(0.3),
+            color: appColor.withAlpha(77),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -268,7 +268,7 @@ class _MissionAssignView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withAlpha(38),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -396,7 +396,7 @@ class _MissionAssignView extends StatelessWidget {
                     boxShadow: isActive
                         ? [
                             BoxShadow(
-                              color: appColor.withOpacity(0.25),
+                              color: appColor.withAlpha(64),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -423,8 +423,8 @@ class _MissionAssignView extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: isActive
-                                ? Colors.white.withOpacity(0.25)
-                                : buttonColor.withOpacity(0.15),
+                                ? Colors.white.withAlpha(64)
+                                : buttonColor.withAlpha(38),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -528,7 +528,7 @@ class _MissionAssignView extends StatelessWidget {
                           boxShadow: isActive
                               ? [
                                   BoxShadow(
-                                    color: appColor.withOpacity(0.25),
+                                    color: appColor.withAlpha(64),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -805,7 +805,7 @@ class _MissionAssignView extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isSelected ? appColor.withOpacity(0.05) : Colors.white,
+        color: isSelected ? appColor.withAlpha(13) : Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isSelected ? appColor : borderColor,
@@ -814,7 +814,7 @@ class _MissionAssignView extends StatelessWidget {
         boxShadow: isSelected
             ? [
                 BoxShadow(
-                  color: appColor.withOpacity(0.08),
+                  color: appColor.withAlpha(20),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -830,7 +830,7 @@ class _MissionAssignView extends StatelessWidget {
             CircleAvatar(
               backgroundColor: isSelected
                   ? appColor
-                  : appColor.withOpacity(0.1),
+                  : appColor.withAlpha(26),
               radius: 22,
               child: Text(
                 (user.empName?[0] ?? "").toUpperCase(),
@@ -909,7 +909,7 @@ class _MissionAssignView extends StatelessWidget {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withAlpha(15),
                     blurRadius: 12,
                     offset: const Offset(0, -3),
                   ),
@@ -970,7 +970,7 @@ class _MissionAssignView extends StatelessWidget {
                         disabledBackgroundColor: Colors.grey.shade300,
                         disabledForegroundColor: Colors.grey,
                         elevation: canAssign ? 4 : 0,
-                        shadowColor: appColor.withOpacity(0.3),
+                        shadowColor: appColor.withAlpha(77),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 14,
@@ -1027,7 +1027,7 @@ class _MissionAssignView extends StatelessWidget {
         children: [
           Icon(
             Icons.touch_app_rounded,
-            color: appColor.withOpacity(0.3),
+            color: appColor.withAlpha(77),
             size: 64,
           ),
           const SizedBox(height: 12),
@@ -1118,9 +1118,9 @@ class _ConfirmDialog extends StatelessWidget {
                                     u.empName ?? '',
                                     style: const TextStyle(fontSize: 11),
                                   ),
-                                  backgroundColor: buttonColor.withOpacity(0.1),
+                                  backgroundColor: buttonColor.withAlpha(26),
                                   side: BorderSide(
-                                    color: buttonColor.withOpacity(0.3),
+                                    color: buttonColor.withAlpha(77),
                                   ),
                                   padding: EdgeInsets.zero,
                                   materialTapTargetSize:

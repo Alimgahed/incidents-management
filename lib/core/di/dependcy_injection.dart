@@ -40,10 +40,19 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cub
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
 import 'package:incidents_managment/core/network/dio_factory.dart';
+import 'package:incidents_managment/core/security/secure_storage_service.dart';
+import 'package:incidents_managment/core/security/session_manager.dart';
 
 final getIt = GetIt.instance;
 
 Future<void> setup() async {
+  // Security Services
+  getIt.registerLazySingleton<SecureStorageService>(() => SecureStorageService());
+  getIt.registerLazySingleton<SessionManager>(() => SessionManager());
+  
+  // File Upload Repository
+  getIt.registerLazySingleton<FileUploadRepository>(() => FileUploadRepository());
+
   // Core Services
   Dio dio = DioFactory.getDioInstance();
   getIt.registerLazySingleton<ApiService>(() => ApiService(dio));

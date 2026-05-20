@@ -109,7 +109,7 @@ class _SearchAndFilterBarState extends State<_SearchAndFilterBar> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -170,9 +170,9 @@ class _SearchAndFilterBarState extends State<_SearchAndFilterBar> {
             height: 56,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: appColor.withOpacity(0.1),
+              color: appColor.withAlpha(26),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: appColor.withOpacity(0.3), width: 1.5),
+              border: Border.all(color: appColor.withAlpha(77), width: 1.5),
             ),
             child: IconButton(
               icon: Icon(Icons.filter_list, color: appColor),

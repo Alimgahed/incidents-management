@@ -66,8 +66,8 @@ class _DashboardViewState extends State<DashboardView> {
           BlocListener<DashboardCubit, DashboardState>(
             listenWhen: (_, state) => state.maybeWhen(
               error: (_) => true,
-              updateRequested: (_, __, ___) => true,
-              missionUpdateRequested: (_, __, ___) => true,
+              updateRequested: (_, _, _) => true,
+              missionUpdateRequested: (_, _, _) => true,
               orElse: () => false,
             ),
             listener: (context, state) {

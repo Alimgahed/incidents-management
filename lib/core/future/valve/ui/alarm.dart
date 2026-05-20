@@ -26,7 +26,7 @@ class AlarmBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.4),
+            color: Colors.red.withAlpha(102),
             blurRadius: 12,
             spreadRadius: 2,
           ),

@@ -19,7 +19,7 @@ class Globalheader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: appColor.withOpacity(0.1),
+            color: appColor.withAlpha(26),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: appColor, size: 20),
@@ -161,7 +161,7 @@ class ErrorDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withAlpha(26),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -335,9 +335,9 @@ class Error extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.05),
+        color: Colors.red.withAlpha(13),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red.withOpacity(0.2)),
+        border: Border.all(color: Colors.red.withAlpha(51)),
       ),
       child: const Row(
         children: [
@@ -399,7 +399,7 @@ class SuccessDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withAlpha(26),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -511,7 +511,7 @@ class CustomFloatingButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             boxShadow: [
               BoxShadow(
-                color: appColor.withOpacity(0.4),
+                color: appColor.withAlpha(102),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),

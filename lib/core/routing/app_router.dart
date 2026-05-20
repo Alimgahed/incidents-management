@@ -37,10 +37,52 @@ import 'package:incidents_managment/core/future/mobile/ui/screens/home/home.dart
 import 'package:incidents_managment/core/future/valve/logic/cubit/valve_cubit.dart';
 import 'package:incidents_managment/core/future/valve/ui/map_screen.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
+import 'package:incidents_managment/core/security/access_denied_screen.dart';
+import 'package:incidents_managment/core/security/session_manager.dart';
 
 class AppRouter {
   Route generateRoute(RouteSettings settings) {
+    // 1. Resolve SessionManager
+    final sessionManager = getIt<SessionManager>();
+    
+    // 2. Define public routes that do NOT require authentication
+    final publicRoutes = [Routes.login];
+
+    // 3. Force redirection to Login if user has no active session
+    final hasSession = sessionManager.getCurrentUser() != null;
+    if (!hasSession && !publicRoutes.contains(settings.name)) {
+      return MaterialPageRoute(
+        builder: (_) => BlocProvider(
+          create: (context) => getIt<LoginCubit>(),
+          child: const LoginScreen(),
+        ),
+      );
+    }
+
+    // 4. Define administrative/supervisor routes that require supervisor role
+    final supervisorRoutes = [
+      Routes.addIncidentType,
+      Routes.addMissions,
+      Routes.allMissions,
+      Routes.addIncidentMission,
+      Routes.allIncidentType,
+      Routes.editMissions,
+      Routes.missionAssign,
+      Routes.registration,
+    ];
+
+    if (supervisorRoutes.contains(settings.name)) {
+      final isAuthorized = sessionManager.isSupervisorOrAdmin();
+      if (!isAuthorized) {
+        return MaterialPageRoute(
+          builder: (_) => const AccessDeniedScreen(),
+        );
+      }
+    }
+
     switch (settings.name) {
+      case Routes.accessDenied:
+        return MaterialPageRoute(builder: (_) => const AccessDeniedScreen());
       case Routes.addIncident:
         return MaterialPageRoute(
           builder: (_) => MultiBlocProvider(

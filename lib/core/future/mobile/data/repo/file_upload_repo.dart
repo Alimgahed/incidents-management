@@ -1,11 +1,8 @@
 import 'dart:io';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 
 class FileUploadRepository {
-  // Replace with your actual server IP and port
-  static const String baseUrl = 'http://172.16.0.31:5000';
-
   /// ==============================
   /// Upload Single Incident Photo
   /// ==============================
@@ -19,45 +16,48 @@ class FileUploadRepository {
     required double yAxis, // latitude
   }) async {
     try {
-      var uri = Uri.parse('$baseUrl/upload-incident-photo/$incidentId');
+      final dio = getIt<Dio>();
 
-      var request = http.MultipartRequest('POST', uri);
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('ملف الصورة غير موجود على الجهاز.');
+      }
 
-      // Text fields
-      request.fields['description'] = description;
-      request.fields['x_axis'] = xAxis.toString();
-      request.fields['y_axis'] = yAxis.toString();
+      final formData = FormData.fromMap({
+        'description': description,
+        'x_axis': xAxis.toString(),
+        'y_axis': yAxis.toString(),
+        'photo': await MultipartFile.fromFile(filePath, filename: fileName),
+      });
 
-      // File
-      request.files.add(await http.MultipartFile.fromPath('photo', filePath));
-
-      onProgress(0.3);
-
-      var streamedResponse = await request.send();
-      onProgress(0.7);
-
-      var response = await http.Response.fromStream(streamedResponse);
-      onProgress(1.0);
+      final response = await dio.post(
+        '/upload-incident-photo/$incidentId',
+        data: formData,
+        onSendProgress: (sent, total) {
+          if (total > 0) {
+            onProgress(sent / total);
+          }
+        },
+      );
 
       if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
         return {
           'success': true,
-          'message': 'Upload success',
-          'data': responseData,
+          'message': 'تم رفع الملف بنجاح',
+          'data': response.data,
           'statusCode': response.statusCode,
         };
       } else {
-        throw Exception('Upload failed with status: ${response.statusCode}');
+        throw Exception('فشل الرفع برمز الحالة: ${response.statusCode}');
       }
-    } on SocketException {
-      throw Exception('No internet connection. Please check your network.');
-    } on http.ClientException {
-      throw Exception('Connection error. Please try again.');
-    } on FormatException {
-      throw Exception('Invalid response from server.');
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+        throw Exception('انتهت مهلة الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+      }
+      final errorMsg = e.response?.data?['error'] ?? e.response?.data?['message'] ?? e.message;
+      throw Exception('فشل الرفع: $errorMsg');
     } catch (e) {
-      throw Exception('Upload failed: $e');
+      throw Exception('فشل الرفع: $e');
     }
   }
 
@@ -74,53 +74,62 @@ class FileUploadRepository {
     required double yAxis,
   }) async {
     try {
-      var uri = Uri.parse('$baseUrl/upload-incident-photo/$incidentId');
-      var request = http.MultipartRequest('POST', uri);
+      final dio = getIt<Dio>();
 
-      // Text fields
-      request.fields['description'] = description;
-      request.fields['user_id'] = userId.toString();
-      request.fields['x_axis'] = xAxis.toString();
-      request.fields['y_axis'] = yAxis.toString();
-
-      // Add multiple files
-      for (int i = 0; i < filePaths.length; i++) {
-        request.files.add(
-          await http.MultipartFile.fromPath('photo', filePaths[i]),
-        );
-
-        onProgress((i + 1) / (filePaths.length * 2));
+      final List<MultipartFile> files = [];
+      for (var path in filePaths) {
+        final file = File(path);
+        if (await file.exists()) {
+          final name = path.split('/').last;
+          files.add(await MultipartFile.fromFile(path, filename: name));
+        }
       }
 
-      var streamedResponse = await request.send();
-      onProgress(0.75);
+      if (files.isEmpty) {
+        throw Exception('قائمة الملفات المحددة فارغة أو غير صالحة.');
+      }
 
-      var response = await http.Response.fromStream(streamedResponse);
-      onProgress(1.0);
+      final formData = FormData.fromMap({
+        'description': description,
+        'user_id': userId.toString(),
+        'x_axis': xAxis.toString(),
+        'y_axis': yAxis.toString(),
+        'photo': files,
+      });
+
+      final response = await dio.post(
+        '/upload-incident-photo/$incidentId',
+        data: formData,
+        onSendProgress: (sent, total) {
+          if (total > 0) {
+            onProgress(sent / total);
+          }
+        },
+      );
 
       if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
         return {
           'success': true,
-          'message': 'Multiple files uploaded successfully',
-          'data': responseData,
+          'message': 'تم رفع الملفات بنجاح',
+          'data': response.data,
           'statusCode': response.statusCode,
         };
       } else {
-        throw Exception('Upload failed with status: ${response.statusCode}');
+        throw Exception('فشل الرفع برمز الحالة: ${response.statusCode}');
       }
-    } on SocketException {
-      throw Exception('No internet connection.');
+    } on DioException catch (e) {
+      final errorMsg = e.response?.data?['error'] ?? e.response?.data?['message'] ?? e.message;
+      throw Exception('فشل الرفع المتعدد: $errorMsg');
     } catch (e) {
-      throw Exception('Multiple upload failed: $e');
+      throw Exception('فشل الرفع المتعدد: $e');
     }
   }
 
   /// ==========================
-  /// Validate Image File
+  /// Validate Image File (Backup method - client constraints are applied in Cubit)
   /// ==========================
   bool isValidImageFile(String filePath) {
-    final validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+    final validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'pdf'];
     final extension = filePath.split('.').last.toLowerCase();
     return validExtensions.contains(extension);
   }

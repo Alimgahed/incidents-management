@@ -125,7 +125,7 @@ class _IncidentMapWidgetState extends State<IncidentMapWidget> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15),
+          BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 15),
         ],
       ),
       child: Row(

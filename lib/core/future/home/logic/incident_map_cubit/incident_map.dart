@@ -5,8 +5,8 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
-import 'package:incidents_managment/core/helpers/shared_preference.dart';
-import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/security/secure_storage_service.dart';
 
 // Provide a lightweight copyWith for CurrentIncidentModel in case the model
 // does not define one; this attempts to use toJson/fromJson if present,
@@ -59,8 +59,8 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   // ===========================================================================
   Future<void> initialize() async {
     try {
-      // 1. Get token from storage
-      final token = await SharedPreferencesHelper.getData<String>(SharedPreferenceKeys.userToken);
+      // 1. Get token from storage securely
+      final token = await getIt<SecureStorageService>().getUserToken();
       
       // 2. ONLY connect if token exists
       if (token == null || token.trim().isEmpty) {
@@ -320,17 +320,19 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   bool get isConnected => _socket?.connected ?? false;
 
   // ===========================================================================
-  // CLEANUP
+  // CLEANUP & LIFECYCLE DISCONNECT
   // ===========================================================================
-  @override
-  Future<void> close() {
+  void disconnectSocket() {
     _reconnectTimer?.cancel();
     _alertTimer?.cancel();
-    // _stopAlert();
-
+    _socket?.disconnect();
     _socket?.dispose();
     _socket = null;
+  }
 
+  @override
+  Future<void> close() {
+    disconnectSocket();
     return super.close();
   }
 }
