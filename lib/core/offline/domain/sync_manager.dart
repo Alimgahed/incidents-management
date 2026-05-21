@@ -53,6 +53,7 @@ class SyncManager {
   final Lock _drainLock = Lock();
   bool _isSyncing = false;
   Timer? _periodicTimer;
+  StreamSubscription<bool>? _onlineSub;
 
   final StreamController<SyncStatusEvent> _events =
       StreamController<SyncStatusEvent>.broadcast();
@@ -64,25 +65,57 @@ class SyncManager {
 
   /// Wire into NetworkMonitor and schedule the foreground periodic sweep.
   /// Background sync is handled separately by [BackgroundSyncService].
+  ///
+  /// We use two redundant triggers so a missed event never leaves the queue
+  /// stranded:
+  ///   1. Direct subscription to [NetworkMonitorService.onlineStream] — fires
+  ///      on every emission, so even if the reconnect-callback path missed
+  ///      one (e.g. listener race during bootstrap), this catches it.
+  ///   2. A short periodic sweep (every 20 seconds) that retries the queue
+  ///      while we're online — covers any edge case where the stream is
+  ///      paused or the listener is gone.
   Future<void> start() async {
+    // 0. Recover items left in `syncing` state from a previous app run.
+    await queue.resetStuckSyncing();
+
+    // 1. Reconnect listener (legacy entry point, still useful for tests).
     networkMonitor.addReconnectListener(syncNow);
-    _periodicTimer?.cancel();
-    _periodicTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (networkMonitor.isOnline) {
-        // Best-effort retry of items whose backoff window has elapsed.
+
+    // 2. PRIMARY trigger: every emission of `true` on the online stream runs
+    //    syncNow. This is what guarantees pending writes flush the moment
+    //    connectivity comes back, regardless of which path detected it
+    //    (OS event, periodic probe, or manual Retry).
+    _onlineSub?.cancel();
+    _onlineSub = networkMonitor.onlineStream.listen((online) {
+      if (online) {
         unawaited(syncNow());
       }
     });
+
+    // 3. Safety-net foreground sweep.
+    _periodicTimer?.cancel();
+    _periodicTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (networkMonitor.isOnline) {
+        unawaited(syncNow());
+      }
+    });
+
+    // 4. Immediately drain anything left over from a previous session.
+    if (networkMonitor.isOnline) {
+      unawaited(syncNow());
+    }
   }
 
   Future<void> stop() async {
     _periodicTimer?.cancel();
     _periodicTimer = null;
+    await _onlineSub?.cancel();
+    _onlineSub = null;
     networkMonitor.removeReconnectListener(syncNow);
   }
 
   /// Drain whatever is pending right now. Safe to call from anywhere; calls
-  /// while a previous drain is in flight are coalesced.
+  /// while a previous drain is in flight are coalesced by [_drainLock].
   Future<void> syncNow() async {
     if (!networkMonitor.isOnline) return;
     await _drainLock.synchronized(_drainOnce);

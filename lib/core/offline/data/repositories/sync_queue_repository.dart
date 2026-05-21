@@ -111,4 +111,20 @@ class SyncQueueRepository {
 
   /// Removes everything in the queue. Used by Logout.
   Future<void> clear() => _lock.synchronized(() => _box.clear());
+
+  /// Recovers items left in the `syncing` state — typically after the app was
+  /// killed mid-sync. Without this, those items would be invisible to
+  /// [pending] (which only returns `pending` and `failed`) and stay stuck
+  /// forever. Called once during bootstrap.
+  Future<int> resetStuckSyncing() => _lock.synchronized(() async {
+        var count = 0;
+        for (final item in _box.values.toList()) {
+          if (item.state == SyncState.syncing) {
+            item.state = SyncState.pending;
+            await _box.put(item.id, item);
+            count += 1;
+          }
+        }
+        return count;
+      });
 }
