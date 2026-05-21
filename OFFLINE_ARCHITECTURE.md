@@ -73,7 +73,7 @@ writes into the queue) and domain (sync manager reads/writes through Dio).
 | `network/network_monitor.dart` | `connectivity_plus` wrapper with `onlineStream`, reconnect listeners, `refresh()`. |
 | `network/offline_interceptor.dart` | Installed first in the Dio chain. While offline: writes → queue + synthetic 202 response; reads → served from `cache_get_responses` Hive box. Caches all 200 GETs on the success path. |
 | `network/websocket_resilience.dart` | Drop-in resilient wrapper around `socket_io_client`: heartbeat, exponential backoff reconnect, graceful disconnect when offline, post-reconnect resync trigger calling `SyncManager.syncNow`. |
-| `background/background_sync.dart` | Registers a 15-minute periodic WorkManager task. Web is a no-op. |
+| `background/background_sync.dart` | Subscribes to `AppLifecycleState`. Forces a connectivity re-check and triggers `SyncManager.syncNow()` every time the app comes back to the foreground. No native dependencies. |
 | `presentation/offline_status_state.dart` | Equatable snapshot consumed by the banner/chip. |
 | `presentation/offline_status_cubit.dart` | Aggregates network + sync + queue counts. |
 | `presentation/offline_banner.dart` | Slim banner: offline / syncing / pending / conflict / clean. Has Retry button. |
@@ -83,7 +83,7 @@ writes into the queue) and domain (sync manager reads/writes through Dio).
 
 | File | Change |
 |---|---|
-| `pubspec.yaml` | Added: `hive ^2.2.3`, `hive_flutter ^1.1.0`, `path_provider ^2.1.5`, `connectivity_plus ^6.1.0`, `workmanager ^0.5.2`, `uuid ^4.5.1`, `synchronized ^3.3.0+3`. |
+| `pubspec.yaml` | Added: `hive ^2.2.3`, `hive_flutter ^1.1.0`, `path_provider ^2.1.5`, `connectivity_plus ^6.1.0`, `uuid ^4.5.1`, `synchronized ^3.3.0+3`. (No `workmanager` — its 0.5.x release uses removed v1 embedding APIs and breaks the Android build; the lifecycle observer in `background_sync.dart` covers the same use case without native code.) |
 | `lib/core/di/dependcy_injection.dart` | Registered the shared `Dio` in get_it so `FileUploadRepository`, `SyncManager`, and offline-aware repos resolve the same instance. |
 | `lib/core/helpers/startup_service.dart` | Added `OfflineBootstrap.initialize(...)` between DI setup and the token read. Idempotent. |
 | `lib/incidents.dart` | Added a top-level `BlocProvider<OfflineStatusCubit>` and the `OfflineBanner` widget at the top of every screen. |

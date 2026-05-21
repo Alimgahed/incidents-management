@@ -121,8 +121,13 @@ class OfflineBootstrap {
           ));
     }
 
-    // 7. Background sync (best-effort).
-    await BackgroundSyncService.initialize();
+    // 7. App-lifecycle hook — triggers a sync on every resume so writes that
+    //    happened while the app was in the background get flushed as soon as
+    //    the user comes back. Replaces the broken `workmanager` integration.
+    await BackgroundSyncService.initialize(
+      syncManager: getIt<SyncManager>(),
+      networkMonitor: monitor,
+    );
 
     _initialized = true;
     if (kDebugMode) {

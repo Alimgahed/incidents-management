@@ -1,104 +1,112 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:workmanager/workmanager.dart';
+import 'package:flutter/widgets.dart';
 
-/// Schedules periodic background-sync work. On Android this is delivered by
-/// WorkManager; on iOS the same package bridges to BGTaskScheduler / fetch
-/// (capabilities permitting).
+import '../domain/sync_manager.dart';
+import '../network/network_monitor.dart';
+
+/// "Background-ish" sync hook.
 ///
-/// The actual sync logic doesn't live in the background isolate — when the
-/// task wakes us up we just **re-launch** the main isolate which, on
-/// `_AppBootstrap.initState`, will hit [SyncManager.syncNow] as part of normal
-/// startup. This avoids the well-known headache of duplicating Hive boxes /
-/// Dio instances across isolates.
+/// We deliberately do **not** use the `workmanager` package — its 0.5.x
+/// release still depends on Flutter's removed v1 Android embedding APIs
+/// (`ShimPluginRegistry`, `PluginRegistrantCallback`) and breaks the Android
+/// release build on modern Flutter. True headless sync from a background
+/// isolate would need either a fixed version of workmanager or a platform-
+/// channel of our own; both are out of scope for the offline-first pass.
 ///
-/// If you later want true headless sync, swap the callback dispatcher body to
-/// call `SyncManager.syncNow` directly after re-initializing Hive + DI in the
-/// background isolate.
+/// Instead, this service subscribes to the app lifecycle and triggers
+/// [SyncManager.syncNow] whenever the app comes back to the foreground.
+/// Combined with the immediate sync on startup, the periodic 20-second
+/// safety-net inside SyncManager, and the per-emission sync on
+/// `NetworkMonitor.onlineStream`, this covers every realistic case where
+/// the user expects pending writes to flush:
+///
+///   * App was backgrounded while offline, then brought to foreground after
+///     connectivity returned → resume callback triggers sync.
+///   * Phone went to sleep mid-sync → on wake, the OS resumes the app and
+///     the lifecycle observer triggers a fresh sync.
+///   * Connectivity flips while the app is in the foreground → handled by
+///     the stream subscription inside SyncManager.
+///
+/// All of the above happens with **zero native code** and no permission
+/// changes to `AndroidManifest.xml` / `Info.plist`.
 class BackgroundSyncService {
   BackgroundSyncService._();
 
-  static const String _kPeriodicTask = 'offline_sync_periodic';
-  static const String _kOneoffTask = 'offline_sync_oneoff';
-
+  static _ResumeObserver? _observer;
   static bool _initialized = false;
 
-  /// Idempotent; safe to call multiple times.
-  static Future<void> initialize() async {
+  /// Idempotent. Safe to call multiple times.
+  static Future<void> initialize({
+    required SyncManager syncManager,
+    required NetworkMonitorService networkMonitor,
+  }) async {
     if (_initialized) return;
+    _initialized = true;
 
     if (kIsWeb) {
-      // WorkManager has no web implementation; on web the foreground
-      // SyncManager + connectivity listener is sufficient.
-      _initialized = true;
+      // On web there is no real "resume" event; the browser tab visibility
+      // change is the equivalent, and connectivity_plus already covers the
+      // important transitions.
       return;
     }
 
-    try {
-      await Workmanager().initialize(
-        _callbackDispatcher,
-        isInDebugMode: kDebugMode,
-      );
-      await Workmanager().registerPeriodicTask(
-        _kPeriodicTask,
-        _kPeriodicTask,
-        frequency: const Duration(minutes: 15), // platform minimum on Android
-        constraints: Constraints(
-          networkType: NetworkType.connected,
-          requiresBatteryNotLow: true,
-        ),
-        existingWorkPolicy: ExistingWorkPolicy.keep,
-      );
-      _initialized = true;
-    } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('BackgroundSync init failed: $e\n$st');
-      }
-      // Don't crash the app — background sync is a nice-to-have.
-    }
+    _observer = _ResumeObserver(
+      syncManager: syncManager,
+      networkMonitor: networkMonitor,
+    );
+    WidgetsBinding.instance.addObserver(_observer!);
   }
 
-  /// Manually schedule a one-shot sync attempt (e.g. after the user enqueued
-  /// something important).
-  static Future<void> requestOneoff() async {
-    if (kIsWeb || !_initialized) return;
-    try {
-      await Workmanager().registerOneOffTask(
-        '${_kOneoffTask}_${DateTime.now().millisecondsSinceEpoch}',
-        _kOneoffTask,
-        constraints: Constraints(networkType: NetworkType.connected),
-        existingWorkPolicy: ExistingWorkPolicy.append,
-      );
-    } catch (e) {
-      if (kDebugMode) debugPrint('requestOneoff failed: $e');
-    }
+  /// Manually request a sync attempt right now. Cheap — coalesces with any
+  /// in-flight drain via the [SyncManager]'s internal lock.
+  static Future<void> requestOneoff({
+    required SyncManager syncManager,
+  }) async {
+    await syncManager.syncNow();
   }
 
   static Future<void> cancel() async {
-    if (kIsWeb) return;
-    try {
-      await Workmanager().cancelAll();
-    } catch (_) {}
+    if (_observer != null) {
+      WidgetsBinding.instance.removeObserver(_observer!);
+      _observer = null;
+    }
+    _initialized = false;
   }
 }
 
-/// Top-level entry point invoked by WorkManager when a task fires.
-///
-/// Must be a top-level function (annotated with @pragma).
-@pragma('vm:entry-point')
-void _callbackDispatcher() {
-  Workmanager().executeTask((task, inputData) async {
-    if (kDebugMode) debugPrint('BG task fired: $task');
-    // Headless sync hook. To enable true headless processing:
-    //   1. await LocalDatabase.initialize();
-    //   2. construct a minimal Dio + SyncQueueRepository + SyncManager;
-    //   3. await SyncManager.syncNow();
-    //
-    // We leave it intentionally minimal here so the app stays buildable
-    // without further platform-channel wiring (Android manifest changes,
-    // iOS BGTaskScheduler identifiers in Info.plist). When you adopt
-    // headless sync, wire those up and replace this body.
-    return Future.value(true);
+class _ResumeObserver with WidgetsBindingObserver {
+  _ResumeObserver({
+    required this.syncManager,
+    required this.networkMonitor,
   });
+
+  final SyncManager syncManager;
+  final NetworkMonitorService networkMonitor;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // 1. Force a connectivity re-check — iOS often doesn't fire the
+      //    connectivity_plus stream after a long suspend / Wi-Fi handoff.
+      // 2. Sync — even if isOnline is currently true, this is cheap (the
+      //    drain lock prevents duplicate work) and worth doing every resume.
+      _trigger();
+    }
+  }
+
+  Future<void> _trigger() async {
+    try {
+      await networkMonitor.refresh();
+      if (networkMonitor.isOnline) {
+        await syncManager.syncNow();
+      }
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('Resume sync failed: $e\n$st');
+      }
+    }
+  }
 }
