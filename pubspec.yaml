@@ -83,6 +83,20 @@ dependencies:
 
   equatable: ^2.0.8
 
+  # ───────────────── Offline-First Stack ─────────────────
+  # Local persistence
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.5
+  # Connectivity monitoring
+  connectivity_plus: ^6.1.0
+  # Background sync (Android primarily; iOS uses BGTaskScheduler bridge)
+  workmanager: ^0.5.2
+  # Unique IDs for temp/local entities
+  uuid: ^4.5.1
+  # Async safety
+  synchronized: ^3.3.0+3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

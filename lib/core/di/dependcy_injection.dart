@@ -57,6 +57,12 @@ Future<void> setup() async {
 
   // Core Services
   Dio dio = DioFactory.getDioInstance();
+  // Register the shared Dio so any consumer (FileUploadRepository,
+  // SyncManager, etc.) resolves the same instance with all interceptors
+  // already attached.
+  if (!getIt.isRegistered<Dio>()) {
+    getIt.registerLazySingleton<Dio>(() => dio);
+  }
   getIt.registerLazySingleton<ApiService>(() => ApiService(dio));
 
   // Repositories - LazySingleton is correct for repos

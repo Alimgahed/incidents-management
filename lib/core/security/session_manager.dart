@@ -6,6 +6,7 @@ import 'package:incidents_managment/core/future/auth/data/model/login_response_m
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/helpers/shared_preference.dart';
 import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
+import 'package:incidents_managment/core/offline/offline_bootstrap.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 
@@ -56,7 +57,7 @@ class SessionManager {
   Future<void> logout({bool sessionExpired = false}) async {
     // 1. Clear secure storage
     await _secureStorage.clearAll();
-    
+
     // 2. Clear old preferences token just in case
     await SharedPreferencesHelper.removeData(SharedPreferenceKeys.userToken);
     await SharedPreferencesHelper.removeData(SharedPreferenceKeys.refreshToken);
@@ -71,7 +72,13 @@ class SessionManager {
       }
     } catch (_) {}
 
-    // 4. Redirect to login
+    // 4. Wipe the offline cache so the next user doesn't inherit pending
+    //    queue items, cached lists, or attachments from this session.
+    try {
+      await OfflineBootstrap.resetOnLogout();
+    } catch (_) {}
+
+    // 5. Redirect to login
     if (sessionExpired) {
       _showSessionExpiredAlert();
     } else {

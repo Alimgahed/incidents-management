@@ -1,8 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/helpers/shared_preference.dart';
 import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
+import 'package:incidents_managment/core/network/dio_factory.dart';
+import 'package:incidents_managment/core/offline/offline_bootstrap.dart';
 import 'package:incidents_managment/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -49,6 +52,17 @@ class StartupService {
       SharedPreferences.getInstance(),
     ]);
     SharedPreferencesHelper.init(results[1] as SharedPreferences);
+
+    // ── Step 2b: Offline subsystem ───────────────────────────────────────────
+    // Opens Hive boxes, starts NetworkMonitor + SyncManager, installs the
+    // OfflineInterceptor onto the shared Dio. Safe to call after [setup]
+    // because it depends on the singletons just registered.
+    await OfflineBootstrap.initialize(
+      getIt: getIt,
+      dioBuilder: () => getIt.isRegistered<Dio>()
+          ? getIt<Dio>()
+          : DioFactory.getDioInstance(),
+    );
 
     // ── Step 3: Token read — now fully synchronous (SP instance cached) ──────
     final token = await SharedPreferencesHelper.getData<String>(
