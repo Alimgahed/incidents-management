@@ -31,8 +31,12 @@ extension _CurrentIncidentModelCopy on CurrentIncidentModel {
   CurrentIncidentModel copyWith({List<dynamic>? currentIncidentWithMissions}) {
     try {
       final map = (this as dynamic).toJson() as Map<String, dynamic>;
-      // prefer camelCase key as used by the app model field; adjust if your JSON uses another key
-      map['currentIncidentWithMissions'] = currentIncidentWithMissions
+      // The generated fromJson reads the missions list from the JSON key 'missions'
+      // (see @JsonKey(name: 'missions') on currentIncidentWithMissions in the model).
+      // Writing to 'currentIncidentWithMissions' here was a no-op — fromJson never
+      // reads it, so socket updates were silently dropped and the UI kept showing
+      // the old mission status.
+      map['missions'] = currentIncidentWithMissions
           ?.map(
             (m) => (m as dynamic).toJson != null ? (m as dynamic).toJson() : m,
           )
@@ -56,6 +60,8 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
   List<CurrentIncidentModel> incidentss = [];
 
+  DateTime? _lastIncidentPayloadAt;
+
   Timer? _reconnectTimer;
   Timer? _alertTimer;
 
@@ -69,6 +75,10 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   static const String alertSoundUrl =
       'https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg';
   IncidentMapCubit() : super(IncidentMapInitial());
+
+  void _bumpPayloadTime() {
+    _lastIncidentPayloadAt = DateTime.now();
+  }
 
   // ===========================================================================
   // SOCKET INITIALIZATION
@@ -200,6 +210,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       // isolate boundaries safely (socket.io may return a non-growable view).
       incidentss = await compute(_parseIncidentList, List<dynamic>.from(data));
 
+      _bumpPayloadTime();
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     } catch (e) {
       emit(IncidentMapError(message: 'خطأ في تحميل البيانات'));
@@ -213,6 +224,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     // the intermediate growable list that spread syntax produces.
     final updated = List<CurrentIncidentModel>.of(incidentss)..add(newIncident);
     incidentss = updated;
+    _bumpPayloadTime();
     emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
 
     // 🚨 PLAY SAME ALERT SOUND (7 SECONDS)
@@ -232,6 +244,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       final updated = List<CurrentIncidentModel>.of(incidentss);
       updated[index] = updatedIncident;
       incidentss = updated;
+      _bumpPayloadTime();
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     }
   }
@@ -244,6 +257,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
         .where((i) => i.currentIncidentId != id)
         .toList(growable: false);
 
+    _bumpPayloadTime();
     emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
   }
 
@@ -264,33 +278,54 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       final incidentIndex = incidentss.indexWhere(
         (i) => i.currentIncidentId == incidentId,
       );
-      if (incidentIndex == -1) return;
+      if (incidentIndex == -1) {
+        // If incident not found, refresh to get latest
+        refresh();
+        return;
+      }
 
       final incident = incidentss[incidentIndex];
 
       // تحديث المهمة داخل الـ incident
-      final missions = incident.currentIncidentWithMissions ?? [];
+      // Copy the list so we don't mutate the previous state's list in place.
+      final missions = List<CurrentIncidentWithMissions>.from(
+        incident.currentIncidentWithMissions ?? const [],
+      );
 
-      final missionIndex = missions.indexWhere(
+      // Try matching by current_incident_mission_id first (what the server sends),
+      // then fall back to the row id (idCurrentIncidentMission) in case the server
+      // payload's id refers to that.
+      var missionIndex = missions.indexWhere(
         (m) => m.currentIncidentMissionId == missionId,
       );
+      if (missionIndex == -1) {
+        missionIndex = missions.indexWhere(
+          (m) => m.idCurrentIncidentMission == missionId,
+        );
+      }
 
       if (missionIndex != -1) {
         final mission = missions[missionIndex];
+        // Preserve ALL existing fields and only override status + updated_at.
+        // The previous version dropped currentIncidentId and any future fields,
+        // which broke the UI binding.
         final updatedMission = CurrentIncidentWithMissions(
-          missionName: mission.missionName,
-          currentIncidentMissionStatusUpdatedBy:
-              mission.currentIncidentMissionStatusUpdatedBy,
+          idCurrentIncidentMission: mission.idCurrentIncidentMission,
+          currentIncidentId: mission.currentIncidentId,
           currentIncidentMissionId: mission.currentIncidentMissionId,
           currentIncidentMissionOrder: mission.currentIncidentMissionOrder,
-
-          idCurrentIncidentMission: mission.idCurrentIncidentMission,
           currentIncidentMissionStatus: newStatus,
+          currentIncidentMissionStatusUpdatedBy:
+              mission.currentIncidentMissionStatusUpdatedBy,
           currentIncidentMissionStatusUpdatedAt: DateTime.now(),
-          // Copy other fields from the original mission
+          missionName: mission.missionName,
         );
 
         missions[missionIndex] = updatedMission;
+      } else {
+        // Mission not found locally — ask server for a fresh snapshot.
+        refresh();
+        return;
       }
 
       // تحديث الـ incident في القائمة
@@ -300,6 +335,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
       incidentss[incidentIndex] = updatedIncident;
 
+      _bumpPayloadTime();
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     } catch (e) {
       emit(IncidentMapError(message: 'فشل تحديث حالة المهمة'));
@@ -311,6 +347,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     emit(IncidentMapError(message: msg));
 
     if (incidentss.isNotEmpty) {
+      _bumpPayloadTime();
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     }
   }
@@ -340,8 +377,10 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   // MANUAL REFRESH
   // ===========================================================================
   void refresh() {
-    emit(IncidentMapLoading());
-    _socket?.emit('get_incidents');
+    if (_socket?.connected ?? false) {
+      emit(IncidentMapLoading());
+      _socket?.emit('get_incidents');
+    }
   }
 
   // ===========================================================================
@@ -350,6 +389,19 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   List<CurrentIncidentModel> get incidents => List.unmodifiable(incidentss);
 
   bool get isConnected => _socket?.connected ?? false;
+
+  DateTime? get lastIncidentPayloadAt => _lastIncidentPayloadAt;
+
+  /// Get a specific incident by ID from the current list
+  CurrentIncidentModel? getIncidentById(int incidentId) {
+    try {
+      return incidentss.firstWhere(
+        (i) => i.currentIncidentId == incidentId,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   // ===========================================================================
   // CLEANUP & LIFECYCLE DISCONNECT

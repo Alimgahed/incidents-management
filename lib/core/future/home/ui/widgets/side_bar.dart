@@ -1,165 +1,285 @@
 // ============================================================================
-// OPTIMIZED SIDEBAR - Fixed Size with Scroll
+// Dashboard sidebar — desktop rail + mobile drawer (Material 3 style)
 // ============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_states.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
-
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
 
-Widget buildSidebar(BuildContext context) {
-  return Container(
-    width: 60.w,
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [Color(0xFF1E3A5F), Color(0xFF2C5F8D)],
+/// Desktop: fixed-width rail. [isDrawer]: full-height drawer variant (wider touch targets, section labels).
+Widget buildSidebar(BuildContext context, {bool isDrawer = false}) {
+  final width = isDrawer
+      ? (MediaQuery.sizeOf(context).width * 0.88).clamp(280.0, 360.0)
+      : 272.0;
+
+  return Material(
+    color: Colors.transparent,
+    child: SizedBox(
+      width: width,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0F2744),
+              Color(0xFF1E3A5F),
+              Color(0xFF244A6E),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x40000000),
+              blurRadius: 16,
+              offset: Offset(4, 0),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SidebarHeader(compact: !isDrawer),
+            Divider(height: 1, thickness: 1, color: Colors.white.withValues(alpha: 0.12)),
+            Expanded(
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(scrollbars: true),
+                child: ListView(
+                  padding: EdgeInsets.symmetric(vertical: isDrawer ? 12 : 8, horizontal: 8),
+                  children: [
+                    _sectionLabel('لوحة التشغيل', isDrawer),
+                    buildNavItem(
+                      context,
+                      icon: Icons.space_dashboard_outlined,
+                      selectedIcon: Icons.space_dashboard_rounded,
+                      label: 'لوحة التحكم',
+                      index: 0,
+                      isDrawer: isDrawer,
+                    ),
+                    buildNavItem(
+                      context,
+                      icon: Icons.map_outlined,
+                      selectedIcon: Icons.map_rounded,
+                      label: 'الخريطة',
+                      index: 1,
+                      isDrawer: isDrawer,
+                    ),
+                    _sectionLabel('الفرق والبيانات', isDrawer),
+                    buildNavItem(
+                      context,
+                      icon: Icons.groups_outlined,
+                      selectedIcon: Icons.groups_rounded,
+                      label: 'الفرق',
+                      index: 2,
+                      isDrawer: isDrawer,
+                    ),
+                    buildNavItem(
+                      context,
+                      icon: Icons.insights_outlined,
+                      selectedIcon: Icons.insights_rounded,
+                      label: 'التحليلات',
+                      index: 3,
+                      isDrawer: isDrawer,
+                    ),
+                    _sectionLabel('الأزمات والمهام', isDrawer),
+                    buildNavItem(
+                      context,
+                      icon: Icons.add_circle_outline_rounded,
+                      selectedIcon: Icons.add_circle_rounded,
+                      label: 'إضافة أزمة',
+                      index: 4,
+                      isDrawer: isDrawer,
+                    ),
+                    buildNavItem(
+                      context,
+                      icon: Icons.category_outlined,
+                      selectedIcon: Icons.category_rounded,
+                      label: 'أنواع الأزمات',
+                      index: 5,
+                      isDrawer: isDrawer,
+                    ),
+                    buildNavItem(
+                      context,
+                      icon: Icons.assignment_outlined,
+                      selectedIcon: Icons.assignment_rounded,
+                      label: 'جميع المهام',
+                      index: 6,
+                      isDrawer: isDrawer,
+                    ),
+                    buildNavItem(
+                      context,
+                      icon: Icons.hub_outlined,
+                      selectedIcon: Icons.hub_rounded,
+                      label: 'ربط مهام بالأزمة',
+                      index: 7,
+                      isDrawer: isDrawer,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const UserProfileWidget(),
+          ],
+        ),
       ),
-      boxShadow: [
-        BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(2, 0)),
-      ],
-    ),
-    child: Column(
-      children: [
-        _buildHeader(),
-        const Divider(color: Colors.white24, height: 1),
-        _buildNavigation(context),
-        const Spacer(),
-        _buildUserProfile(),
-      ],
     ),
   );
 }
 
-// ============================================================================
-// HEADER
-// ============================================================================
-Widget _buildHeader() {
-  return Container(
-    padding: const EdgeInsets.all(16),
-    child: Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
+Widget _sectionLabel(String title, bool show) {
+  if (!show) return const SizedBox.shrink();
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+    child: Text(
+      title.toUpperCase(),
+      style: TextStyle(
+        fontSize: 11,
+        letterSpacing: 0.8,
+        fontWeight: FontWeight.w600,
+        color: Colors.white.withValues(alpha: 0.45),
+      ),
+    ),
+  );
+}
+
+class _SidebarHeader extends StatelessWidget {
+  final bool compact;
+
+  const _SidebarHeader({required this.compact});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(compact ? 14 : 16, compact ? 18 : 20, 14, 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            ),
+            child: const Icon(Icons.shield_moon_outlined, color: Colors.white, size: 26),
           ),
-          child: const Icon(Icons.shield, color: Colors.white, size: 28),
-        ),
-        const SizedBox(width: 12),
-        const Expanded(
-          child: Text(
-            'إدارة\nالأزمات',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              height: 1.2,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'إدارة الأزمات',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'لوحة العمليات',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
-Widget _buildNavigation(BuildContext context) {
-  return SingleChildScrollView(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Column(
-      children: [
-        buildNavItem(icon: Icons.dashboard, label: 'لوحة التحكم', index: 0),
-        buildNavItem(icon: Icons.map, label: 'عرض الخريطة', index: 1),
-        buildNavItem(icon: Icons.people, label: 'الفرق', index: 2),
-        buildNavItem(icon: Icons.analytics, label: 'التحليلات', index: 3),
-        buildNavItem(
-          icon: Icons.add_circle_outline,
-          label: 'أضافة أزمة',
-          index: 4,
-        ),
-        buildNavItem(icon: Icons.category, label: 'أنواع الأزمات', index: 5),
-        buildNavItem(icon: Icons.list_alt, label: 'جميع المهام', index: 6),
-        buildNavItem(
-          icon: Icons.link,
-          label: 'إضافة مهام الأزمة',
-          index: 7,
-        ),
-      ],
-    ),
-  );
-}
-
-Widget buildNavItem({
-  Color? color,
+Widget buildNavItem(
+  BuildContext context, {
   required IconData icon,
+  required IconData selectedIcon,
   required String label,
   required int index,
+  bool isDrawer = false,
 }) {
-  color ??= Colors.white.withValues(alpha: 0.3);
   return BlocBuilder<HomeCubit, HomeStates>(
     buildWhen: (previous, current) => current is HomeChanged,
     builder: (context, state) {
       final cubit = context.read<HomeCubit>();
-      final bool isSelected = cubit.selectedIndex == index;
+      final selected = cubit.selectedIndex == index;
+      final vertical = isDrawer ? 4.0 : 2.0;
 
-      return InkWell(
-        onTap: () {
-          cubit.changeState(index);
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.white
-                : color ?? Colors.white.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected
-                  ? Colors.white
-                  : color ?? Colors.white.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: isSelected ? appColor : Colors.white, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isSelected
-                        ? appColor
-                        : Colors.white.withValues(alpha: 0.7),
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                    fontSize: 16,
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: vertical),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => cubit.changeState(index),
+            borderRadius: BorderRadius.circular(12),
+            hoverColor: Colors.white.withValues(alpha: 0.06),
+            splashColor: Colors.white.withValues(alpha: 0.12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.symmetric(
+                horizontal: isDrawer ? 14 : 10,
+                vertical: isDrawer ? 14 : 10,
+              ),
+              decoration: BoxDecoration(
+                color: selected ? Colors.white.withValues(alpha: 0.14) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.35)
+                      : Colors.white.withValues(alpha: 0.08),
+                ),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.18),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    selected ? selectedIcon : icon,
+                    color: selected ? Colors.white : Colors.white.withValues(alpha: 0.72),
+                    size: isDrawer ? 24 : 22,
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: selected ? Colors.white : Colors.white.withValues(alpha: 0.78),
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: isDrawer ? 15 : 14,
+                        height: 1.25,
+                      ),
+                    ),
+                  ),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 3,
+                    height: selected ? 22 : 0,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5CE1FF),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ],
               ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 4,
-                height: isSelected ? 24 : 0,
-                decoration: BoxDecoration(
-                  color: appColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       );
@@ -170,9 +290,6 @@ Widget buildNavItem({
 // ============================================================================
 // USER PROFILE
 // ============================================================================
-Widget _buildUserProfile() {
-  return const UserProfileWidget();
-}
 
 class UserProfileWidget extends StatefulWidget {
   const UserProfileWidget({super.key});
@@ -202,169 +319,141 @@ class _UserProfileWidgetState extends State<UserProfileWidget> {
   @override
   Widget build(BuildContext context) {
     final currentUser = getIt<SessionManager>().getCurrentUser();
-    final name = currentUser?.empName ?? currentUser?.username ?? 'المسؤول';
-    final role = currentUser?.authorityName ?? 'مشرف';
+    final name = currentUser?.empName ?? currentUser?.username ?? 'مستخدم';
+    final role = currentUser?.authorityName ?? '';
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+    return Material(
+      color: Colors.black.withValues(alpha: 0.15),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
-            child: const Icon(Icons.person, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-                Text(
-                  role,
-                  style: const TextStyle(color: Colors.white70, fontSize: 10),
-                ),
-              ],
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: Colors.white.withValues(alpha: 0.18),
+              child: const Icon(Icons.person_rounded, color: Colors.white, size: 22),
             ),
-          ),
-          PopupMenuButton<String>(
-            icon: Icon(
-              Icons.more_vert,
-              color: Colors.white.withValues(alpha: 0.7),
-              size: 18,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  if (role.isNotEmpty)
+                    Text(
+                      role,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        fontSize: 11,
+                      ),
+                    ),
+                ],
+              ),
             ),
-            color: const Color(0xFF2C5F8D),
-            onOpened: _checkLoginStatus, // Refresh state before opening menu
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'profile',
-                child: Row(
-                  children: [
-                    Icon(Icons.person, color: Colors.white, size: 16),
-                    SizedBox(width: 8),
-                    Text(
-                      'الملف الشخصي',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ],
-                ),
+            PopupMenuButton<String>(
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: Colors.white.withValues(alpha: 0.75),
+                size: 22,
               ),
-              const PopupMenuItem(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings, color: Colors.white, size: 16),
-                    SizedBox(width: 8),
-                    Text(
-                      'الإعدادات',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              if (!_isLoggedIn) ...[
-                const PopupMenuItem(
-                  value: 'registration',
-                  child: Row(
-                    children: [
-                      Icon(Icons.person_add, color: Colors.white, size: 16),
-                      SizedBox(width: 8),
-                      Text(
-                        'تسجيل مستخدم جديد',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'login',
-                  child: Row(
-                    children: [
-                      Icon(Icons.login, color: Colors.white, size: 16),
-                      SizedBox(width: 8),
-                      Text(
-                        'تسجيل الدخول',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout, color: Colors.red, size: 16),
-                      SizedBox(width: 8),
-                      Text(
-                        'تسجيل الخروج',
-                        style: TextStyle(color: Colors.red, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
+              color: const Color(0xFF1A2F4A),
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onOpened: _checkLoginStatus,
+              itemBuilder: (context) => [
+                _menuRow(Icons.person_outline_rounded, 'الملف الشخصي', 'profile'),
+                _menuRow(Icons.settings_outlined, 'الإعدادات', 'settings'),
+                if (!_isLoggedIn) ...[
+                  _menuRow(Icons.person_add_alt_1_outlined, 'تسجيل مستخدم', 'registration'),
+                  _menuRow(Icons.login_rounded, 'تسجيل الدخول', 'login'),
+                ] else
+                  _menuRow(Icons.logout_rounded, 'تسجيل الخروج', 'logout', danger: true),
               ],
-            ],
-            onSelected: (value) async {
-              switch (value) {
-                case 'login':
-                  await context.pushNamed(Routes.login);
-                  _checkLoginStatus(); // Update if login was successful
-                  break;
-                case 'profile':
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('سيتم فتح الملف الشخصي قريباً', style: TextStyle(color: Colors.white)),
-                      backgroundColor: Colors.blue,
-                    ),
-                  );
-                  break;
-                case 'registration':
-                  context.pushNamed(Routes.registration);
-                  break;
-                case 'logout':
-                  showDialog(
-                    context: context,
-                    builder: (dialogContext) => AlertDialog(
-                      title: const Text('تسجيل الخروج'),
-                      content: const Text('هل أنت متأكد من تسجيل الخروج؟'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: const Text('إلغاء'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () async {
-                            Navigator.pop(dialogContext);
-                            await getIt<SessionManager>().logout();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+              onSelected: (value) async {
+                switch (value) {
+                  case 'login':
+                    await context.pushNamed(Routes.login);
+                    _checkLoginStatus();
+                    break;
+                  case 'profile':
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('الملف الشخصي — قيد التطوير'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    break;
+                  case 'registration':
+                    context.pushNamed(Routes.registration);
+                    break;
+                  case 'settings':
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('الإعدادات — قيد التطوير'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    break;
+                  case 'logout':
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('تسجيل الخروج'),
+                        content: const Text('هل أنت متأكد؟'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext, false),
+                            child: const Text('إلغاء'),
                           ),
-                          child: const Text('تسجيل الخروج'),
-                        ),
-                      ],
-                    ),
-                  );
-                  break;
-              }
-            },
-          ),
-        ],
+                          FilledButton(
+                            onPressed: () => Navigator.pop(dialogContext, true),
+                            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                            child: const Text('خروج'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (ok == true && context.mounted) {
+                      await getIt<SessionManager>().logout();
+                    }
+                    break;
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+PopupMenuItem<String> _menuRow(IconData icon, String text, String value, {bool danger = false}) {
+  final c = danger ? Colors.redAccent : Colors.white;
+  return PopupMenuItem(
+    value: value,
+    child: Row(
+      children: [
+        Icon(icon, color: c, size: 20),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text, style: TextStyle(color: c, fontSize: 14))),
+      ],
+    ),
+  );
 }

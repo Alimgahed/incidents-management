@@ -9,6 +9,7 @@ import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/miss
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/all_active_user_state.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/mission_assign_states.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/mission_selection_state.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/incident_description_present.dart';
 
 class MissionAssignScreen extends StatelessWidget {
   final CurrentIncidentModel incident;
@@ -245,6 +246,9 @@ class _MissionAssignView extends StatelessWidget {
   }
 
   Widget _buildIncidentCard() {
+    final headline = incidentDescriptionHeadline(incident.currentIncidentDescription).trim();
+    final summary = headline.isEmpty ? 'بدون وصف' : headline;
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -283,7 +287,7 @@ class _MissionAssignView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  incident.currentIncidentDescription ?? "بدون وصف",
+                  summary,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

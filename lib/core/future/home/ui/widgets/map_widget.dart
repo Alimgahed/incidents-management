@@ -9,6 +9,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/incident_description_present.dart';
 import 'package:latlong2/latlong.dart';
 
 class IncidentsMapScreen extends StatefulWidget {
@@ -689,8 +690,11 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                       _buildDetailSection(
                         'الوصف',
                         Icons.description,
-                        widget.incident.currentIncidentDescription ??
-                            'لا يوجد وصف',
+                        IncidentDescriptionPresentation(
+                          description: widget.incident.currentIncidentDescription,
+                          textColor: const Color(0xFF1E3A5F),
+                          secondaryColor: Colors.grey[700],
+                        ),
                       ),
                       const SizedBox(height: 16),
                       if (widget.incident.currentIncidentXAxis != null &&
@@ -707,7 +711,14 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                         _buildDetailSection(
                           'ملاحظات',
                           Icons.notes,
-                          widget.incident.currentIncidentNotes!,
+                          Text(
+                            widget.incident.currentIncidentNotes!,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1E3A5F),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -1059,7 +1070,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
     );
   }
 
-  Widget _buildDetailSection(String title, IconData icon, String content) {
+  Widget _buildDetailSection(String title, IconData icon, Widget content) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1085,14 +1096,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  content,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E3A5F),
-                  ),
-                ),
+                content,
               ],
             ),
           ),

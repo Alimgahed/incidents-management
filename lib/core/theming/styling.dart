@@ -19,6 +19,13 @@ class TextStyles {
     return TextStyle(fontSize: 16.0, fontWeight: fontWeight, color: color);
   }
 
+  static TextStyle size13({
+    FontWeight fontWeight = FontWeight.normal,
+    Color color = Colors.black87,
+  }) {
+    return TextStyle(fontSize: 13.0, fontWeight: fontWeight, color: color);
+  }
+
   static TextStyle size14({
     FontWeight fontWeight = FontWeight.normal,
     Color color = Colors.black87,
@@ -31,6 +38,20 @@ class TextStyles {
     Color color = secondaryTextColor,
   }) {
     return TextStyle(fontSize: 12.0, fontWeight: fontWeight, color: color);
+  }
+
+  static TextStyle size11({
+    FontWeight fontWeight = FontWeight.normal,
+    Color color = secondaryTextColor,
+  }) {
+    return TextStyle(fontSize: 11.0, fontWeight: fontWeight, color: color);
+  }
+
+  static TextStyle size10({
+    FontWeight fontWeight = FontWeight.normal,
+    Color color = secondaryTextColor,
+  }) {
+    return TextStyle(fontSize: 10.0, fontWeight: fontWeight, color: color);
   }
 
   static TextStyle size8({

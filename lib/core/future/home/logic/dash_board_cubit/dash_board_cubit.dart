@@ -172,6 +172,17 @@ class DashboardCubit extends Cubit<DashboardState> {
     emit(DashboardIncidentSelected(updated));
   }
 
+  // Sync single incident after mission update
+  void syncSelectedIncident(CurrentIncidentModel updatedIncident) {
+    if (_selectedIncident == null) return;
+    if (_selectedIncident!.currentIncidentId != updatedIncident.currentIncidentId) {
+      return;
+    }
+
+    _selectedIncident = updatedIncident;
+    emit(DashboardIncidentSelected(updatedIncident));
+  }
+
   // ---------------- HELPER ----------------
   CurrentIncidentModel _copyIncident(
     CurrentIncidentModel incident, {

@@ -18,6 +18,7 @@ import 'package:incidents_managment/core/future/auth/logic/cubit/registraion_pos
 import 'package:incidents_managment/core/future/auth/logic/cubit/registration_get_cubit.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
+import 'package:incidents_managment/core/future/home/logic/incident_picker_bridge.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/repo/all_active_user_repo.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/repo/mission_assign_repo.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/all_active_user_cubit.dart';
@@ -49,7 +50,8 @@ Future<void> setup() async {
   // Security Services
   getIt.registerLazySingleton<SecureStorageService>(() => SecureStorageService());
   getIt.registerLazySingleton<SessionManager>(() => SessionManager());
-  
+  getIt.registerLazySingleton<IncidentPickerBridge>(() => IncidentPickerBridge());
+
   // File Upload Repository
   getIt.registerLazySingleton<FileUploadRepository>(() => FileUploadRepository());
 

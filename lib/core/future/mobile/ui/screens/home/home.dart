@@ -18,6 +18,7 @@ import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/in
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_detail_dialogs.dart';
 import 'package:incidents_managment/core/future/mobile/ui/screens/add_photo/add_image.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/incident_description_present.dart';
 import 'package:incidents_managment/core/gloable/gloable.dart';
 import 'package:incidents_managment/core/helpers/date_format.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
@@ -1037,14 +1038,10 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
                         _MobileSection(
                           title: 'وصف الأزمة',
                           icon: Icons.description_outlined,
-                          child: Text(
-                            incident.currentIncidentDescription ??
-                                'لا يوجد وصف متاح',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              color: primaryTextColor,
-                              height: 1.6,
-                            ),
+                          child: IncidentDescriptionPresentation(
+                            description: incident.currentIncidentDescription,
+                            textColor: primaryTextColor,
+                            secondaryColor: secondaryTextColor,
                           ),
                         ),
 
@@ -1140,6 +1137,7 @@ class _MobileSliverAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = incident.currentIncidentStatus ?? 1;
     final severity = incident.currentIncidentSeverity ?? 1;
+    final headline = incidentDescriptionHeadline(incident.currentIncidentDescription);
 
     return SliverAppBar(
       expandedHeight: 200,
@@ -1209,7 +1207,7 @@ class _MobileSliverAppBar extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'أزمة #${incident.currentIncidentDescription}',
+                              headline,
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
