@@ -212,6 +212,14 @@ class _DashboardViewState extends State<DashboardView> {
                 // Sync all incidents
                 dashboardCubit.syncWithIncidents(state.incidents);
 
+                // Auto-select the first incident on desktop when nothing is selected yet
+                if (selectedIncidentId == null && state.incidents.isNotEmpty) {
+                  final isMobile = MediaQuery.sizeOf(context).width <= 768;
+                  if (!isMobile) {
+                    dashboardCubit.selectIncident(state.incidents.first);
+                  }
+                }
+
                 // Also make sure selected incident is updated if it exists
                 if (selectedIncidentId != null) {
                   try {

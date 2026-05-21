@@ -479,7 +479,7 @@ class IncidentsList extends StatelessWidget {
                                 useWebTileLayout: useWebGrid,
                                 onTap: () {
                                   cubit.selectIncident(incident);
-                                  onIncidentTap?.call(incident);
+                                  // onIncidentTap?.call(incident);
                                 },
                               ),
                             );
