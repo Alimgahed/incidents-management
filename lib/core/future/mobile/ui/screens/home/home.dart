@@ -1043,6 +1043,24 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
 
                         const SizedBox(height: 16),
 
+                        // Address Section
+                        if (incident.address != null && incident.address!.isNotEmpty)
+                          _MobileSection(
+                            title: 'العنوان',
+                            icon: Icons.location_on_outlined,
+                            child: Text(
+                              incident.address!,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: primaryTextColor,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+
+                        if (incident.address != null && incident.address!.isNotEmpty)
+                          const SizedBox(height: 16),
+
                         // Missions Section
                         _MobileMissionsSection(incident: incident),
 

@@ -20,6 +20,7 @@ class EditIncidentCubit extends Cubit<EditIncidentStates> {
     LatLng? location,
     required int branchId,
     String? notes,
+    String? address,
   }) async {
     emit(const EditIncidentStates.loading());
 
@@ -32,6 +33,7 @@ class EditIncidentCubit extends Cubit<EditIncidentStates> {
       currentIncidentSeverity: severity,
       branchId: branchId,
       currentIncidentNotes: notes,
+      address: address,
       currentIncidentStatusUpdatedAt: DateTime.now(),
       currentIncidentSeverityUpdateAt: DateTime.now(),
     );

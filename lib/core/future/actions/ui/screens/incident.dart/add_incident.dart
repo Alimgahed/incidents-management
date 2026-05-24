@@ -19,6 +19,7 @@ class AddIncidentScreen extends StatefulWidget {
 class _AddIncidentScreenState extends State<AddIncidentScreen> {
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
 
   int? selectedTypeId;
   int? selectedSeverity;
@@ -111,6 +112,14 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
           SizedBox(height: 20),
 
           CustomTextFormField(
+            controller: addressController,
+            hintText: "العنوان بالتفصيل",
+            useValidator: false,
+            maxLines: 2,
+          ),
+          SizedBox(height: 20),
+
+          CustomTextFormField(
             controller: notesController,
             hintText: "ملاحظات إضافية (اختياري)",
             useValidator: false,
@@ -144,6 +153,9 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
                       currentIncidentNotes: notesController.text.isEmpty
                           ? null
                           : notesController.text,
+                      address: addressController.text.isEmpty
+                          ? null
+                          : addressController.text,
                     ),
                   );
                 },

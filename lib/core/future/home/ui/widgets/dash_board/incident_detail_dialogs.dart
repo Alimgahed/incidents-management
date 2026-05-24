@@ -288,6 +288,8 @@ void showEditDialog(
                             ),
                             description:
                                 incident.currentIncidentDescription ?? '',
+                            notes: incident.currentIncidentNotes,
+                            address: incident.address,
                           );
                         },
                         child: const Text(

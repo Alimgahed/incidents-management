@@ -51,6 +51,7 @@ CurrentIncidentModel _$CurrentIncidentModelFromJson(
         currentIncidentNotes: json['current_incident_notes'] as String?,
         branchName: json['branch_name'] as String?,
         username: json['user_name'] as String?,
+        address: json['address'] as String?,
         photos: (json['photos'] as List<dynamic>?)
             ?.map(
               (e) => CurrentIncidentPhoto.fromJson(e as Map<String, dynamic>),
@@ -93,6 +94,7 @@ Map<String, dynamic> _$CurrentIncidentModelToJson(
   'branch_id': instance.branchId,
   'branch_name': instance.branchName,
   'user_name': instance.username,
+  'address': instance.address,
   'photos': instance.photos,
 };
 

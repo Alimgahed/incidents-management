@@ -51,6 +51,8 @@ class CurrentIncidentModel {
   final String? branchName;
   @JsonKey(name: 'user_name')
   final String? username;
+  @JsonKey(name: 'address')
+  final String? address;
   @JsonKey(name: 'photos')
   final List<CurrentIncidentPhoto>? photos;
 
@@ -75,6 +77,7 @@ class CurrentIncidentModel {
     this.currentIncidentNotes,
     this.branchName,
     this.username,
+    this.address,
     this.photos,
   });
 

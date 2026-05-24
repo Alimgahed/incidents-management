@@ -21,6 +21,7 @@ class AddIncidentMobileScreen extends StatefulWidget {
 class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
 
   int? selectedTypeId;
   int? selectedSeverity;
@@ -44,6 +45,7 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
   void dispose() {
     descriptionController.dispose();
     notesController.dispose();
+    addressController.dispose();
     super.dispose();
   }
 
@@ -146,6 +148,16 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
 
                     const SizedBox(height: 16),
 
+                    /// ================= ADDRESS =================
+                    CustomTextFormField(
+                      controller: addressController,
+                      hintText: "العنوان بالتفصيل",
+                      useValidator: false,
+                      maxLines: 2,
+                    ),
+
+                    const SizedBox(height: 16),
+
                     /// ================= NOTES =================
                     CustomTextFormField(
                       controller: notesController,
@@ -199,6 +211,9 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
       currentIncidentNotes: notesController.text.isEmpty
           ? null
           : notesController.text,
+      address: addressController.text.isEmpty
+          ? null
+          : addressController.text,
       currentIncidentXAxis: location.latitude,
       currentIncidentYAxis: location.longitude,
     );

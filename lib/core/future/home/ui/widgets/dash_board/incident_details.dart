@@ -133,6 +133,12 @@ class _IncidentMainContent extends StatelessWidget {
       children: [
         _MissionsCard(incident: incident),
         SizedBox(height: spacing),
+        _DescriptionCard(incident: incident),
+        SizedBox(height: spacing),
+        if (incident.address != null && incident.address!.isNotEmpty)
+          _AddressCard(address: incident.address!),
+        if (incident.address != null && incident.address!.isNotEmpty)
+          SizedBox(height: spacing),
         if (incident.currentIncidentId != null)
           Column(
             children: [
@@ -1033,6 +1039,28 @@ class _DescriptionCard extends StatelessWidget {
         description: incident.currentIncidentDescription,
         textColor: primaryTextColor,
         secondaryColor: secondaryTextColor,
+      ),
+    );
+  }
+}
+
+// ==================== ADDRESS CARD ====================
+class _AddressCard extends StatelessWidget {
+  const _AddressCard({required this.address});
+  final String address;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      title: 'العنوان',
+      icon: Icons.location_on_outlined,
+      child: Text(
+        address,
+        style: TextStyle(
+          fontSize: 14,
+          color: primaryTextColor,
+          height: 1.5,
+        ),
       ),
     );
   }
