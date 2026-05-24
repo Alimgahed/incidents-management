@@ -151,7 +151,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             icon: const Icon(Icons.refresh),
             label: const Text('إعادة المحاولة'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2C5F8D),
+              backgroundColor: const Color(0xFF2B6CB0),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -179,7 +179,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.map, color: Color(0xFF1E3A5F), size: 28),
+              const Icon(Icons.map, color: Color(0xFF1B4F8A), size: 28),
               const SizedBox(width: 12),
               const Expanded(
                 child: Column(
@@ -190,7 +190,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E3A5F),
+                        color: Color(0xFF1B4F8A),
                       ),
                     ),
                     Text(
@@ -241,9 +241,9 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF2C5F8D).withAlpha(26),
+        color: const Color(0xFF2B6CB0).withAlpha(26),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF2C5F8D).withAlpha(77)),
+        border: Border.all(color: const Color(0xFF2B6CB0).withAlpha(77)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -254,18 +254,18 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation(Color(0xFF2C5F8D)),
+                valueColor: AlwaysStoppedAnimation(Color(0xFF2B6CB0)),
               ),
             )
           else
-            const Icon(Icons.location_on, color: Color(0xFF2C5F8D), size: 20),
+            const Icon(Icons.location_on, color: Color(0xFF2B6CB0), size: 20),
           const SizedBox(width: 8),
           Text(
             '$count أزمة',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2C5F8D),
+              color: Color(0xFF2B6CB0),
             ),
           ),
         ],
@@ -287,7 +287,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             _filterNotifier.value = filter;
           },
           backgroundColor: Colors.grey[200],
-          selectedColor: const Color(0xFF2C5F8D),
+          selectedColor: const Color(0xFF2B6CB0),
           labelStyle: TextStyle(
             color: isSelected ? Colors.white : Colors.black87,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -511,7 +511,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: const Color(0xFF2C5F8D)),
+            child: Icon(icon, color: const Color(0xFF2B6CB0)),
           ),
         ),
       ),
@@ -692,7 +692,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                         Icons.description,
                         IncidentDescriptionPresentation(
                           description: widget.incident.currentIncidentDescription,
-                          textColor: const Color(0xFF1E3A5F),
+                          textColor: const Color(0xFF1B4F8A),
                           secondaryColor: Colors.grey[700],
                         ),
                       ),
@@ -716,7 +716,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E3A5F),
+                              color: Color(0xFF1B4F8A),
                             ),
                           ),
                         ),
@@ -738,7 +738,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(
-        color: Color(0xFF1E3A5F),
+        color: Color(0xFF1B4F8A),
         borderRadius: BorderRadius.only(topRight: Radius.circular(24)),
       ),
       child: Row(
@@ -802,7 +802,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E3A5F),
+                  color: Color(0xFF1B4F8A),
                 ),
               ),
               const SizedBox(height: 4),
@@ -891,7 +891,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2C5F8D),
+                  color: const Color(0xFF2B6CB0),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -910,7 +910,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E3A5F),
+                        color: Color(0xFF1B4F8A),
                       ),
                     ),
                     Text(
@@ -949,7 +949,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
               minHeight: 8,
               backgroundColor: Colors.grey[300],
               valueColor: AlwaysStoppedAnimation(
-                progressPercent == 1.0 ? Colors.green : const Color(0xFF2C5F8D),
+                progressPercent == 1.0 ? Colors.green : const Color(0xFF2B6CB0),
               ),
             ),
           ),
@@ -1017,7 +1017,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: isCompleted ? Colors.grey : const Color(0xFF1E3A5F),
+                    color: isCompleted ? Colors.grey : const Color(0xFF1B4F8A),
                     decoration: isCompleted ? TextDecoration.lineThrough : null,
                   ),
                 ),
@@ -1081,7 +1081,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFF2C5F8D), size: 24),
+          Icon(icon, color: const Color(0xFF2B6CB0), size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1121,14 +1121,14 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
         children: [
           Row(
             children: [
-              const Icon(Icons.location_on, color: Color(0xFF2C5F8D), size: 24),
+              const Icon(Icons.location_on, color: Color(0xFF2B6CB0), size: 24),
               const SizedBox(width: 12),
               const Text(
                 'الموقع',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E3A5F),
+                  color: Color(0xFF1B4F8A),
                 ),
               ),
               const Spacer(),
@@ -1137,7 +1137,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
                 icon: const Icon(Icons.zoom_in, size: 18),
                 label: const Text('تكبير على الخريطة'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2C5F8D),
+                  backgroundColor: const Color(0xFF2B6CB0),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -1232,14 +1232,14 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
         children: [
           const Row(
             children: [
-              Icon(Icons.access_time, color: Color(0xFF2C5F8D), size: 24),
+              Icon(Icons.access_time, color: Color(0xFF2B6CB0), size: 24),
               SizedBox(width: 12),
               Text(
                 'المواعيد الزمنية',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E3A5F),
+                  color: Color(0xFF1B4F8A),
                 ),
               ),
             ],

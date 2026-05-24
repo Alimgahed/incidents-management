@@ -353,14 +353,14 @@ class _HeaderDecoration {
   static BoxDecoration build() {
     return BoxDecoration(
       gradient: LinearGradient(
-        colors: [const Color(0xFF0F2744), const Color(0xFF1E3A5F)],
+        colors: [const Color(0xFF0A1628), const Color(0xFF1B4F8A)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: const Color(0xFF0F2744).withOpacity(0.2),
+          color: const Color(0xFF0A1628).withOpacity(0.2),
           blurRadius: 20,
           offset: const Offset(0, 8),
         ),

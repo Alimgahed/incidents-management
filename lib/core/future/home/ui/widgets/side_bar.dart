@@ -27,9 +27,9 @@ Widget buildSidebar(BuildContext context, {bool isDrawer = false}) {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF0F2744),
-              Color(0xFF1E3A5F),
-              Color(0xFF244A6E),
+              Color(0xFF0A1628),   // Deep navy
+              Color(0xFF0F3460),   // Navy
+              Color(0xFF1B4F8A),   // Royal blue
             ],
           ),
           boxShadow: [
@@ -278,7 +278,7 @@ Widget buildNavItem(
                     width: 3,
                     height: selected ? 22 : 0,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5CE1FF),
+                      color: const Color(0xFFCDA349),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -378,7 +378,7 @@ class _UserProfileWidgetState extends State<UserProfileWidget> {
                 color: Colors.white.withValues(alpha: 0.75),
                 size: 22,
               ),
-              color: const Color(0xFF1A2F4A),
+              color: const Color(0xFF0F3460),
               surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onOpened: _checkLoginStatus,

@@ -109,7 +109,7 @@ class _UserTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       leading: CircleAvatar(
-        backgroundColor: active ? const Color(0xFF1E3A5F) : Colors.grey,
+        backgroundColor: active ? const Color(0xFF1B4F8A) : Colors.grey,
         child: Icon(
           active ? Icons.person : Icons.person_off,
           color: Colors.white,

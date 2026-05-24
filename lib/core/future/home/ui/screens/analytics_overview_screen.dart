@@ -60,7 +60,7 @@ class _InitialConnectCard extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.hub_outlined, size: 48, color: Color(0xFF1E3A5F)),
+                const Icon(Icons.hub_outlined, size: 48, color: Color(0xFF1B4F8A)),
                 const SizedBox(height: 16),
                 Text(
                   'التدفق المباشر غير متصل',
@@ -260,7 +260,7 @@ class _StatCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: const Color(0xFF1E3A5F)),
+              Icon(icon, color: const Color(0xFF1B4F8A)),
               const SizedBox(height: 8),
               Text(
                 value,

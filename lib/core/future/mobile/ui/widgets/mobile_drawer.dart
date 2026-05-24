@@ -37,7 +37,7 @@ class _MobileDrawerState extends State<MobileDrawer> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF1E3A5F), Color(0xFF2C5F8D)],
+            colors: [Color(0xFF0A1628), Color(0xFF1B4F8A)],
           ),
         ),
         child: Column(

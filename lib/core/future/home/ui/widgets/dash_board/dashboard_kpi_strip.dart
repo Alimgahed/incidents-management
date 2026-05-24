@@ -118,8 +118,8 @@ class DashboardKpiStrip extends StatelessWidget {
                   label: 'إجمالي الحالات والبلاغات',
                   value: '$total',
                   icon: Icons.emergency_outlined,
-                  baseColor: const Color(0xFF1E3A5F),
-                  gradientColors: const [Color(0xFF1E3A5F), Color(0xFF2A4D7C)],
+                  baseColor: const Color(0xFF1B4F8A),
+                  gradientColors: const [Color(0xFF1B4F8A), Color(0xFF1B4F8A)],
                   compact: compact,
                 ),
                 _KpiCard(

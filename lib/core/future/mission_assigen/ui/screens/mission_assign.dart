@@ -254,7 +254,7 @@ class _MissionAssignView extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [appColor, Color(0xFF2A4D7C)],
+          colors: [appColor, Color(0xFF1B4F8A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

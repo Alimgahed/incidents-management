@@ -3,20 +3,20 @@ import 'package:incidents_managment/core/constant/colors.dart';
 
 class AppTheme {
   // =======================
-  // Color Constants
+  // Color Constants — Logo-derived palette
   // =======================
-  static const Color primaryColor = Color(0xFF1E3A5F);
-  static const Color primaryLight = Color(0xFF2A4D7C);
-  static const Color primaryDark = Color(0xFF152B47);
+  static const Color primaryColor = Color(0xFF1B4F8A);   // Royal blue
+  static const Color primaryLight = Color(0xFF2B6CB0);
+  static const Color primaryDark = Color(0xFF0F3460);     // Deep navy
 
-  static const Color accentColor = Color(0xFF00D9FF);
-  static const Color accentLight = Color(0xFF5CE1FF);
-  static const Color accentDark = Color(0xFF00A8CC);
+  static const Color accentColor = Color(0xFFCDA349);     // Gold
+  static const Color accentLight = Color(0xFFE0C068);
+  static const Color accentDark = Color(0xFFAA8030);
 
-  static const Color successColor = Color(0xFF00E5A0);
-  static const Color errorColor = Color(0xFFFF6B93);
-  static const Color warningColor = Color(0xFFFFB547);
-  static const Color infoColor = Color(0xFF7B8CDE);
+  static const Color successColor = Color(0xFF22C55E);
+  static const Color errorColor = Color(0xFFEF4444);
+  static const Color warningColor = Color(0xFFCDA349);    // Gold as warning
+  static const Color infoColor = Color(0xFF5BA3D9);       // Water blue
 
   static const Color backgroundColor = Color(0xFFF5F7FA);
   static const Color surfaceColor = Color(0xFFFFFFFF);
@@ -36,34 +36,36 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       scaffoldBackgroundColor: Colors.white,
-      primaryColor: Colors.white,
+      primaryColor: primaryColor,
       fontFamily: 'Alexandria',
 
       // Color scheme
       colorScheme: const ColorScheme.light(
-        primary: Colors.white,
-        surface: Colors.white,
-        onPrimary: Colors.black,
+        primary: primaryColor,
+        secondary: accentColor,
+        surface: surfaceColor,
+        onPrimary: textOnPrimary,
+        onSecondary: textOnPrimary,
       ),
 
       // Icons
-      iconTheme: IconThemeData(color: appColor),
-      primaryIconTheme: IconThemeData(color: appColor),
+      iconTheme: const IconThemeData(color: primaryColor),
+      primaryIconTheme: const IconThemeData(color: primaryColor),
 
       // AppBar
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         titleTextStyle: TextStyle(
-          color: appColor,
+          color: primaryColor,
           fontSize: 22,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: IconThemeData(color: appColor),
+        iconTheme: IconThemeData(color: primaryColor),
         elevation: 0,
       ),
 
-      progressIndicatorTheme: ProgressIndicatorThemeData(color: appColor),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: primaryColor),
 
       // Text
       textTheme: const TextTheme(
@@ -79,7 +81,7 @@ class AppTheme {
 }
 
 // =======================
-// Dark Theme
+// Decorations
 // =======================
 
 class AppDecorations {

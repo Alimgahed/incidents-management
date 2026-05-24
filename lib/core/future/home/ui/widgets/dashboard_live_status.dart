@@ -53,7 +53,7 @@ class DashboardLiveStatusStrip extends StatelessWidget {
               _Chip(
                 icon: Icons.schedule_rounded,
                 label: 'آخر تحديث ${_formatTime(last)}',
-                foreground: const Color(0xFF1E3A5F),
+                foreground: const Color(0xFF1B4F8A),
                 background: const Color(0xFFE2E8F0),
               ),
               if (err != null && err.isNotEmpty) ...[

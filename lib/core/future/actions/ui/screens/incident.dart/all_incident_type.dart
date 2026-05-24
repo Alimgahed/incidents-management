@@ -139,8 +139,8 @@ class _IncidentTypeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final missionsCount = incidentType.missions?.length ?? 0;
     final colors = [
-      const Color(0xFF1E3A5F),
-      const Color(0xFF2C5F8D),
+      const Color(0xFF1B4F8A),
+      const Color(0xFF2B6CB0),
       const Color(0xFF3A7CA5),
       const Color(0xFF4E8FB8),
     ];
@@ -322,7 +322,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                       height: 70,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [appColor, Color(0xFF2C5F8D)],
+                          colors: [appColor, Color(0xFF2B6CB0)],
                         ),
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -450,7 +450,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                             height: 42,
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [appColor, Color(0xFF2C5F8D)],
+                                colors: [appColor, Color(0xFF2B6CB0)],
                               ),
                               borderRadius: BorderRadius.circular(10),
                             ),

@@ -67,7 +67,7 @@ class GlobalAppBar extends StatelessWidget implements PreferredSizeWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF1E3A5F), Color(0xFF2C5F8D)],
+            colors: [Color(0xFF1B4F8A), Color(0xFF2B6CB0)],
           ),
         ),
       ),
