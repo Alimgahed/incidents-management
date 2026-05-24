@@ -24,7 +24,7 @@ void showStatusSelector(
         width: 500,
         padding: const EdgeInsets.all(24),
         child: StatefulBuilder(
-          builder: (context, setState) {
+          builder: (statefulContext, setState) {
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,7 +170,7 @@ void showEditDialog(
         width: 500,
         padding: const EdgeInsets.all(24),
         child: StatefulBuilder(
-          builder: (context, setState) {
+          builder: (statefulContext, setState) {
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,6 +268,14 @@ void showEditDialog(
                         ),
                         onPressed: () {
                           Navigator.pop(dialogContext);
+                          
+                          // Optimistically update the UI so it doesn't wait for server response/socket broadcast
+                          context.read<IncidentMapCubit>().optimisticUpdateIncident(
+                            incidentId: incident.currentIncidentId!,
+                            newStatus: selectedStatus,
+                            newSeverity: selectedSeverity,
+                          );
+
                           cubit.submitIncident(
                             id: incident.currentIncidentId!,
                             status: selectedStatus,

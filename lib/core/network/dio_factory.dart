@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/network/api_constants.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
-import 'package:incidents_managment/core/security/session_manager.dart';
 
 class DioFactory {
   DioFactory._();
@@ -42,11 +41,6 @@ class DioFactory {
           return handler.next(options);
         },
         onError: (DioException error, handler) async {
-          if (error.response?.statusCode == 401) {
-            // Trigger global force logout via SessionManager on 401 Unauthorized (without the popup)
-            final sessionManager = getIt<SessionManager>();
-            await sessionManager.logout(sessionExpired: false);
-          }
           return handler.next(error);
         },
       ),

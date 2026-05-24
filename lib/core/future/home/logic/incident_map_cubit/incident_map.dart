@@ -28,25 +28,37 @@ List<CurrentIncidentModel> _parseIncidentList(List<dynamic> data) {
 // does not define one; this attempts to use toJson/fromJson if present,
 // and falls back to a best-effort mutation if necessary.
 extension _CurrentIncidentModelCopy on CurrentIncidentModel {
-  CurrentIncidentModel copyWith({List<dynamic>? currentIncidentWithMissions}) {
+  CurrentIncidentModel copyWith({
+    List<dynamic>? currentIncidentWithMissions,
+    int? currentIncidentStatus,
+    int? currentIncidentSeverity,
+  }) {
     try {
       final map = (this as dynamic).toJson() as Map<String, dynamic>;
-      // The generated fromJson reads the missions list from the JSON key 'missions'
-      // (see @JsonKey(name: 'missions') on currentIncidentWithMissions in the model).
-      // Writing to 'currentIncidentWithMissions' here was a no-op — fromJson never
-      // reads it, so socket updates were silently dropped and the UI kept showing
-      // the old mission status.
-      map['missions'] = currentIncidentWithMissions
-          ?.map(
-            (m) => (m as dynamic).toJson != null ? (m as dynamic).toJson() : m,
-          )
-          .toList();
+      
+      if (currentIncidentWithMissions != null) {
+        map['missions'] = currentIncidentWithMissions
+            .map(
+              (m) => (m as dynamic).toJson != null ? (m as dynamic).toJson() : m,
+            )
+            .toList();
+      }
+
+      if (currentIncidentStatus != null) {
+        map['current_incident_status'] = currentIncidentStatus;
+      }
+      
+      if (currentIncidentSeverity != null) {
+        map['current_incident_severity'] = currentIncidentSeverity;
+      }
+
       return CurrentIncidentModel.fromJson(map);
     } catch (_) {
-      // fallback: try to mutate the instance if fields are non-final, else return original
+      // fallback
       try {
-        (this as dynamic).currentIncidentWithMissions =
-            currentIncidentWithMissions;
+        if (currentIncidentWithMissions != null) {
+          (this as dynamic).currentIncidentWithMissions = currentIncidentWithMissions;
+        }
         return this;
       } catch (_) {
         return this;
@@ -333,7 +345,9 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
         currentIncidentWithMissions: missions,
       );
 
-      incidentss[incidentIndex] = updatedIncident;
+      final updated = List<CurrentIncidentModel>.of(incidentss);
+      updated[incidentIndex] = updatedIncident;
+      incidentss = updated;
 
       _bumpPayloadTime();
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
@@ -343,7 +357,30 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   }
 
   // ===========================================================================
-  // OPTIMISTIC OFFLINE UPDATE
+  // OPTIMISTIC OFFLINE UPDATE INCIDENT
+  // ===========================================================================
+  void optimisticUpdateIncident({
+    required int incidentId,
+    required int newStatus,
+    required int newSeverity,
+  }) {
+    final index = incidentss.indexWhere((i) => i.currentIncidentId == incidentId);
+    if (index != -1) {
+      final updatedIncident = incidentss[index].copyWith(
+        currentIncidentStatus: newStatus,
+        currentIncidentSeverity: newSeverity,
+      );
+
+      final updated = List<CurrentIncidentModel>.of(incidentss);
+      updated[index] = updatedIncident;
+      incidentss = updated;
+      _bumpPayloadTime();
+      emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+    }
+  }
+
+  // ===========================================================================
+  // OPTIMISTIC OFFLINE UPDATE MISSION
   // ===========================================================================
   void optimisticUpdateMission({
     required int incidentId,

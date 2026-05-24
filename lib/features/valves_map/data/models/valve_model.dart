@@ -1,6 +1,7 @@
 import 'package:incidents_managment/features/valves_map/domain/entities/valve_entity.dart';
 
 /// Valve Model extending ValveEntity to handle JSON serialization.
+// ignore: must_be_immutable
 class ValveModel extends ValveEntity {
   ValveModel({
     required super.id,

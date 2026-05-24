@@ -69,7 +69,13 @@ class _AppBootstrapState extends State<_AppBootstrap> {
   Future<void> _start() async {
     final stopwatch = Stopwatch()..start();
 
+    // Start a 2-second minimum delay timer
+    final minDelay = Future.delayed(const Duration(seconds: 2));
+
     final result = await StartupService.initialize();
+
+    // Wait until at least 2 seconds have passed
+    await minDelay;
 
     if (kDebugMode) {
       stopwatch.stop();
@@ -105,21 +111,21 @@ class _AppSplash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Color(0xFFFFFFFF),
+        backgroundColor: const Color(0xFFFFFFFF),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.crisis_alert_rounded,
-                size: 72,
-                color: Color(0xFF1565C0),
+              Image.asset(
+                'assets/images/logo.png',
+                width: 120,
+                height: 120,
               ),
-              SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'إدارة الأزمات',
                 style: TextStyle(
                   fontSize: 26,
@@ -128,8 +134,8 @@ class _AppSplash extends StatelessWidget {
                   decoration: TextDecoration.none,
                 ),
               ),
-              SizedBox(height: 40),
-              SizedBox(
+              const SizedBox(height: 40),
+              const SizedBox(
                 width: 28,
                 height: 28,
                 child: CircularProgressIndicator(

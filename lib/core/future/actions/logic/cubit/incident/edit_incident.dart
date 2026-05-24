@@ -32,6 +32,8 @@ class EditIncidentCubit extends Cubit<EditIncidentStates> {
       currentIncidentSeverity: severity,
       branchId: branchId,
       currentIncidentNotes: notes,
+      currentIncidentStatusUpdatedAt: DateTime.now(),
+      currentIncidentSeverityUpdateAt: DateTime.now(),
     );
 
     final result = await editIncidentRepo.editIncident(model, id);

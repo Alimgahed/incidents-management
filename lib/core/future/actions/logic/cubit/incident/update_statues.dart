@@ -20,6 +20,7 @@ class UpdateStatuesCubit extends Cubit<UpdateStatuesStates> {
 
     final model = CurrentIncidentWithMissions(
       currentIncidentMissionStatus: statusid,
+      currentIncidentMissionStatusUpdatedAt: DateTime.now(),
     );
 
     final result = await updateStatuesRepo.updateStatues(

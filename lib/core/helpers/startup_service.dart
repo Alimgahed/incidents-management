@@ -5,6 +5,7 @@ import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/helpers/shared_preference.dart';
 import 'package:incidents_managment/core/network/dio_factory.dart';
 import 'package:incidents_managment/core/offline/offline_bootstrap.dart';
+import 'package:incidents_managment/core/security/session_manager.dart';
 import 'package:incidents_managment/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -65,7 +66,9 @@ class StartupService {
           : DioFactory.getDioInstance(),
     );
 
-    // ── Step 3: Token read — now fetches from SecureStorage ──────
+    // ── Step 3: Token and Session read ──────
+    final sessionManager = getIt<SessionManager>();
+    await sessionManager.initializeSession();
     final token = await getIt<SecureStorageService>().getUserToken();
     final isLoggedIn = token != null && token.trim().isNotEmpty;
 
