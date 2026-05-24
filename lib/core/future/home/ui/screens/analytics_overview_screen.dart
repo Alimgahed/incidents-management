@@ -21,23 +21,22 @@ class AnalyticsOverviewScreen extends StatelessWidget {
                 onConnect: () => context.read<IncidentMapCubit>().initialize(),
               );
             }
-            if (state is IncidentMapLoading) {
+            if (state is IncidentMapLoading && context.read<IncidentMapCubit>().incidents.isEmpty) {
               return const Center(child: CircularProgressIndicator());
             }
-            if (state is IncidentMapError) {
+            if (state is IncidentMapError && context.read<IncidentMapCubit>().incidents.isEmpty) {
               return _ErrorCard(
                 message: state.message,
                 onRetry: () => context.read<IncidentMapCubit>().initialize(),
               );
             }
-            if (state is IncidentMapLoaded) {
-              return _LoadedBody(
-                incidents: state.incidents,
-                onRefresh: () => context.read<IncidentMapCubit>().refresh(),
-                connected: context.read<IncidentMapCubit>().isConnected,
-              );
-            }
-            return const SizedBox.shrink();
+            
+            final incidents = context.read<IncidentMapCubit>().incidents;
+            return _LoadedBody(
+              incidents: incidents,
+              onRefresh: () => context.read<IncidentMapCubit>().refresh(),
+              connected: context.read<IncidentMapCubit>().isConnected,
+            );
           },
         ),
       ),

@@ -58,4 +58,8 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Play Core: required for deferred components (SplitInstall / Play Store)
+    implementation("com.google.android.play:core:1.10.3")
+    // Optional KTX helpers
+    implementation("com.google.android.play:core-ktx:1.8.1")
 }

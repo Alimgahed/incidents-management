@@ -5,7 +5,7 @@ import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
-import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
+
 import 'package:incidents_managment/core/future/home/logic/incident_picker_bridge.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/incident_description_present.dart';
 
@@ -115,9 +115,7 @@ class _CommandPaletteDialogState extends State<_CommandPaletteDialog> {
 
   List<CurrentIncidentModel> _filteredIncidents(IncidentMapCubit map) {
     final q = _controller.text.trim().toLowerCase();
-    final list = map.state is IncidentMapLoaded
-        ? (map.state as IncidentMapLoaded).incidents
-        : <CurrentIncidentModel>[];
+    final list = map.incidents;
     if (q.isEmpty) return list.take(12).toList();
     return list.where((i) {
       final id = '${i.currentIncidentId ?? ''}';

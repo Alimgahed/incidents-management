@@ -12,7 +12,6 @@ import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:incidents_managment/main.dart';
-import 'package:incidents_managment/core/security/session_timeout_listener.dart';
 
 class WebScrollBehavior extends MaterialScrollBehavior {
   @override
@@ -71,8 +70,7 @@ class Incidents extends StatelessWidget {
             return BlocProvider<OfflineStatusCubit>(
               // Singleton-ish: factory builds a single cubit per app lifecycle.
               create: (_) => getIt<OfflineStatusCubit>(),
-              child: SessionTimeoutListener(
-                child: Directionality(
+              child: Directionality(
                   textDirection: TextDirection.rtl,
                   child: ResponsiveBreakpoints.builder(
                     child: MediaQuery(
@@ -95,8 +93,7 @@ class Incidents extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-            );
+              );
           },
         );
       },

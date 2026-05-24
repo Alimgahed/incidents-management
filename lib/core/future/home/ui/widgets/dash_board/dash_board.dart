@@ -299,9 +299,7 @@ class _DashboardIncidentsScreen extends StatelessWidget {
           previous.runtimeType != current.runtimeType ||
           current is IncidentMapLoaded,
       builder: (context, mapState) {
-        final allIncidents = mapState is IncidentMapLoaded
-            ? mapState.incidents
-            : <CurrentIncidentModel>[];
+        final allIncidents = context.read<IncidentMapCubit>().incidents;
         final connected = context.read<IncidentMapCubit>().isConnected;
         final isMobile = MediaQuery.sizeOf(context).width <= 768;
 

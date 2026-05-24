@@ -95,9 +95,7 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
       // 👇 IMPORTANT: Listen to BOTH cubits
       body: BlocBuilder<IncidentMapCubit, IncidentMapState>(
         builder: (context, incidentState) {
-          final incidents = incidentState is IncidentMapLoaded
-              ? incidentState.incidents
-              : <CurrentIncidentModel>[];
+          final incidents = context.read<IncidentMapCubit>().incidents;
 
           return BlocBuilder<DashboardCubit, DashboardState>(
             builder: (context, dashboardState) {
@@ -980,9 +978,7 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
         ],
         child: BlocBuilder<IncidentMapCubit, IncidentMapState>(
           builder: (context, state) {
-            final incidents = state is IncidentMapLoaded
-                ? state.incidents
-                : <CurrentIncidentModel>[];
+            final incidents = context.read<IncidentMapCubit>().incidents;
             final incident = incidents.firstWhere(
               (i) => i.currentIncidentId == incidentID,
               orElse: () => CurrentIncidentModel(),

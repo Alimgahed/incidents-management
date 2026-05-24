@@ -1139,7 +1139,7 @@ class _MissionItem extends StatelessWidget {
   final CurrentIncidentWithMissions mission;
   final int incidentId;
 
-  _MissionItem({required this.mission, required this.incidentId});
+  const _MissionItem({required this.mission, required this.incidentId});
 
   @override
   Widget build(BuildContext context) {

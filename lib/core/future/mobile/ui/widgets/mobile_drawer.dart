@@ -135,7 +135,12 @@ class _MobileDrawerState extends State<MobileDrawer> {
               color: Colors.white.withAlpha(38),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.shield_rounded, color: Colors.white, size: 32),
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 32,
+              height: 32,
+              errorBuilder: (_, _, _) => const Icon(Icons.shield_rounded, color: Colors.white, size: 32),
+            ),
           ),
           const SizedBox(width: 16),
           const Expanded(

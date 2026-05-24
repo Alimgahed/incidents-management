@@ -164,7 +164,12 @@ class _SidebarHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),
-            child: const Icon(Icons.shield_moon_outlined, color: Colors.white, size: 26),
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 26,
+              height: 26,
+              errorBuilder: (_, _, _) => const Icon(Icons.shield_moon_outlined, color: Colors.white, size: 26),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(

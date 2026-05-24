@@ -90,3 +90,7 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.openjsse.**
 -dontwarn com.sun.jna.**
+
+# Keep Play Core classes used by Flutter's deferred components manager
+-keep class com.google.android.play.core.** { *; }
+-dontwarn com.google.android.play.core.**
