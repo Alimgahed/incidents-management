@@ -59,12 +59,8 @@ class SessionManager {
   Future<void> logout({bool sessionExpired = false}) async {
     // 0. Notify backend to clear device token
     try {
-      if (getIt.isRegistered<ApiService>()) {
-        final fcmToken = await FcmService.getToken();
-        if (fcmToken != null && fcmToken.isNotEmpty) {
-          await getIt<ApiService>().logout({"device_token": fcmToken});
-        }
-      }
+      final fcmToken = await FcmService.getToken();
+      await getIt<ApiService>().logout({"device_token": fcmToken ?? ""});
     } catch (_) {
       // Ignore API errors to ensure local logout completes
     }
