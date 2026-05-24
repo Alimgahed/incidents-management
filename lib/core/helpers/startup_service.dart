@@ -3,11 +3,12 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/helpers/shared_preference.dart';
-import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
 import 'package:incidents_managment/core/network/dio_factory.dart';
 import 'package:incidents_managment/core/offline/offline_bootstrap.dart';
 import 'package:incidents_managment/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:incidents_managment/core/security/secure_storage_service.dart';
 
 /// Result of [StartupService.initialize], consumed by [_AppBootstrapState]
 /// to decide which initial route the app should navigate to.
@@ -64,11 +65,9 @@ class StartupService {
           : DioFactory.getDioInstance(),
     );
 
-    // ── Step 3: Token read — now fully synchronous (SP instance cached) ──────
-    final token = await SharedPreferencesHelper.getData<String>(
-      SharedPreferenceKeys.userToken,
-    );
-    final isLoggedIn = token != null && token.toString().trim().isNotEmpty;
+    // ── Step 3: Token read — now fetches from SecureStorage ──────
+    final token = await getIt<SecureStorageService>().getUserToken();
+    final isLoggedIn = token != null && token.trim().isNotEmpty;
 
     return AppStartupResult(isLoggedIn: isLoggedIn);
   }

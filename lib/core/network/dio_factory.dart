@@ -43,9 +43,9 @@ class DioFactory {
         },
         onError: (DioException error, handler) async {
           if (error.response?.statusCode == 401) {
-            // Trigger global force logout via SessionManager on 401 Unauthorized
+            // Trigger global force logout via SessionManager on 401 Unauthorized (without the popup)
             final sessionManager = getIt<SessionManager>();
-            await sessionManager.logout(sessionExpired: true);
+            await sessionManager.logout(sessionExpired: false);
           }
           return handler.next(error);
         },

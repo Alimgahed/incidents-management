@@ -342,6 +342,23 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     }
   }
 
+  // ===========================================================================
+  // OPTIMISTIC OFFLINE UPDATE
+  // ===========================================================================
+  void optimisticUpdateMission({
+    required int incidentId,
+    required int missionId,
+    required int newStatus,
+  }) {
+    // Calls the same logic the socket uses, so the UI updates immediately
+    // even if we are offline and haven't received a socket broadcast.
+    _handleMissionStatusUpdated({
+      'incident_id': incidentId,
+      'mission_id': missionId,
+      'new_status': newStatus,
+    });
+  }
+
   void _handleMissionUpdateError(dynamic data) {
     final msg = data is Map ? data['message'] ?? 'فشل تحديث المهمة' : 'خطأ';
     emit(IncidentMapError(message: msg));

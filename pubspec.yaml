@@ -58,6 +58,11 @@ dependencies:
   retrofit: 4.9.2  # Fixed version - must match generator
   socket_io_client: ^3.1.4
 
+  # Google Maps & Reactive
+  google_maps_flutter: ^2.10.0
+  google_maps_cluster_manager: ^3.0.0+1
+  rxdart: ^0.28.0
+
   # State Management
   get: ^4.6.6
   bloc: ^9.1.0
