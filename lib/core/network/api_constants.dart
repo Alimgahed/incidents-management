@@ -19,5 +19,6 @@ class ApiConstants {
   static const allActiveUsers = "/all-active-users";
   static const register = "/register";
   static const login = "/login";
+  static const logout = "/logout";
   static const allValves = "/all-valves";
 }

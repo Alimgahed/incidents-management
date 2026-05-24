@@ -62,6 +62,8 @@ abstract class ApiService {
   Future<RegistrationModel> getregister();
   @POST(ApiConstants.login)
   Future<LoginResponseModel> login(@Body() LoginModel loginModel);
+  @POST(ApiConstants.logout)
+  Future<dynamic> logout(@Body() Map<String, dynamic> data);
   @GET(ApiConstants.allValves)
   Future<List<ValveModel>> allValves();
 }

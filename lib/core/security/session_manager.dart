@@ -6,6 +6,8 @@ import 'package:incidents_managment/core/future/auth/data/model/login_response_m
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/helpers/shared_preference.dart';
 import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
+import 'package:incidents_managment/core/network/api_services.dart';
+import 'package:incidents_managment/core/network/fcm_service.dart';
 import 'package:incidents_managment/core/offline/offline_bootstrap.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
@@ -55,6 +57,18 @@ class SessionManager {
 
   /// Global proactive logout flow
   Future<void> logout({bool sessionExpired = false}) async {
+    // 0. Notify backend to clear device token
+    try {
+      if (getIt.isRegistered<ApiService>()) {
+        final fcmToken = await FcmService.getToken();
+        if (fcmToken != null && fcmToken.isNotEmpty) {
+          await getIt<ApiService>().logout({"device_token": fcmToken});
+        }
+      }
+    } catch (_) {
+      // Ignore API errors to ensure local logout completes
+    }
+
     // 1. Clear secure storage
     await _secureStorage.clearAll();
 

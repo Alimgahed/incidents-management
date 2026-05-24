@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:incidents_managment/core/network/fcm_service.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
-import 'package:incidents_managment/core/future/auth/data/model/login_model.dart';
 import 'package:incidents_managment/core/future/auth/logic/cubit/login_cubit.dart';
 import 'package:incidents_managment/core/future/auth/logic/state/login_state.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
@@ -29,18 +27,13 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _submitForm() async {
+  void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      final fcmToken = await FcmService.getToken();
-
-      final loginModel = LoginModel(
-        username: _usernameController.text.trim(),
-        password: _passwordController.text.trim(),
-        deviceToken: fcmToken ?? "",
-      );
-
       if (mounted) {
-        context.read<LoginCubit>().login(loginModel);
+        context.read<LoginCubit>().login(
+          _usernameController.text.trim(),
+          _passwordController.text.trim(),
+        );
       }
     }
   }
