@@ -40,15 +40,15 @@ Color _severityColor(int? severity) {
 String _severityLabel(int? severity) {
   switch (severity) {
     case 1:
-      return 'ظ…ظ†ط®ظپط¶';
+      return 'منخفض';
     case 2:
-      return 'ظ…طھظˆط³ط·ط©';
+      return 'متوسطة';
     case 3:
-      return 'ظ…ط±طھظپط¹ط©';
+      return 'مرتفعة';
     case 4:
-      return 'ط­ط±ط¬ط©';
+      return 'حرجة';
     default:
-      return 'ط؛ظٹط± ظ…ط­ط¯ط¯';
+      return 'غير محدد';
   }
 }
 
@@ -282,7 +282,7 @@ class _MissionAssignView extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              "طھظ… طھط¹ظٹظٹظ† $count ظ…ظ‡ظ…ط© ط¨ظ†ط¬ط§ط­ âœ“",
+              "طھظ… طھط¹ظٹظٹظ† $count مهمة ط¨ظ†ط¬ط§ط­ âœ“",
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -618,7 +618,7 @@ class _IncidentInfoCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      incident.branchName ?? 'ط؛ظٹط± ظ…ط­ط¯ط¯',
+                      incident.branchName ?? 'غير محدد',
                       style: const TextStyle(
                         color: secondaryTextColor,
                         fontSize: 12,
@@ -689,7 +689,7 @@ class _MissionsSidebar extends StatelessWidget {
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    "ط§ظ„ظ…ظ‡ط§ظ… ط§ظ„ظ…ط·ظ„ظˆط¨ط©",
+                    "المهام المطلوبة",
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
@@ -825,7 +825,7 @@ class _MissionsSidebar extends StatelessWidget {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    mission.missionName ?? "ظ…ظ‡ظ…ط©",
+                                    mission.missionName ?? "مهمة",
                                     style: TextStyle(
                                       color: isActive
                                           ? appColor
@@ -919,7 +919,7 @@ class _MissionHorizontalTabs extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    "ط§ظ„ظ…ظ‡ط§ظ…",
+                    "المهام",
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
@@ -928,7 +928,7 @@ class _MissionHorizontalTabs extends StatelessWidget {
                   ),
                   const Spacer(),
                   Text(
-                    "${missions.length} ظ…ظ‡ظ…ط©",
+                    "${missions.length} مهمة",
                     style: const TextStyle(
                       color: secondaryTextColor,
                       fontSize: 12,
@@ -994,7 +994,7 @@ class _MissionHorizontalTabs extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                mission.missionName ?? "ظ…ظ‡ظ…ط©",
+                                mission.missionName ?? "مهمة",
                                 style: TextStyle(
                                   color: isActive
                                       ? Colors.white
@@ -1089,7 +1089,7 @@ class _UsersPanel extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const Text(
-            "ط¬ط§ط±ظٹ طھط­ظ…ظٹظ„ ط§ظ„ظ…ط³طھط®ط¯ظ…ظٹظ†...",
+            "جاري تحميل المستخدمين...",
             style: TextStyle(
               color: secondaryTextColor,
               fontSize: 14,
@@ -1279,7 +1279,7 @@ class _UsersList extends StatelessWidget {
             ),
             child: TextField(
               decoration: InputDecoration(
-                hintText: "ط¨ط­ط« ط¨ط§ظ„ط§ط³ظ…...",
+                hintText: "بحث بالاسم...",
                 hintStyle: TextStyle(
                   color: secondaryTextColor.withAlpha(150),
                   fontSize: 14,
@@ -1308,7 +1308,7 @@ class _UsersList extends StatelessWidget {
             children: [
               Expanded(
                 child: _FilterDropdown(
-                  label: "ط§ظ„طµظ„ط§ط­ظٹط©",
+                  label: "الصلاحية",
                   value: state.selectedAuthority,
                   items: authorities.cast<String?>(),
                   onChanged: selCubit.updateAuthority,
@@ -1317,7 +1317,7 @@ class _UsersList extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _FilterDropdown(
-                  label: "ط§ظ„ظ‚ط·ط§ط¹",
+                  label: "القطاع",
                   value: state.selectedSector,
                   items: sectors.cast<String?>(),
                   onChanged: selCubit.updateSector,
@@ -1347,7 +1347,7 @@ class _UsersList extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              "${filteredUsers.length} ظ…ط³طھط®ط¯ظ…",
+              "${filteredUsers.length} مستخدم",
               style: const TextStyle(
                 color: secondaryTextColor,
                 fontSize: 12,
@@ -1367,7 +1367,7 @@ class _UsersList extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                "${activeUsers.length} ظ…ط­ط¯ط¯",
+                "${activeUsers.length} محدد",
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
@@ -1386,8 +1386,8 @@ class _UsersList extends StatelessWidget {
             ),
             label: Text(
               activeUsers.length == filteredUsers.length
-                  ? "ط¥ظ„ط؛ط§ط، ط§ظ„ظƒظ„"
-                  : "طھط­ط¯ظٹط¯ ط§ظ„ظƒظ„",
+                  ? "إلغاء ط§ظ„ظƒظ„"
+                  : "تحديد الكل",
               style: const TextStyle(
                 color: appColor,
                 fontSize: 12,
@@ -1650,7 +1650,7 @@ class _BottomActionBar extends StatelessWidget {
                                   ),
                                   SizedBox(width: 8),
                                   Text(
-                                    "ط§ط®طھط± ظ…ظ‡ظ…ط© ط«ظ… ط¹ظٹظ‘ظ† ظ…ط³طھط®ط¯ظ…ظٹظ†",
+                                    "اختر مهمة ثم عيّن مستخدمين",
                                     style: TextStyle(
                                       color: secondaryTextColor,
                                       fontSize: 13,
@@ -1715,8 +1715,8 @@ class _BottomActionBar extends StatelessWidget {
                                     const SizedBox(width: 10),
                                     Text(
                                       isLoading
-                                          ? "ط¬ط§ط±ظٹ ط§ظ„طھط¹ظٹظٹظ†..."
-                                          : "طھط¹ظٹظٹظ† ط§ظ„ظ…ظ‡ط§ظ…",
+                                          ? "جاري التعيين..."
+                                          : "تعيين المهام",
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w700,
@@ -1758,7 +1758,7 @@ class _BottomActionBar extends StatelessWidget {
             const Icon(Icons.summarize_rounded, color: appColor, size: 16),
             const SizedBox(width: 6),
             Text(
-              "${selCubit.assignedMissionsCount} ظ…ظ‡ظ…ط© آ· ${assigned.fold<int>(0, (sum, e) => sum + e.value.length)} ظ…ط³طھط®ط¯ظ…",
+              "${selCubit.assignedMissionsCount} مهمة آ· ${assigned.fold<int>(0, (sum, e) => sum + e.value.length)} ظ…ط³طھط®ط¯ظ…",
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
@@ -1777,7 +1777,7 @@ class _BottomActionBar extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(bottom: 2),
             child: Text(
-              "${mission?.missionName ?? 'ظ…ظ‡ظ…ط©'}: ${e.value.length} ظ…ط³طھط®ط¯ظ…",
+              "${mission?.missionName ?? 'مهمة'}: ${e.value.length} مستخدم",
               style: const TextStyle(
                 color: secondaryTextColor,
                 fontSize: 12,
@@ -1790,7 +1790,7 @@ class _BottomActionBar extends StatelessWidget {
         }),
         if (assigned.length > 2)
           Text(
-            "+${assigned.length - 2} ظ…ظ‡ط§ظ… ط£ط®ط±ظ‰",
+            "+${assigned.length - 2} مهام أخرى",
             style: TextStyle(
               color: appColor.withAlpha(150),
               fontSize: 11,
@@ -1830,7 +1830,7 @@ class _EmptyMissionPlaceholder extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           const Text(
-            "ط§ط¶ط؛ط· ط¹ظ„ظ‰ ظ…ظ‡ظ…ط© ظ„طھط¹ظٹظٹظ† ظ…ط³طھط®ط¯ظ…ظٹظ† ظ„ظ‡ط§",
+            "اضغط على مهمة لتعيين مستخدمين لها",
             style: TextStyle(
               color: secondaryTextColor,
               fontSize: 15,
@@ -1839,7 +1839,7 @@ class _EmptyMissionPlaceholder extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            "ط§ط®طھط± ظ…ظ‡ظ…ط© ظ…ظ† ${isWide ? 'ط§ظ„ظ‚ط§ط¦ظ…ط© ط§ظ„ط¬ط§ظ†ط¨ظٹط©' : 'ط§ظ„ط£ط¹ظ„ظ‰'} ظ„ظ„ط¨ط¯ط،",
+            "اختر مهمة من ${isWide ? 'القائمة الجانبية' : 'الأعلى'} للبدء",
             style: TextStyle(
               color: secondaryTextColor.withAlpha(150),
               fontSize: 13,
@@ -1901,7 +1901,7 @@ class _ErrorWidget extends StatelessWidget {
             onPressed: () =>
                 context.read<AllActiveUserCubit>().allActiveUsers(),
             icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text("ط¥ط¹ط§ط¯ط© ط§ظ„ظ…ط­ط§ظˆظ„ط©"),
+            label: const Text("إعادة المحاولة"),
             style: TextButton.styleFrom(foregroundColor: appColor),
           ),
         ],
@@ -1959,7 +1959,7 @@ class _ConfirmDialogDesktop extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               const Text(
-                "طھط£ظƒظٹط¯ ط§ظ„طھط¹ظٹظٹظ†",
+                "تأكيد التعيين",
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   color: primaryTextColor,
@@ -1968,7 +1968,7 @@ class _ConfirmDialogDesktop extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                "ط³ظٹطھظ… ط¥ط±ط³ط§ظ„ طھط¹ظٹظٹظ†ط§طھ ظ„ظ€ $assignedCount ظ…ظ‡ظ…ط©",
+                "سيتم إرسال تعيينات لـ $assignedCount مهمة",
                 style: const TextStyle(color: secondaryTextColor, fontSize: 14),
               ),
               const SizedBox(height: 20),
@@ -2000,7 +2000,7 @@ class _ConfirmDialogDesktop extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: const Text(
-                        "ط¥ظ„ط؛ط§ط،",
+                        "إلغاء",
                         style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -2053,7 +2053,7 @@ class _ConfirmDialogDesktop extends StatelessWidget {
                                   Icon(Icons.check_circle_rounded, size: 18),
                                   SizedBox(width: 8),
                                   Text(
-                                    "طھط£ظƒظٹط¯ ط§ظ„طھط¹ظٹظٹظ†",
+                                    "تأكيد التعيين",
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -2107,7 +2107,7 @@ class _ConfirmDialogDesktop extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  mission?.missionName ?? 'ظ…ظ‡ظ…ط© ${entry.key}',
+                  mission?.missionName ?? 'مهمة ${entry.key}',
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     color: primaryTextColor,
@@ -2122,7 +2122,7 @@ class _ConfirmDialogDesktop extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  "${entry.value.length} ظ…ط³طھط®ط¯ظ…",
+                  "${entry.value.length} مستخدم",
                   style: const TextStyle(
                     color: appColor,
                     fontSize: 11,
@@ -2239,7 +2239,7 @@ class _ConfirmBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const Text(
-            "طھط£ظƒظٹط¯ ط§ظ„طھط¹ظٹظٹظ†",
+            "تأكيد التعيين",
             style: TextStyle(
               fontWeight: FontWeight.w800,
               color: primaryTextColor,
@@ -2248,7 +2248,7 @@ class _ConfirmBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            "ط³ظٹطھظ… ط¥ط±ط³ط§ظ„ طھط¹ظٹظٹظ†ط§طھ ظ„ظ€ $assignedCount ظ…ظ‡ظ…ط©",
+            "سيتم إرسال تعيينات لـ $assignedCount مهمة",
             style: const TextStyle(color: secondaryTextColor, fontSize: 14),
           ),
           const SizedBox(height: 16),
@@ -2292,7 +2292,7 @@ class _ConfirmBottomSheet extends StatelessWidget {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                mission?.missionName ?? 'ظ…ظ‡ظ…ط©',
+                                mission?.missionName ?? 'مهمة',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
@@ -2310,7 +2310,7 @@ class _ConfirmBottomSheet extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                "${e.value.length} ظ…ط³طھط®ط¯ظ…",
+                                "${e.value.length} مستخدم",
                                 style: const TextStyle(
                                   color: appColor,
                                   fontSize: 12,
@@ -2344,7 +2344,7 @@ class _ConfirmBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: const Text(
-                      "ط¥ظ„ط؛ط§ط،",
+                      "إلغاء",
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -2397,7 +2397,7 @@ class _ConfirmBottomSheet extends StatelessWidget {
                                 Icon(Icons.check_circle_rounded, size: 20),
                                 SizedBox(width: 8),
                                 Text(
-                                  "طھط£ظƒظٹط¯ ط§ظ„طھط¹ظٹظٹظ†",
+                                  "تأكيد التعيين",
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 15,

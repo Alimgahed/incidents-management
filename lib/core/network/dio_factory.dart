@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/network/api_constants.dart';
+import 'dart:convert';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 
 class DioFactory {
@@ -21,8 +22,12 @@ class DioFactory {
         // Web (dio_web_adapter): sendTimeout is only valid when the request has a body.
         sendTimeout: kIsWeb ? null : const Duration(seconds: 15),
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
           'Accept': 'application/json',
+          'Accept-Charset': 'utf-8',
+        },
+        responseDecoder: (responseBytes, options, responseBody) {
+          return utf8.decode(responseBytes, allowMalformed: true);
         },
       ),
     );
