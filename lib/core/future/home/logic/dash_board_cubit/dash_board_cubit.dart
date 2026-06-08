@@ -210,6 +210,14 @@ class DashboardCubit extends Cubit<DashboardState> {
         currentIncidentXAxis: incident.currentIncidentXAxis,
         currentIncidentYAxis: incident.currentIncidentYAxis,
         currentIncidentNotes: incident.currentIncidentNotes,
+        managerId: incident.managerId,
+        managerName: incident.managerName,
+        currentIncidentTypeName: incident.currentIncidentTypeName,
+        branchId: incident.branchId,
+        branchName: incident.branchName,
+        username: incident.username,
+        address: incident.address,
+        photos: incident.photos,
       )
       ..currentIncidentWithMissions =
           missions ?? incident.currentIncidentWithMissions;

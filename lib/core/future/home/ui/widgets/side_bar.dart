@@ -158,7 +158,7 @@ class _SidebarHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
@@ -166,9 +166,9 @@ class _SidebarHeader extends StatelessWidget {
             ),
             child: Image.asset(
               'assets/images/logo.png',
-              width: 26,
-              height: 26,
-              errorBuilder: (_, _, _) => const Icon(Icons.shield_moon_outlined, color: Colors.white, size: 26),
+              width: 38,
+              height: 38,
+              errorBuilder: (_, _, _) => const Icon(Icons.shield_moon_outlined, color: Colors.white, size: 38),
             ),
           ),
           const SizedBox(width: 12),

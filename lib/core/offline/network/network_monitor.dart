@@ -77,25 +77,41 @@ class NetworkMonitorService {
     _initialized = true;
 
     // 1. Initial OS-level check.
-    final initial = await _connectivity.checkConnectivity();
-    final osOnline = _anyConnected(initial);
+    bool osOnline = true;
+    try {
+      final initial = await _connectivity.checkConnectivity();
+      osOnline = _anyConnected(initial);
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('⚠️ NetworkMonitor checkConnectivity failed (normal on Web/offline): $e\n$st');
+      }
+      // Fallback: assume online to allow app boot to proceed.
+      // Active HTTP probes will correct this state if the server is unreachable.
+      osOnline = true;
+    }
     _updateState(osOnline);
 
     // 2. Reactive OS-level updates.
-    _sub = _connectivity.onConnectivityChanged.listen((results) async {
-      final reportedOnline = _anyConnected(results);
-      if (reportedOnline) {
-        // OS says we have an interface — verify with a real probe before
-        // promising the rest of the app there's internet.
-        await _runProbe(triggerReconnect: true);
-      } else {
-        _updateState(false);
-      }
-    }, onError: (e, st) {
+    try {
+      _sub = _connectivity.onConnectivityChanged.listen((results) async {
+        final reportedOnline = _anyConnected(results);
+        if (reportedOnline) {
+          // OS says we have an interface — verify with a real probe before
+          // promising the rest of the app there's internet.
+          await _runProbe(triggerReconnect: true);
+        } else {
+          _updateState(false);
+        }
+      }, onError: (e, st) {
+        if (kDebugMode) {
+          debugPrint('NetworkMonitor connectivity error: $e\n$st');
+        }
+      });
+    } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('NetworkMonitor connectivity error: $e\n$st');
+        debugPrint('⚠️ NetworkMonitor connectivity listener registration failed: $e\n$st');
       }
-    });
+    }
 
     // 3. Periodic reachability probe — recovers from missed change events in
     //    BOTH directions:
@@ -173,7 +189,7 @@ class NetworkMonitorService {
           Dio(BaseOptions(
             connectTimeout: probeTimeout,
             receiveTimeout: probeTimeout,
-            sendTimeout: probeTimeout,
+            sendTimeout: kIsWeb ? null : probeTimeout,
             validateStatus: (_) => true, // any response = internet works
           ));
       final url = baseUrl!;

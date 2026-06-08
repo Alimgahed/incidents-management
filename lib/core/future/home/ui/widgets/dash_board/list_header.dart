@@ -106,16 +106,21 @@ class DashboardListHeader extends StatelessWidget {
                           visualDensity: VisualDensity.compact,
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
-                          padding: EdgeInsets.zero,
+                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
                           labelPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
+                            horizontal: 10,
+                            vertical: 0,
                           ),
                           selected: isSelected,
                           selectedColor: appColor,
-                          backgroundColor: fieldColor,
+                          backgroundColor: const Color(0xFFF1F5F9),
                           showCheckmark: false,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                           side: BorderSide(
-                            color: isSelected ? appColor : AppTheme.borderColor,
+                            color: isSelected ? appColor : const Color(0xFFE2E8F0),
+                            width: 1.0,
                           ),
                           onSelected: (_) => cubit.updateFilter(filter),
                           label: Text(
@@ -126,7 +131,7 @@ class DashboardListHeader extends StatelessWidget {
                                   : AppTheme.textSecondary,
                               fontWeight: isSelected
                                   ? FontWeight.w700
-                                  : FontWeight.w500,
+                                  : FontWeight.w600,
                             ),
                           ),
                         ),
@@ -186,15 +191,23 @@ class DashboardListHeader extends StatelessWidget {
                         child: FilterChip(
                           selected: isSelected,
                           selectedColor: appColor,
-                          backgroundColor: fieldColor,
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          showCheckmark: false,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          side: BorderSide(
+                            color: isSelected ? appColor : const Color(0xFFE2E8F0),
+                            width: 1.0,
+                          ),
                           onSelected: (_) => cubit.updateFilter(filter),
                           label: Text(
                             filter,
                             style: TextStyles.size12(
-                              color: isSelected ? Colors.white : Colors.black87,
+                              color: isSelected ? Colors.white : AppTheme.textSecondary,
                               fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                             ),
                           ),
                         ),

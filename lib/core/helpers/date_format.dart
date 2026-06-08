@@ -40,12 +40,12 @@ extension TimeAgoArabic on DateTime {
 
     if (difference.inMinutes < 60) {
       final m = difference.inMinutes;
-      return 'قبل $m ${_pluralMinute(m)}';
+      return 'منذ $m ${_pluralMinute(m)}';
     }
 
     if (difference.inHours < 24) {
       final h = difference.inHours;
-      return 'قبل $h ${_pluralHour(h)}';
+      return 'منذ $h ${_pluralHour(h)}';
     }
 
     if (difference.inDays == 1) {
@@ -53,7 +53,7 @@ extension TimeAgoArabic on DateTime {
     }
 
     if (difference.inDays < 7) {
-      return 'قبل ${difference.inDays} ${_pluralDay(difference.inDays)}';
+      return 'منذ ${difference.inDays} ${_pluralDay(difference.inDays)}';
     }
 
     return _shortDate.format(this);

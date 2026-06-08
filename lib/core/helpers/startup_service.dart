@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, debugPrint;
 import 'package:dio/dio.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -36,12 +37,27 @@ class StartupService {
 
   static Future<AppStartupResult> initialize() async {
     // ── Step 1: Firebase (blocking — DI needs it) ────────────────────────────
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
-    // Fire-and-forget; analytics collection doesn't need to await.
-    FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+      // Fire-and-forget; analytics collection doesn't need to await.
+      try {
+        await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+      } catch (analyticsError) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Firebase Analytics config failed (expected offline/web): $analyticsError');
+        }
+      }
+    } catch (firebaseError) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Firebase initializeApp failed (expected offline/web): $firebaseError');
+      }
+      // On Web or Offline environments, Firebase might fail to load (e.g. DNS block or
+      // offline state prevents loading Firebase Web JS SDK from gstatic).
+      // We catch this to allow the app to boot up in offline mode.
+    }
 
     // ── Step 2: DI + SP warm-up in parallel ─────────────────────────────────
     // [setup] registers all GetIt singletons/factories.

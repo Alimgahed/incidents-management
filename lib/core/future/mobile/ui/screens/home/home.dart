@@ -24,6 +24,9 @@ import 'package:incidents_managment/core/helpers/date_format.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/theming/styling.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:incidents_managment/core/network/api_constants.dart';
+import 'package:incidents_managment/core/security/secure_storage_service.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:incidents_managment/core/future/mobile/ui/widgets/mobile_drawer.dart';
 
@@ -215,85 +218,141 @@ class _MobileStatsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [appColor, appColor.withAlpha(204)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: appColor.withAlpha(77),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: appColor.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(51),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.white,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$totalIncidents',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // Glowing Gradient Background
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [appColor, appColor.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                const Text(
-                  'إجمالي الأزمات',
-                  style: TextStyle(fontSize: 14, color: Colors.white70),
+              ),
+            ),
+            // Background Nefertiti gold glow
+            Positioned(
+              left: -40,
+              top: -40,
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: goldColor.withOpacity(0.12),
                 ),
-              ],
+              ),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+            // Background water blue glow
+            Positioned(
+              right: -30,
+              bottom: -50,
+              child: Container(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: waterBlue.withOpacity(0.18),
+                ),
+              ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'نشط',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$totalIncidents',
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontFamily: 'Alexandria',
+                          ),
+                        ),
+                        const Text(
+                          'إجمالي الأزمات النشطة',
+                          style: TextStyle(
+                            fontSize: 13, 
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'نشط',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -312,15 +371,16 @@ class _MobileIncidentCard extends StatelessWidget {
     final status = incident.currentIncidentStatus ?? 1;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEDF2F7), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(13),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -340,7 +400,7 @@ class _MobileIncidentCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: getSeverityColor(severity).withAlpha(26),
+                        color: getSeverityColor(severity).withOpacity(0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -405,10 +465,10 @@ class _MobileIncidentCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: getSeverityColor(severity).withAlpha(38),
+                        color: getSeverityColor(severity).withOpacity(0.08),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: getSeverityColor(severity).withAlpha(77),
+                          color: getSeverityColor(severity).withOpacity(0.2),
                         ),
                       ),
                       child: Row(
@@ -441,14 +501,14 @@ class _MobileIncidentCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: getStatusColor(status),
+                        color: getStatusColor(status).withOpacity(0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         getStatusArabic(status),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white,
+                          color: getStatusColor(status),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1073,6 +1133,11 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
 
                         // Timeline Section
                         _MobileTimelineSection(incident: incident),
+
+                        const SizedBox(height: 16),
+
+                        // Photos Section
+                        _MobilePhotosSection(incident: incident),
 
                         const SizedBox(height: 16),
 
@@ -2043,4 +2108,106 @@ class _MobileTimelineItem extends StatelessWidget {
   }
 }
 
-// Mobile Location Section
+class _MobilePhotosSection extends StatelessWidget {
+  final CurrentIncidentModel incident;
+
+  const _MobilePhotosSection({required this.incident});
+
+  @override
+  Widget build(BuildContext context) {
+    if (incident.photos == null || incident.photos!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return _MobileSection(
+      title: 'صور الأزمة',
+      icon: Icons.photo_library_outlined,
+      child: FutureBuilder<String?>(
+        future: getIt<SecureStorageService>().getUserToken(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+          final token = snapshot.data!;
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: incident.photos!.length,
+            itemBuilder: (context, index) {
+              final photo = incident.photos![index];
+              if (photo.id == null) return const SizedBox.shrink();
+
+              final imageUrl = ApiConstants.viewIncidentPhotoUrl(photo.id!);
+
+              return GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      backgroundColor: Colors.transparent,
+                      insetPadding: const EdgeInsets.all(8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          httpHeaders: {'Authorization': 'Bearer $token'},
+                          fit: BoxFit.contain,
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.white,
+                            padding: const EdgeInsets.all(16),
+                            child: const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.broken_image, size: 64, color: Colors.grey),
+                                SizedBox(height: 16),
+                                Text('تعذر تحميل الصورة'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      httpHeaders: {'Authorization': 'Bearer $token'},
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      errorWidget: (context, url, error) => const Icon(
+                        Icons.broken_image,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}

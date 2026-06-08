@@ -86,13 +86,6 @@ class _AddIncidentMissionBodyState extends State<Addincidentmission> {
   @override
   void initState() {
     super.initState();
-    // Only reset the states, don't interfere with data loading
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<AddIncidentMissionCubit>().resetState();
-        context.read<MissionSelectionCubit>().reset();
-      }
-    });
   }
 
   void _closeDialogIfOpen() {
@@ -228,11 +221,12 @@ class _AddIncidentMissionBodyState extends State<Addincidentmission> {
                       children: [
                         Row(
                           children: [
-                            const Globalheader(
-                              icon: Icons.check_circle_outline,
-                              title: 'المهمات المحددة',
+                            const Expanded(
+                              child: Globalheader(
+                                icon: Icons.check_circle_outline,
+                                title: 'المهمات المحددة',
+                              ),
                             ),
-                            const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,

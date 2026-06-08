@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:audioplayers/audioplayers.dart';
 
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
@@ -17,11 +18,20 @@ import 'package:incidents_managment/core/security/secure_storage_service.dart';
 /// Using [List.generate] pre-allocates the backing array to the exact capacity
 /// needed, avoiding repeated reallocation that a growable list would incur.
 List<CurrentIncidentModel> _parseIncidentList(List<dynamic> data) {
-  return List<CurrentIncidentModel>.generate(
+  final list = List<CurrentIncidentModel>.generate(
     data.length,
     (i) => CurrentIncidentModel.fromJson(data[i] as Map<String, dynamic>),
-    growable: false,
+    growable: true,
   );
+  list.sort((a, b) {
+    final aTime = a.currentIncidentCreatedAt;
+    final bTime = b.currentIncidentCreatedAt;
+    if (aTime == null && bTime == null) return 0;
+    if (aTime == null) return 1;
+    if (bTime == null) return -1;
+    return bTime.compareTo(aTime);
+  });
+  return list;
 }
 
 // Provide a lightweight copyWith for CurrentIncidentModel in case the model
@@ -80,6 +90,9 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   int _reconnectAttempts = 0;
   static const int _maxReconnectAttempts = 5;
   static const Duration _reconnectDelay = Duration(seconds: 3);
+
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isAlertPlaying = false;
 
   // ================= ALERT STATE =================
 
@@ -232,15 +245,38 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   void _handleIncidentCreated(dynamic data) {
     final newIncident = CurrentIncidentModel.fromJson(data);
 
-    // Pre-allocate to exact capacity (incidentss.length + 1) to avoid
-    // the intermediate growable list that spread syntax produces.
-    final updated = List<CurrentIncidentModel>.of(incidentss)..add(newIncident);
+    final updated = List<CurrentIncidentModel>.of(incidentss)..insert(0, newIncident);
+    updated.sort((a, b) {
+      final aTime = a.currentIncidentCreatedAt;
+      final bTime = b.currentIncidentCreatedAt;
+      if (aTime == null && bTime == null) return 0;
+      if (aTime == null) return 1;
+      if (bTime == null) return -1;
+      return bTime.compareTo(aTime);
+    });
     incidentss = updated;
     _bumpPayloadTime();
     emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
 
-    // 🚨 PLAY SAME ALERT SOUND (7 SECONDS)
-    // _playAlertFor7Seconds();
+    _playAlertFor5Seconds();
+  }
+
+  Future<void> _playAlertFor5Seconds() async {
+    if (_isAlertPlaying) return;
+    try {
+      _isAlertPlaying = true;
+      await _audioPlayer.setVolume(1.0);
+      await _audioPlayer.play(AssetSource('sounds/alarm.ogg'));
+      
+      _alertTimer?.cancel();
+      _alertTimer = Timer(const Duration(seconds: 5), () async {
+        await _audioPlayer.stop();
+        _isAlertPlaying = false;
+      });
+    } catch (e) {
+      _isAlertPlaying = false;
+      debugPrint('Error playing alert sound: $e');
+    }
   }
 
   void _handleIncidentUpdated(dynamic data) {
@@ -471,6 +507,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   @override
   Future<void> close() {
     disconnectSocket();
+    _audioPlayer.dispose();
     return super.close();
   }
 }

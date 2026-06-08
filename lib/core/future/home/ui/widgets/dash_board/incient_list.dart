@@ -80,29 +80,37 @@ class _IncidentCardState extends State<IncidentCard> {
       return MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
-        child: Material(
-          color: cardBgColor,
-          borderRadius: BorderRadius.circular(12),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: widget.onTap,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: baseBorderColor,
-                  width: widget.isSelected ? 1.8 : 1,
-                ),
-                boxShadow: _isHovered
-                    ? [
-                        BoxShadow(
-                          color: appColor.withValues(alpha: 0.08),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: baseBorderColor,
+              width: widget.isSelected ? 1.8 : 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(_isHovered ? 0.08 : 0.03),
+                blurRadius: _isHovered ? 16 : 8,
+                offset: Offset(0, _isHovered ? 6 : 3),
               ),
+              if (widget.isSelected)
+                BoxShadow(
+                  color: appColor.withOpacity(0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: widget.onTap,
               child: Row(
                 children: [
                   Container(width: 4, color: severityColor),
@@ -199,7 +207,7 @@ class _IncidentCardState extends State<IncidentCard> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 6),
+                    padding: const EdgeInsets.only(left: 8),
                     child: Icon(
                       Icons.chevron_right_rounded,
                       size: 18,
@@ -220,31 +228,39 @@ class _IncidentCardState extends State<IncidentCard> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
-        child: Material(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+        decoration: BoxDecoration(
           color: cardBgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: baseBorderColor,
+            width: widget.isSelected ? 2.0 : 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(_isHovered ? 0.08 : 0.03),
+              blurRadius: _isHovered ? 16 : 8,
+              offset: Offset(0, _isHovered ? 6 : 3),
+            ),
+            if (widget.isSelected)
+              BoxShadow(
+                color: appColor.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
+              ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: widget.onTap,
-            child: Container(
+            child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: baseBorderColor,
-                  width: widget.isSelected ? 2 : 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(5),
-                    blurRadius: _isHovered ? 8 : 3,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,6 +328,23 @@ class _IncidentCardState extends State<IncidentCard> {
                           ),
                         ),
                       ),
+                      if (widget.incident.currentIncidentCreatedAt != null) ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 12,
+                          color: AppTheme.textTertiary,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          widget.incident.currentIncidentCreatedAt!
+                              .timeAgoArabic(),
+                          style: TextStyles.size10(
+                            color: AppTheme.textTertiary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                       const SizedBox(width: 8),
                       _SeverityBadge(
                         severity: severity,

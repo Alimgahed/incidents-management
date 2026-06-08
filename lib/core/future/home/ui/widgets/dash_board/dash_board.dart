@@ -207,7 +207,8 @@ class _DashboardViewState extends State<DashboardView> {
             listener: (context, state) {
               if (state is IncidentMapLoaded) {
                 final dashboardCubit = context.read<DashboardCubit>();
-                final selectedIncidentId = dashboardCubit.selectedIncident?.currentIncidentId;
+                final selectedIncidentId =
+                    dashboardCubit.selectedIncident?.currentIncidentId;
 
                 // Sync all incidents
                 dashboardCubit.syncWithIncidents(state.incidents);
@@ -274,9 +275,8 @@ class _DashboardViewState extends State<DashboardView> {
               default:
                 return MaterialPageRoute<void>(
                   settings: settings,
-                  builder: (context) => _DashboardIncidentsScreen(
-                    onIncidentTap: _onIncidentTap,
-                  ),
+                  builder: (context) =>
+                      _DashboardIncidentsScreen(onIncidentTap: _onIncidentTap),
                 );
             }
           },
@@ -330,54 +330,61 @@ class _DashboardIncidentsScreen extends StatelessWidget {
           );
         }
 
-        // Desktop: Two-panel layout (List + Details side by side)
-        return Row(
+        // Desktop: Two-panel layout (List + Details side by side) with KPIs at the top
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // LEFT PANEL: Incident List
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+              child: DashboardKpiStrip(
+                incidents: allIncidents,
+                connected: connected,
+                compact: false,
+              ),
+            ),
             Expanded(
-              flex: 35,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              child: Row(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-                    child: DashboardKpiStrip(
-                      incidents: allIncidents,
-                      connected: connected,
-                      compact: true,
+                  // LEFT PANEL: Incident List
+                  Expanded(
+                    flex: 25,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                            child: IncidentsList(
+                              allIncidents: allIncidents,
+                              useWebGrid: false,
+                              onIncidentTap: onIncidentTap,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  // RIGHT PANEL: Incident Details
                   Expanded(
+                    flex: 65,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                      child: IncidentsList(
-                        allIncidents: allIncidents,
-                        useWebGrid: false,
-                        onIncidentTap: onIncidentTap,
+                      padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.borderColor),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: IncidentDetailsPanel(
+                            contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ],
-              ),
-            ),
-            // RIGHT PANEL: Incident Details
-            Expanded(
-              flex: 65,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.borderColor),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: IncidentDetailsPanel(
-                      contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                    ),
-                  ),
-                ),
               ),
             ),
           ],

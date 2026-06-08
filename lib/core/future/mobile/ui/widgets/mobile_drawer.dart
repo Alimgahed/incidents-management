@@ -130,16 +130,16 @@ class _MobileDrawerState extends State<MobileDrawer> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.white.withAlpha(38),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Image.asset(
               'assets/images/logo.png',
-              width: 32,
-              height: 32,
-              errorBuilder: (_, _, _) => const Icon(Icons.shield_rounded, color: Colors.white, size: 32),
+              width: 40,
+              height: 40,
+              errorBuilder: (_, _, _) => const Icon(Icons.shield_rounded, color: Colors.white, size: 40),
             ),
           ),
           const SizedBox(width: 16),

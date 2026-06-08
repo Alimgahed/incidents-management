@@ -7,6 +7,8 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/incident/edi
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/update_statues.dart';
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_state.dart';
+import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dashboard_kpi_strip.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_detail_dialogs.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_photo_gallery.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/incident_description_present.dart';
@@ -45,6 +47,7 @@ class IncidentDetailsPanel extends StatelessWidget {
         }
 
         return _IncidentDetailContent(
+          key: ValueKey<int?>(incident.currentIncidentId),
           incident: incident,
           contentPadding: contentPadding,
           showBackToList: showBackToList,
@@ -58,6 +61,7 @@ class IncidentDetailsPanel extends StatelessWidget {
 // ==================== CONTENT LAYOUT ====================
 class _IncidentDetailContent extends StatelessWidget {
   const _IncidentDetailContent({
+    super.key,
     required this.incident,
     required this.contentPadding,
     required this.showBackToList,
@@ -78,6 +82,83 @@ class _IncidentDetailContent extends StatelessWidget {
       mobileSpacing: 10,
       desktopSpacing: 10,
     );
+    final isWide = MediaQuery.sizeOf(context).width > 1050;
+
+    // Right Column widgets (Core Info)
+    final rightColumnWidgets = <Widget>[
+      _MissionsCard(incident: incident),
+      SizedBox(height: spacing),
+
+      if (incident.currentIncidentNotes != null) ...[
+        SizedBox(height: spacing),
+        _NotesCard(notes: incident.currentIncidentNotes!),
+        SizedBox(height: spacing),
+        _TimelineCard(incident: incident),
+      ],
+    ];
+
+    // Left Column widgets (Media, Map & Timeline)
+    final hasLocation =
+        incident.currentIncidentXAxis != null &&
+        incident.currentIncidentYAxis != null;
+
+    final leftColumnWidgets = <Widget>[
+      if (incident.address != null && incident.address!.isNotEmpty) ...[
+        _AddressCard(address: incident.address!),
+        SizedBox(height: spacing),
+      ],
+      if (incident.currentIncidentId != null) ...[
+        IncidentPhotosGrid(
+          incident: incident,
+          incidentId: incident.currentIncidentId!,
+        ),
+        SizedBox(height: spacing),
+      ],
+      if (hasLocation)
+        AppMapSection(
+          lat: incident.currentIncidentXAxis!,
+          lng: incident.currentIncidentYAxis!,
+          mapHeight: 320,
+        )
+      else
+        _NoLocationPlaceholder(),
+    ];
+
+    Widget mainLayout;
+    if (isWide) {
+      mainLayout = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // RIGHT COLUMN (Core Info - read first in RTL)
+          Expanded(
+            flex: 11,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: rightColumnWidgets,
+            ),
+          ),
+          SizedBox(width: spacing),
+          // LEFT COLUMN (Secondary Info, Media & Timeline)
+          Expanded(
+            flex: 9,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: leftColumnWidgets,
+            ),
+          ),
+        ],
+      );
+    } else {
+      // Mobile stacked layout
+      mainLayout = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ...rightColumnWidgets,
+          SizedBox(height: spacing),
+          ...leftColumnWidgets,
+        ],
+      );
+    }
 
     return Container(
       color: backgroundColor,
@@ -91,11 +172,12 @@ class _IncidentDetailContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Header Section
+                  // Header Section (Always on top, full width)
                   _IncidentHeaderSection(incident: incident),
                   SizedBox(height: spacing),
-                  // Main Content
-                  _IncidentMainContent(incident: incident, spacing: spacing),
+                  // Responsive main content
+                  mainLayout,
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -115,64 +197,6 @@ class _IncidentHeaderSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _AnimatedFadeSlideIn(
       child: _ProfessionalIncidentHeader(incident: incident),
-    );
-  }
-}
-
-// ==================== MAIN CONTENT SECTION ====================
-class _IncidentMainContent extends StatelessWidget {
-  const _IncidentMainContent({required this.incident, required this.spacing});
-
-  final CurrentIncidentModel incident;
-  final double spacing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _MissionsCard(incident: incident),
-        SizedBox(height: spacing),
-        _DescriptionCard(incident: incident),
-        SizedBox(height: spacing),
-        if (incident.address != null && incident.address!.isNotEmpty)
-          _AddressCard(address: incident.address!),
-        if (incident.address != null && incident.address!.isNotEmpty)
-          SizedBox(height: spacing),
-        if (incident.currentIncidentId != null)
-          Column(
-            children: [
-              IncidentPhotosGrid(
-                incident: incident,
-                incidentId: incident.currentIncidentId!,
-              ),
-              SizedBox(height: spacing),
-            ],
-          ),
-        if (incident.currentIncidentXAxis != null &&
-            incident.currentIncidentYAxis != null)
-          Column(
-            children: [
-              AppMapSection(
-                lat: incident.currentIncidentXAxis!,
-                lng: incident.currentIncidentYAxis!,
-                mapHeight: 320,
-              ),
-              SizedBox(height: spacing),
-            ],
-          )
-        else
-          Column(
-            children: [
-              _NoLocationPlaceholder(),
-              SizedBox(height: spacing),
-            ],
-          ),
-        _DescriptionAndNotesSection(incident: incident),
-        SizedBox(height: spacing),
-        _TimelineCard(incident: incident),
-        const SizedBox(height: 16),
-      ],
     );
   }
 }
@@ -620,7 +644,10 @@ class _ActionButtonsGroup extends StatelessWidget {
           icon: Icons.person_add_alt_1_outlined,
           tooltip: 'تعيين مسؤول',
           onPressed: () =>
-              context.pushNamed(Routes.missionAssign, arguments: incident),
+              Navigator.of(context, rootNavigator: true).pushNamed(
+                Routes.missionAssign,
+                arguments: incident,
+              ),
         ),
       ],
     );
@@ -1056,11 +1083,7 @@ class _AddressCard extends StatelessWidget {
       icon: Icons.location_on_outlined,
       child: Text(
         address,
-        style: TextStyle(
-          fontSize: 14,
-          color: primaryTextColor,
-          height: 1.5,
-        ),
+        style: TextStyle(fontSize: 14, color: primaryTextColor, height: 1.5),
       ),
     );
   }
@@ -1303,7 +1326,7 @@ class _MissionActionButton extends StatelessWidget {
 
 // ==================== TIMELINE CARD ====================
 class _TimelineCard extends StatelessWidget {
-  const _TimelineCard({required this.incident});
+  const _TimelineCard({super.key, required this.incident});
   final CurrentIncidentModel incident;
 
   @override

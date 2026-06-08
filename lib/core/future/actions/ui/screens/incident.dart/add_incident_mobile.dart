@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/add_incident_widget.dart';
+import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
@@ -149,11 +150,19 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
                     const SizedBox(height: 16),
 
                     /// ================= ADDRESS =================
-                    CustomTextFormField(
-                      controller: addressController,
-                      hintText: "العنوان بالتفصيل",
-                      useValidator: false,
-                      maxLines: 2,
+                    BlocListener<MapCubit, MapState>(
+                      listenWhen: (previous, current) => previous.address != current.address,
+                      listener: (context, state) {
+                        if (state.address != null) {
+                          addressController.text = state.address!;
+                        }
+                      },
+                      child: CustomTextFormField(
+                        controller: addressController,
+                        hintText: "العنوان بالتفصيل",
+                        useValidator: false,
+                        maxLines: 2,
+                      ),
                     ),
 
                     const SizedBox(height: 16),

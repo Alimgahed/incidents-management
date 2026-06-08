@@ -7,6 +7,7 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/add_incident_widget.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
+import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
 
 class AddIncidentScreen extends StatefulWidget {
@@ -111,11 +112,19 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
           ),
           SizedBox(height: 20),
 
-          CustomTextFormField(
-            controller: addressController,
-            hintText: "العنوان بالتفصيل",
-            useValidator: false,
-            maxLines: 2,
+          BlocListener<MapCubit, MapState>(
+            listenWhen: (previous, current) => previous.address != current.address,
+            listener: (context, state) {
+              if (state.address != null) {
+                addressController.text = state.address!;
+              }
+            },
+            child: CustomTextFormField(
+              controller: addressController,
+              hintText: "العنوان بالتفصيل",
+              useValidator: false,
+              maxLines: 2,
+            ),
           ),
           SizedBox(height: 20),
 
