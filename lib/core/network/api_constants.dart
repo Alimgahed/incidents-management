@@ -1,5 +1,8 @@
 class ApiConstants {
-  static const baseUrl = "http://172.16.0.31:5000";
+  static const String internalBaseUrl = "https://crises.miniawater.com/api";
+  static const String externalBaseUrl = "https://crises.miniawater.com/api";
+
+  static String baseUrl = externalBaseUrl;
 
   /// Authenticated incident photo stream (requires `Authorization` header).
   static String viewIncidentPhotoUrl(int photoId) =>

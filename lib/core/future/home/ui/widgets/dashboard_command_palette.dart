@@ -12,8 +12,7 @@ import 'package:incidents_managment/core/future/home/ui/widgets/incident_descrip
 const _kDashboardPaletteNav = <({int index, String title, IconData icon})>[
   (index: 0, title: 'لوحة التحكم', icon: Icons.space_dashboard_outlined),
   (index: 1, title: 'الخريطة', icon: Icons.map_outlined),
-  (index: 2, title: 'الفرق', icon: Icons.groups_outlined),
-  (index: 3, title: 'التحليلات', icon: Icons.insights_outlined),
+  (index: 2, title: 'المستخدمين', icon: Icons.groups_outlined),
   (index: 4, title: 'إضافة أزمة', icon: Icons.add_circle_outline_rounded),
   (index: 5, title: 'أنواع الأزمات', icon: Icons.category_outlined),
   (index: 6, title: 'جميع المهام', icon: Icons.assignment_outlined),

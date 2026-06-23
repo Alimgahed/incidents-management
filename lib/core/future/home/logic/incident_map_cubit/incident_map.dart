@@ -9,6 +9,7 @@ import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/in
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
+import 'package:incidents_managment/core/network/api_constants.dart';
 
 // ---------------------------------------------------------------------------
 // Top-level isolate helpers (must live outside the class for compute())
@@ -118,11 +119,19 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
         return;
       }
       
-      // 3. Configure socket with auth
+      // As requested, hardcode the external URL for the websocket in all cases
+      final String socketUrl = 'https://crises.miniawater.com';
+      final String socketPath = '/api/socket.io';
+      
+      print('🔌 Socket URL: $socketUrl');
+      print('🔌 Socket Path: $socketPath');
+      
+      // 4. Configure socket with auth and correct path
       _socket = io.io(
-        'http://172.16.0.31:5000',
+        socketUrl,
         io.OptionBuilder()
-            .setTransports(['websocket'])
+            .setTransports(['polling', 'websocket'])
+            .setPath(socketPath)
             .setReconnectionAttempts(_maxReconnectAttempts)
             .setReconnectionDelay(3000)
             .disableAutoConnect() // Don't connect until listeners are ready
@@ -132,11 +141,29 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
             .build(),
       );
 
+      // DEBUG - add temporarily
+      _socket?.onAny((event, data) {
+        print('🔌 Socket event: $event | data: $data');
+      });
+
+      _socket?.on('connect_error', (data) {
+        print('❌ Connect error: $data');
+      });
+
+      _socket?.on('error', (data) {
+        print('❌ Socket error: $data');
+      });
+
       // 3. Attach listeners BEFORE connecting to avoid race condition
       _setupSocketListeners();
 
       // 4. Now connect manually
       _socket?.connect();
+
+      Future.delayed(const Duration(seconds: 3), () {
+        print('🔌 Socket connected: ${_socket?.connected}');
+        print('🔌 Socket id: ${_socket?.id}');
+      });
     } catch (e) {
       emit(IncidentMapError(message: 'فشل في إنشاء اتصال Socket.IO'));
     }

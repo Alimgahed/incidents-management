@@ -16,13 +16,15 @@ class LoginRepo {
       final response = await apiService.login(loginModel);
 
       // Securely cache token and current user profile
-      if (response.token != null) {
+      if (response.token != null && response.currentUser != null) {
         await getIt<SecureStorageService>().saveUserToken(response.token!);
-      }
-      if (response.currentUser != null) {
         await getIt<SessionManager>().setCurrentUser(response.currentUser!);
+        return ApiResult.success(response);
+      } else {
+        return ApiResult.error(
+          ApiErrorModel(error: 'بيانات الدخول غير صحيحة أو غير مكتملة'),
+        );
       }
-      return ApiResult.success(response);
     } on DioException catch (e) {
       if (e.response?.data != null) {
         try {
@@ -39,6 +41,10 @@ class LoginRepo {
           ApiErrorModel(error: 'Network error. Please check your connection'),
         );
       }
+    } catch (e) {
+      return ApiResult.error(
+        ApiErrorModel(error: 'حدث خطأ أثناء معالجة الاستجابة'),
+      );
     }
   }
 }

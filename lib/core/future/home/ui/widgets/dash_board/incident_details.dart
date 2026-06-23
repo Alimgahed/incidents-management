@@ -1326,7 +1326,7 @@ class _MissionActionButton extends StatelessWidget {
 
 // ==================== TIMELINE CARD ====================
 class _TimelineCard extends StatelessWidget {
-  const _TimelineCard({super.key, required this.incident});
+  const _TimelineCard({required this.incident});
   final CurrentIncidentModel incident;
 
   @override

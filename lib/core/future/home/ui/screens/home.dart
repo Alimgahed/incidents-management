@@ -13,6 +13,7 @@ import 'package:incidents_managment/core/future/home/ui/widgets/dashboard_comman
 import 'package:incidents_managment/core/future/home/ui/widgets/dashboard_live_status.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/map_widget.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/side_bar.dart';
+import 'package:incidents_managment/core/future/valve/ui/web_valve_map_screen.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
 
 class CrisisDashboard extends StatefulWidget {
@@ -23,17 +24,18 @@ class CrisisDashboard extends StatefulWidget {
 }
 
 class _CrisisDashboardState extends State<CrisisDashboard> {
-  final List<bool> _isBuilt = List.generate(8, (i) => i == 0 || i == 1);
+  final List<bool> _isBuilt = List.generate(9, (i) => i == 0 || i == 1);
 
   static const _titles = <String>[
     'لوحة التحكم',
     'الخريطة',
-    'الفرق',
-    'التحليلات',
+    'المستخدمين',
+    '',
     'إضافة أزمة',
     'أنواع الأزمات',
     'جميع المهام',
     'ربط مهام بالأزمة',
+    'خريطة المحابس',
   ];
 
   @override
@@ -125,7 +127,7 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
 
                     final content = IndexedStack(
                       index: index,
-                      children: List.generate(8, (i) {
+                      children: List.generate(9, (i) {
                         if (!_isBuilt[i]) return const SizedBox.shrink();
                         switch (i) {
                           case 0:
@@ -137,13 +139,15 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                           case 3:
                             return const AnalyticsOverviewScreen();
                           case 4:
-                            return const AddIncidentScreen();
+                            return index == 4 ? const AddIncidentScreen() : const SizedBox.shrink();
                           case 5:
                             return const AllIncidentType();
                           case 6:
                             return const AllMissions();
                           case 7:
                             return const Addincidentmission();
+                          case 8:
+                            return const WebValveMapScreen();
                           default:
                             return const SizedBox.shrink();
                         }

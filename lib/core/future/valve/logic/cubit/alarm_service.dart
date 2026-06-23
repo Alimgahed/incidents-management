@@ -21,7 +21,7 @@ class AlarmService {
     // Place an alarm.mp3 file in assets/sounds/
     await _player.setVolume(1.0);
     await _player.setReleaseMode(ReleaseMode.loop);
-    await _player.play(AssetSource('sounds/alarm.ogg'));
+    await _player.play(AssetSource('sounds/emergency.ogg'));
   }
 
   Future<void> stopAlarm() async {
@@ -30,6 +30,12 @@ class AlarmService {
 
     await _player.stop();
     Vibration.cancel();
+  }
+
+  Future<void> playAlarmForDuration(Duration duration) async {
+    await startAlarm();
+    await Future.delayed(duration);
+    await stopAlarm();
   }
 
   void dispose() {

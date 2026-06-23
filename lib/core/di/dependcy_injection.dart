@@ -29,6 +29,7 @@ import 'package:incidents_managment/core/future/valve/data/repo/valve_repo.dart'
 import 'package:incidents_managment/core/future/valve/logic/cubit/alarm_service.dart';
 import 'package:incidents_managment/core/future/valve/logic/cubit/service.dart';
 import 'package:incidents_managment/core/future/valve/logic/cubit/valve_cubit.dart';
+import 'package:incidents_managment/core/future/valve/logic/cubit/web_valve_cubit.dart';
 import 'package:incidents_managment/future/actions/data/repos/all_incident_type_repo.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/missions_repo/add_mission_repo.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/missions_repo/edit_mission_repo.dart';
@@ -128,6 +129,12 @@ Future<void> setup() async {
       valveRepository: getIt<ValveRepo>(),
       proximityService: getIt<ProximityService>(),
       alarmService: getIt<AlarmService>(),
+    ),
+  );
+  
+  getIt.registerFactory<WebValveMapCubit>(
+    () => WebValveMapCubit(
+      valveRepository: getIt<ValveRepo>(),
     ),
   );
 

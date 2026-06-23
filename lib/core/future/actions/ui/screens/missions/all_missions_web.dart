@@ -4,7 +4,6 @@ import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_missions_state.dart';
-import 'package:incidents_managment/core/future/actions/ui/widgets/missions/missions_card.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';

@@ -11,7 +11,7 @@ import 'package:incidents_managment/firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
-
+import 'package:incidents_managment/core/network/api_constants.dart';
 /// Result of [StartupService.initialize], consumed by [_AppBootstrapState]
 /// to decide which initial route the app should navigate to.
 class AppStartupResult {
@@ -36,6 +36,9 @@ class StartupService {
   const StartupService._();
 
   static Future<AppStartupResult> initialize() async {
+    // Determine which base URL to use
+    await _determineBaseUrl();
+
     // ── Step 1: Firebase (blocking — DI needs it) ────────────────────────────
     try {
       await Firebase.initializeApp(
@@ -89,5 +92,48 @@ class StartupService {
     final isLoggedIn = token != null && token.trim().isNotEmpty;
 
     return AppStartupResult(isLoggedIn: isLoggedIn);
+  }
+
+  static Future<void> _determineBaseUrl() async {
+    // If we are running on the web, we can check the URL we are being served from.
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      if (host == '172.16.0.31' || host == 'localhost' || host == '127.0.0.1') {
+        ApiConstants.baseUrl = ApiConstants.internalBaseUrl;
+        if (kDebugMode) {
+          debugPrint('🌐 Using Internal Network Base URL (Detected via Web Host): ${ApiConstants.baseUrl}');
+        }
+      } else {
+        ApiConstants.baseUrl = ApiConstants.externalBaseUrl;
+        if (kDebugMode) {
+          debugPrint('🌐 Using External Network Base URL (Detected via Web Host): ${ApiConstants.baseUrl}');
+        }
+      }
+      return; // Pinging is completely unnecessary and broken by Mixed Content on Web.
+    }
+
+    final dio = Dio(BaseOptions(
+      connectTimeout: const Duration(milliseconds: 1500),
+      receiveTimeout: const Duration(milliseconds: 1500),
+    ));
+    try {
+      await dio.get(ApiConstants.internalBaseUrl);
+      ApiConstants.baseUrl = ApiConstants.internalBaseUrl;
+      if (kDebugMode) {
+        debugPrint('🌐 Using Internal Network Base URL: ${ApiConstants.baseUrl}');
+      }
+    } catch (e) {
+      if (e is DioException && e.response != null) {
+        ApiConstants.baseUrl = ApiConstants.internalBaseUrl;
+        if (kDebugMode) {
+          debugPrint('🌐 Using Internal Network Base URL (Server Responded): ${ApiConstants.baseUrl}');
+        }
+      } else {
+        ApiConstants.baseUrl = ApiConstants.externalBaseUrl;
+        if (kDebugMode) {
+          debugPrint('🌐 Using External Network Base URL: ${ApiConstants.baseUrl}');
+        }
+      }
+    }
   }
 }
