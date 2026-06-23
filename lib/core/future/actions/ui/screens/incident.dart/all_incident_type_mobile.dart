@@ -17,7 +17,7 @@ class AllIncidentTypeMobileScreen extends StatelessWidget {
       create: (context) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('ط£ظ†ظˆط§ط¹ ط§ظ„ط£ط²ظ…ط§طھ'),
+          title: const Text('أنواع الأزمات'),
           centerTitle: true,
           backgroundColor: appColor,
           iconTheme: const IconThemeData(color: Colors.white),
@@ -70,7 +70,7 @@ class _LoadedView extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     sliver: SliverToBoxAdapter(
                       child: Text(
-                        'ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ط£ظ†ظˆط§ط¹: ${incidentTypes.length}',
+                        'إجمالي الأنواع: ${incidentTypes.length}',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
@@ -108,7 +108,7 @@ class _LoadedView extends StatelessWidget {
         // Floating Action Button
         CustomFloatingButton(
           routeName: Routes.addIncidentType,
-          text: "ط£ط¶ط§ظپط© ظ†ظˆط¹ ط§ط²ظ…ط©",
+          text: "أضافة نوع ازمة",
         ),
       ],
     ),
@@ -217,7 +217,7 @@ class _IncidentTypeCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          'ط§ظ„ظپط¦ط©: ${incidentType.className}',
+                          'الفئة: ${incidentType.className}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -245,7 +245,7 @@ class _IncidentTypeCard extends StatelessWidget {
                       Icon(Icons.task_alt_rounded, size: 18, color: cardColor),
                       const SizedBox(width: 6),
                       Text(
-                        '$missionsCount ظ…ظ‡ظ…ط©',
+                        '$missionsCount مهمة',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -357,7 +357,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'ط§ظ„ظپط¦ط©: ${incidentType.className}',
+                              'الفئة: ${incidentType.className}',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -377,7 +377,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                     Icon(Icons.assignment_outlined, color: appColor, size: 24),
                     SizedBox(width: 8),
                     Text(
-                      'ط§ظ„ظ…ظ‡ط§ظ… ط§ظ„ظ…ط±طھط¨ط·ط©',
+                      'المهام المرتبطة',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -402,7 +402,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'ظ„ط§ طھظˆط¬ط¯ ظ…ظ‡ط§ظ… ظ…طھط§ط­ط©',
+                    'لا توجد مهام متاحة',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -470,7 +470,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                mission.missionClassName ?? 'ط؛ظٹط± ظ…طھظˆظپط±',
+                                mission.missionClassName ?? 'غير متوفر',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -479,7 +479,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '#${mission.missionName ?? 'ط؛ظٹط± ظ…طھظˆظپط±'}',
+                                '#${mission.missionName ?? 'غير متوفر'}',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,

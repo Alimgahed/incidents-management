@@ -1007,6 +1007,7 @@ class _MissionHorizontalTabs extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+<<<<<<< HEAD
                               Text(
                                 mission.missionName ?? "مهمة",
                                 style: TextStyle(
@@ -1017,6 +1018,23 @@ class _MissionHorizontalTabs extends StatelessWidget {
                                       ? FontWeight.w700
                                       : FontWeight.w500,
                                   fontSize: 13,
+=======
+                              Container(
+                                constraints: const BoxConstraints(maxWidth: 200),
+                                child: Text(
+                                  mission.missionName?.replaceAll('\n', ' ') ?? "مهمة",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isActive
+                                        ? Colors.white
+                                        : secondaryTextColor,
+                                    fontWeight: isActive
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    fontSize: 13,
+                                  ),
+>>>>>>> a67306ee17a4f56f4a7f961e28cd03672b6fc382
                                 ),
                               ),
                               if (count > 0) ...[
@@ -1613,7 +1631,7 @@ class _UserCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              "${user.authorityName ?? ''} آ· ${user.sectorManagementName ?? ''}",
+                              "${user.authorityName ?? ''} · ${user.sectorManagementName ?? ''}",
                               style: TextStyle(
                                 color: secondaryTextColor.withAlpha(180),
                                 fontSize: 11,

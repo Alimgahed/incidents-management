@@ -279,7 +279,11 @@ class _MissionAssignView extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Text(
+<<<<<<< HEAD
               "تم تعيين $count مهمة بنجاح ✓",
+=======
+              "طھظ… طھط¹ظٹظٹظ† $count مهمة ط¨ظ†ط¬ط§ط­ âœ“",
+>>>>>>> a67306ee17a4f56f4a7f961e28cd03672b6fc382
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -1383,7 +1387,11 @@ class _UsersList extends StatelessWidget {
             ),
             label: Text(
               activeUsers.length == filteredUsers.length
+<<<<<<< HEAD
                   ? "إلغاء الكل"
+=======
+                  ? "إلغاء ط§ظ„ظƒظ„"
+>>>>>>> a67306ee17a4f56f4a7f961e28cd03672b6fc382
                   : "تحديد الكل",
               style: const TextStyle(
                 color: appColor,
@@ -1755,7 +1763,11 @@ class _BottomActionBar extends StatelessWidget {
             const Icon(Icons.summarize_rounded, color: appColor, size: 16),
             const SizedBox(width: 6),
             Text(
+<<<<<<< HEAD
               "${selCubit.assignedMissionsCount} مهمة · ${assigned.fold<int>(0, (sum, e) => sum + e.value.length)} مستخدم",
+=======
+              "${selCubit.assignedMissionsCount} مهمة آ· ${assigned.fold<int>(0, (sum, e) => sum + e.value.length)} ظ…ط³طھط®ط¯ظ…",
+>>>>>>> a67306ee17a4f56f4a7f961e28cd03672b6fc382
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
