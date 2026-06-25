@@ -130,7 +130,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       _socket = io.io(
         socketUrl,
         io.OptionBuilder()
-            .setTransports(['websocket'])
+            .setTransports(kIsWeb ? ['polling', 'websocket'] : ['polling'])
             .setPath(socketPath)
             .setReconnectionAttempts(_maxReconnectAttempts)
             .setReconnectionDelay(3000)
