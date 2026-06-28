@@ -127,6 +127,12 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       print('🔌 Socket Path: $socketPath');
       
       // 4. Configure socket with auth and correct path
+      // IMPORTANT: Transports configuration is an intentional, permanent decision.
+      // Do NOT change mobile back to ['websocket']. The IIS/ARR reverse proxy on our backend
+      // has a known frame-corruption bug with native WebSocket clients. It sends a correct 101
+      // Switching Protocols but wraps the subsequent WebSocket frames in Transfer-Encoding: chunked,
+      // which corrupts them for strict clients like Dart's web_socket_channel. Browsers tolerate this,
+      // which is why kIsWeb can use ['polling', 'websocket'].
       _socket = io.io(
         socketUrl,
         io.OptionBuilder()
