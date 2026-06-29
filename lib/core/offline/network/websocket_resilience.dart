@@ -86,6 +86,11 @@ class ResilientWebSocket {
       opts['auth'] = {'token': authToken};
     }
 
+    if (kDebugMode) {
+      debugPrint('🔍 Socket opts: $opts');
+      debugPrint('🔍 Socket url: $url');
+    }
+
     final s = io.io(url, opts);
     _socket = s;
 

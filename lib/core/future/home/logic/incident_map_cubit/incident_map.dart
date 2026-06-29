@@ -148,6 +148,11 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       // since OptionBuilder doesn't expose a method for it directly.
       opts['upgrade'] = false;
 
+      if (kDebugMode) {
+        debugPrint('🔍 Socket opts: $opts');
+        debugPrint('🔍 Socket url: $socketUrl');
+      }
+
       _socket = io.io(socketUrl, opts);
 
       // DEBUG - add temporarily
