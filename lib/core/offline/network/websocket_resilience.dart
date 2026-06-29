@@ -71,12 +71,16 @@ class ResilientWebSocket {
     if (_stopped) return;
 
     final opts = io.OptionBuilder()
-        .setTransports(const ['websocket'])
+        .setTransports(kIsWeb ? const ['polling', 'websocket'] : const ['polling'])
         .enableReconnection()
         .setReconnectionAttempts(0x7FFFFFFF) // never give up while online
         .setReconnectionDelayMax(reconnectBackoffMax.inMilliseconds)
         .setTimeout(15000)
         .build();
+
+    // Manually inject the upgrade:false flag into the built options map,
+    // since OptionBuilder doesn't expose a method for it directly.
+    opts['upgrade'] = false;
 
     if (authToken != null) {
       opts['auth'] = {'token': authToken};

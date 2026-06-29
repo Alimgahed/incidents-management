@@ -133,9 +133,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       // Switching Protocols but wraps the subsequent WebSocket frames in Transfer-Encoding: chunked,
       // which corrupts them for strict clients like Dart's web_socket_channel. Browsers tolerate this,
       // which is why kIsWeb can use ['polling', 'websocket'].
-      _socket = io.io(
-        socketUrl,
-        io.OptionBuilder()
+      final opts = io.OptionBuilder()
             .setTransports(kIsWeb ? ['polling', 'websocket'] : ['polling'])
             .setPath(socketPath)
             .setReconnectionAttempts(_maxReconnectAttempts)
@@ -144,8 +142,13 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
             .disableMultiplex() // Force new connection, bypasses dead cache
             .setAuth({'token': token}) // Pass token in auth object
             .setExtraHeaders({'Authorization': 'Bearer $token'}) // And in headers just in case
-            .build(),
-      );
+            .build();
+
+      // Manually inject the upgrade:false flag into the built options map,
+      // since OptionBuilder doesn't expose a method for it directly.
+      opts['upgrade'] = false;
+
+      _socket = io.io(socketUrl, opts);
 
       // DEBUG - add temporarily
       _socket?.onAny((event, data) {
