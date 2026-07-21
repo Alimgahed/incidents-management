@@ -87,6 +87,7 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
           SizedBox(height: 20),
           CustomDropdownFormField(
             items: [
+              const DropdownMenuItem(value: 1, child: Text('ديوان عام الشركة')),
               const DropdownMenuItem(value: 213, child: Text('المنيا')),
               const DropdownMenuItem(value: 373, child: Text('المنيا الجديدة')),
               const DropdownMenuItem(value: 173, child: Text('سمالوط')),

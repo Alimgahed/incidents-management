@@ -121,6 +121,7 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
                       value: selectedBranchId,
                       hintText: 'الفرع',
                       items: const [
+                        DropdownMenuItem(value: 1, child: Text('ديوان عام الشركة')),
                         DropdownMenuItem(value: 213, child: Text('المنيا')),
                         DropdownMenuItem(
                           value: 373,

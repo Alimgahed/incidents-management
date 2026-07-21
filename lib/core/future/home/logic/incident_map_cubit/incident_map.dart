@@ -147,6 +147,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       // Manually inject the upgrade:false flag into the built options map,
       // since OptionBuilder doesn't expose a method for it directly.
       opts['upgrade'] = false;
+      opts['forceNew'] = true; // CRITICAL: Prevent reusing old authenticated connection
 
       if (kDebugMode) {
         debugPrint('🔍 Socket opts: $opts');
@@ -543,6 +544,9 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;
+    incidentss.clear();
+    _lastIncidentPayloadAt = null;
+    emit(IncidentMapInitial());
   }
 
   @override

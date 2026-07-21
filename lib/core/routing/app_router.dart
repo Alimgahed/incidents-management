@@ -192,8 +192,8 @@ class AppRouter {
         );
       case Routes.crisisDashboardScreen:
         return MaterialPageRoute(
-          builder: (_) => BlocProvider(
-            create: (context) => getIt<IncidentMapCubit>(),
+          builder: (_) => BlocProvider.value(
+            value: getIt<IncidentMapCubit>(),
             child: const CrisisDashboard(),
           ),
         );
@@ -202,7 +202,7 @@ class AppRouter {
           builder: (_) => MultiBlocProvider(
             providers: [
               BlocProvider(create: (context) => DashboardCubit()),
-              BlocProvider(create: (context) => getIt<IncidentMapCubit>()),
+              BlocProvider.value(value: getIt<IncidentMapCubit>()),
             ],
             child: const MobileIncidentsListScreen(),
           ),

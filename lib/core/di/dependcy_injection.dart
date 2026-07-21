@@ -148,7 +148,7 @@ Future<void> setup() async {
     () =>
         AllIncidentTypeCubit(allIncidentTypeRepo: getIt<AllIncidentTypeRepo>()),
   );
-  getIt.registerFactory<IncidentMapCubit>(() => IncidentMapCubit());
+  getIt.registerLazySingleton<IncidentMapCubit>(() => IncidentMapCubit());
 
   getIt.registerFactory<EditMissionsCubit>(
     () => EditMissionsCubit(repository: getIt<EditMissionRepo>()),
