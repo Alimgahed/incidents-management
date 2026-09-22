@@ -10,6 +10,7 @@ import 'package:incidents_managment/core/offline/presentation/offline_status_cub
 import 'package:incidents_managment/core/routing/app_router.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
+import 'package:incidents_managment/core/theming/logic/theme_cubit.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:incidents_managment/main.dart';
 
@@ -48,53 +49,62 @@ class Incidents extends StatelessWidget {
             ? (isMobile ? Routes.mobileHome : Routes.crisisDashboardScreen)
             : Routes.login;
 
-        return GetMaterialApp(
-          scaffoldMessengerKey: messengerKey,
-          debugShowCheckedModeBanner: false,
-          title: 'Risk Management',
-          theme: AppTheme.lightTheme,
-          onGenerateRoute: appRouter.generateRoute,
-          initialRoute: initialRoute,
-          scrollBehavior: WebScrollBehavior(),
-          // Set the app's locale to Arabic
-          locale: const Locale('ar', 'AE'), // Arabic (UAE) locale
-          supportedLocales: const [Locale('en', 'US'), Locale('ar', 'AE')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
+        return BlocProvider<ThemeCubit>(
+          create: (_) => ThemeCubit(),
+          child: BlocBuilder<ThemeCubit, ThemeMode>(
+            builder: (context, themeMode) {
+              return GetMaterialApp(
+                scaffoldMessengerKey: messengerKey,
+                debugShowCheckedModeBanner: false,
+                title: 'Risk Management',
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: themeMode,
+                onGenerateRoute: appRouter.generateRoute,
+                initialRoute: initialRoute,
+                scrollBehavior: WebScrollBehavior(),
+                // Set the app's locale to Arabic
+                locale: const Locale('ar', 'AE'), // Arabic (UAE) locale
+                supportedLocales: const [Locale('en', 'US'), Locale('ar', 'AE')],
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
 
-          // Ensure RTL layout when using Arabic locale and responsive design
-          builder: (context, child) {
-            return BlocProvider<OfflineStatusCubit>(
-              // Singleton-ish: factory builds a single cubit per app lifecycle.
-              create: (_) => getIt<OfflineStatusCubit>(),
-              child: Directionality(
-                  textDirection: TextDirection.rtl,
-                  child: ResponsiveBreakpoints.builder(
-                    child: MediaQuery(
-                      data: MediaQuery.of(context).copyWith(
-                        textScaler: const TextScaler.linear(1.0), // Prevent system text scaling issues
-                      ),
-                      // Wrap the child so OfflineBanner always sits at the top of the visible UI.
-                      child: Column(
-                        children: [
-                          const OfflineBanner(),
-                          Expanded(child: child ?? const SizedBox.shrink()),
+                // Ensure RTL layout when using Arabic locale and responsive design
+                builder: (context, child) {
+                  return BlocProvider<OfflineStatusCubit>(
+                    // Singleton-ish: factory builds a single cubit per app lifecycle.
+                    create: (_) => getIt<OfflineStatusCubit>(),
+                    child: Directionality(
+                      textDirection: TextDirection.rtl,
+                      child: ResponsiveBreakpoints.builder(
+                        child: MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                            textScaler: const TextScaler.linear(1.0), // Prevent system text scaling issues
+                          ),
+                          // Wrap the child so OfflineBanner always sits at the top of the visible UI.
+                          child: Column(
+                            children: [
+                              const OfflineBanner(),
+                              Expanded(child: child ?? const SizedBox.shrink()),
+                            ],
+                          ),
+                        ),
+                        breakpoints: [
+                          const Breakpoint(start: 0, end: 599, name: MOBILE),
+                          const Breakpoint(start: 600, end: 1023, name: TABLET),
+                          const Breakpoint(start: 1024, end: 1439, name: DESKTOP),
+                          const Breakpoint(start: 1440, end: double.infinity, name: '4K'),
                         ],
                       ),
                     ),
-                    breakpoints: [
-                      const Breakpoint(start: 0, end: 599, name: MOBILE),
-                      const Breakpoint(start: 600, end: 1023, name: TABLET),
-                      const Breakpoint(start: 1024, end: 1439, name: DESKTOP),
-                      const Breakpoint(start: 1440, end: double.infinity, name: '4K'),
-                    ],
-                  ),
-                ),
+                  );
+                },
               );
-          },
+            },
+          ),
         );
       },
     );

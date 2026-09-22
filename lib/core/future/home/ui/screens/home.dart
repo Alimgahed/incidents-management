@@ -125,34 +125,38 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                       }
                     });
 
-                    final content = IndexedStack(
-                      index: index,
-                      children: List.generate(9, (i) {
-                        if (!_isBuilt[i]) return const SizedBox.shrink();
-                        switch (i) {
-                          case 0:
-                            return const DashboardView();
-                          case 1:
-                            return const IncidentsMapScreen();
-                          case 2:
-                            return const ActiveTeamsScreen();
-                          case 3:
-                            return const AnalyticsOverviewScreen();
-                          case 4:
-                            return index == 4 ? const AddIncidentScreen() : const SizedBox.shrink();
-                          case 5:
-                            return const AllIncidentType();
-                          case 6:
-                            return const AllMissions();
-                          case 7:
-                            return const Addincidentmission();
-                          case 8:
-                            return const WebValveMapScreen();
-                          default:
-                            return const SizedBox.shrink();
-                        }
-                      }),
-                    );
+                    Widget content;
+                    switch (index) {
+                      case 0:
+                        content = const DashboardView();
+                        break;
+                      case 1:
+                        content = const IncidentsMapScreen();
+                        break;
+                      case 2:
+                        content = const ActiveTeamsScreen();
+                        break;
+                      case 3:
+                        content = const AnalyticsOverviewScreen();
+                        break;
+                      case 4:
+                        content = const AddIncidentScreen();
+                        break;
+                      case 5:
+                        content = const AllIncidentType();
+                        break;
+                      case 6:
+                        content = const AllMissions();
+                        break;
+                      case 7:
+                        content = const Addincidentmission();
+                        break;
+                      case 8:
+                        content = const WebValveMapScreen();
+                        break;
+                      default:
+                        content = const SizedBox.shrink();
+                    }
 
                     if (isMobile) {
                       return ColoredBox(

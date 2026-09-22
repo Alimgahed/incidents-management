@@ -119,7 +119,12 @@ class _AllIncidentTypeWebScreenState extends State<AllIncidentTypeWebScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   elevation: 0,
                 ),
-                onPressed: () => context.pushNamed(Routes.addIncidentType),
+                onPressed: () async {
+                  await context.pushNamed(Routes.addIncidentType);
+                  if (context.mounted) {
+                    context.read<AllIncidentTypeCubit>().getAllIncidentTypes();
+                  }
+                },
                 icon: const Icon(Icons.add, color: Colors.white, size: 20),
                 label: const Text("إضافة نوع أزمة جديد", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),

@@ -104,6 +104,8 @@ class CurrentIncidentWithMissions extends Equatable {
   final DateTime? currentIncidentMissionStatusUpdatedAt;
   @JsonKey(name: 'mission_name')
   final String? missionName;
+  @JsonKey(name: 'assigned_employees')
+  final List<AssignedEmployee>? assignedEmployees;
 
   const CurrentIncidentWithMissions({
     this.idCurrentIncidentMission,
@@ -114,6 +116,7 @@ class CurrentIncidentWithMissions extends Equatable {
     this.currentIncidentMissionStatusUpdatedBy,
     this.currentIncidentMissionStatusUpdatedAt,
     this.missionName,
+    this.assignedEmployees,
   });
 
   factory CurrentIncidentWithMissions.fromJson(Map<String, dynamic> json) =>
@@ -130,6 +133,45 @@ class CurrentIncidentWithMissions extends Equatable {
         currentIncidentMissionStatusUpdatedBy,
         currentIncidentMissionStatusUpdatedAt,
         missionName,
+        assignedEmployees,
+      ];
+}
+
+@JsonSerializable()
+class AssignedEmployee extends Equatable {
+  final int? id;
+  @JsonKey(name: 'current_incident_mission_id')
+  final int? currentIncidentMissionId;
+  @JsonKey(name: 'employee_id')
+  final int? employeeId;
+  @JsonKey(name: 'emp_name')
+  final String? empName;
+  @JsonKey(name: 'assigned_by')
+  final String? assignedBy;
+  @JsonKey(name: 'assigned_at')
+  final DateTime? assignedAt;
+
+  const AssignedEmployee({
+    this.id,
+    this.currentIncidentMissionId,
+    this.employeeId,
+    this.empName,
+    this.assignedBy,
+    this.assignedAt,
+  });
+
+  factory AssignedEmployee.fromJson(Map<String, dynamic> json) =>
+      _$AssignedEmployeeFromJson(json);
+  Map<String, dynamic> toJson() => _$AssignedEmployeeToJson(this);
+
+  @override
+  List<Object?> get props => [
+        id,
+        currentIncidentMissionId,
+        employeeId,
+        empName,
+        assignedBy,
+        assignedAt,
       ];
 }
 

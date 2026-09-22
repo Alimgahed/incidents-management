@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:incidents_managment/core/future/actions/ui/widgets/incident/shared_incident_form.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/add_incident_widget.dart';
@@ -24,17 +25,9 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
   final TextEditingController notesController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
 
-  int? selectedTypeId;
-  int? selectedSeverity;
-  int? selectedBranchId;
-
   @override
   void initState() {
     super.initState();
-
-    /// Load types
-
-    /// Set default location on open
     Future.microtask(() {
       context.read<MapCubit>().setCurrentLocation(
         const LatLng(30.0444, 31.2357),
@@ -55,7 +48,7 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "إرسال بلاغ",
+          "إضافة أزمة",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -68,7 +61,7 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
             state.whenOrNull(
               success: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم إرسال البلاغ بنجاح')),
+                  const SnackBar(content: Text('تم إضافة الأزمة بنجاح')),
                 );
               },
               error: (e) {
@@ -86,109 +79,13 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    /// ================= MAP =================
                     const SizedBox(height: 300, child: IncidentMapWidget()),
-
                     const SizedBox(height: 20),
-
-                    /// ================= TYPE =================
-                    IncidentTypeDropdown(
-                      selectedValue: selectedTypeId,
-                      onChanged: (v) {
-                        selectedTypeId = v;
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    /// ================= SEVERITY =================
-                    CustomDropdownFormField(
-                      value: selectedSeverity,
-                      hintText: 'درجة الخطورة',
-                      items: const [
-                        DropdownMenuItem(value: 1, child: Text('منخفض')),
-                        DropdownMenuItem(value: 2, child: Text('متوسطة')),
-                        DropdownMenuItem(value: 3, child: Text('مرتفعة')),
-                        DropdownMenuItem(value: 4, child: Text('حرجة')),
-                      ],
-                      onChanged: (v) => setState(() => selectedSeverity = v),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    /// ================= BRANCH =================
-                    CustomDropdownFormField(
-                      value: selectedBranchId,
-                      hintText: 'الفرع',
-                      items: const [
-                        DropdownMenuItem(value: 1, child: Text('ديوان عام الشركة')),
-                        DropdownMenuItem(value: 213, child: Text('المنيا')),
-                        DropdownMenuItem(
-                          value: 373,
-                          child: Text('المنيا الجديدة'),
-                        ),
-                        DropdownMenuItem(value: 173, child: Text('سمالوط')),
-                        DropdownMenuItem(value: 133, child: Text('مطاي')),
-                        DropdownMenuItem(value: 93, child: Text('بني مزار')),
-                        DropdownMenuItem(value: 53, child: Text('مغاغة')),
-                        DropdownMenuItem(value: 13, child: Text('العدوة')),
-                        DropdownMenuItem(value: 253, child: Text('أبو قرقاص')),
-                        DropdownMenuItem(value: 293, child: Text('ملاوي')),
-                        DropdownMenuItem(value: 333, child: Text('ديرمواس')),
-                      ],
-                      onChanged: (v) => setState(() => selectedBranchId = v),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    /// ================= DESCRIPTION =================
-                    CustomTextFormField(
-                      controller: descriptionController,
-                      hintText: "اشرح الحالة بالتفصيل...",
-                      maxLines: 4,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    /// ================= ADDRESS =================
-                    BlocListener<MapCubit, MapState>(
-                      listenWhen: (previous, current) => previous.address != current.address,
-                      listener: (context, state) {
-                        if (state.address != null) {
-                          addressController.text = state.address!;
-                        }
-                      },
-                      child: CustomTextFormField(
-                        controller: addressController,
-                        hintText: "العنوان بالتفصيل",
-                        useValidator: false,
-                        maxLines: 2,
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    /// ================= NOTES =================
-                    CustomTextFormField(
-                      controller: notesController,
-                      hintText: "ملاحظات إضافية (اختياري)",
-                      useValidator: false,
-                      maxLines: 3,
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    /// ================= SUBMIT =================
-                    BlocBuilder<AddIncidentCubit, AddIncidentStates>(
-                      builder: (context, state) {
-                        return CustomButton(
-                          text: state.maybeWhen(
-                            loading: () => 'جاري الإرسال...',
-                            orElse: () => 'إرسال البلاغ',
-                          ),
-                          onPressed: _submit,
-                        );
-                      },
+                    SharedIncidentForm(
+                      descriptionController: descriptionController,
+                      notesController: notesController,
+                      addressController: addressController,
+                      isWeb: false,
                     ),
                   ],
                 ),
@@ -199,37 +96,4 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
       ),
     );
   }
-
-  void _submit() {
-    if (selectedTypeId == null ||
-        selectedSeverity == null ||
-        selectedBranchId == null ||
-        descriptionController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('يرجى ملء جميع الحقول')));
-      return;
-    }
-
-    final location = context.read<MapCubit>().state.selectedLocation;
-
-    final model = CurrentIncidentModel(
-      currentIncidentTypeId: selectedTypeId!,
-      currentIncidentSeverity: selectedSeverity!,
-      branchId: selectedBranchId!,
-      currentIncidentDescription: descriptionController.text,
-      currentIncidentNotes: notesController.text.isEmpty
-          ? null
-          : notesController.text,
-      address: addressController.text.isEmpty
-          ? null
-          : addressController.text,
-      currentIncidentXAxis: location.latitude,
-      currentIncidentYAxis: location.longitude,
-    );
-
-    context.read<AddIncidentCubit>().submitIncident(model: model);
-  }
 }
-
-/// =

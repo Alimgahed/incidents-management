@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:synchronized/synchronized.dart';
 
 import '../data/models/cached_attachment.dart';
@@ -302,10 +303,12 @@ class SyncManager {
     // yet — wait for the parent's remap to land first.
     if (incidentId < 0) return;
 
-    final file = File(att.localFilePath);
-    if (!await file.exists()) {
-      await attachments.recordFailure(att.localId, 'File missing on disk');
-      return;
+    if (!kIsWeb) {
+      final file = File(att.localFilePath);
+      if (!await file.exists()) {
+        await attachments.recordFailure(att.localId, 'File missing on disk');
+        return;
+      }
     }
 
     try {
@@ -314,10 +317,15 @@ class SyncManager {
         'description': att.description,
         'x_axis': att.xAxis.toString(),
         'y_axis': att.yAxis.toString(),
-        'photo': await MultipartFile.fromFile(
-          att.localFilePath,
-          filename: att.fileName,
-        ),
+        'photo': kIsWeb
+            ? MultipartFile.fromBytes(
+                await XFile(att.localFilePath).readAsBytes(),
+                filename: att.fileName,
+              )
+            : await MultipartFile.fromFile(
+                att.localFilePath,
+                filename: att.fileName,
+              ),
       });
 
       final response = await dio.post(

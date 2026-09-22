@@ -25,8 +25,8 @@ class SyncStatusChip extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                border: Border.all(color: color.withOpacity(0.4)),
+                color: color.withValues(alpha: 0.12),
+                border: Border.all(color: color.withValues(alpha: 0.4)),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(

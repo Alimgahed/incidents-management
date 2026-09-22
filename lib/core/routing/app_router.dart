@@ -59,26 +59,7 @@ class AppRouter {
       );
     }
 
-    // 4. Define administrative/supervisor routes that require supervisor role
-    final supervisorRoutes = [
-      Routes.addIncidentType,
-      Routes.addMissions,
-      Routes.allMissions,
-      Routes.addIncidentMission,
-      Routes.allIncidentType,
-      Routes.editMissions,
-      Routes.missionAssign,
-      Routes.registration,
-    ];
-
-    if (supervisorRoutes.contains(settings.name)) {
-      final isAuthorized = sessionManager.isSupervisorOrAdmin();
-      if (!isAuthorized) {
-        return MaterialPageRoute(
-          builder: (_) => const AccessDeniedScreen(),
-        );
-      }
-    }
+    // 4. Removed administrative/supervisor route restrictions at user's request
 
     switch (settings.name) {
       case Routes.accessDenied:
@@ -90,8 +71,7 @@ class AppRouter {
               BlocProvider(create: (_) => getIt<AddIncidentCubit>()),
               BlocProvider(create: (_) => getIt<MapCubit>()),
               BlocProvider(
-                create: (_) =>
-                    getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+                create: (_) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
               ),
             ],
             child: const AddIncidentScreen(),
@@ -104,8 +84,7 @@ class AppRouter {
               BlocProvider(create: (_) => getIt<AddIncidentCubit>()),
               BlocProvider(create: (_) => getIt<MapCubit>()),
               BlocProvider(
-                create: (_) =>
-                    getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+                create: (_) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
               ),
             ],
             child: const AddIncidentMobileScreen(),
@@ -175,8 +154,7 @@ class AppRouter {
               ),
               BlocProvider(create: (_) => getIt<AddIncidentMissionCubit>()),
               BlocProvider(
-                create: (_) =>
-                    getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+                create: (_) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
               ),
             ],
             child: const Addincidentmission(),
@@ -185,8 +163,7 @@ class AppRouter {
       case Routes.allIncidentType:
         return MaterialPageRoute(
           builder: (_) => BlocProvider(
-            create: (context) =>
-                getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+            create: (_) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
             child: const AllIncidentType(),
           ),
         );

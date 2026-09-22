@@ -78,6 +78,55 @@ class AppTheme {
       primarySwatch: Colors.blue,
     );
   }
+  // =======================
+  // Dark Theme
+  // =======================
+  static ThemeData get darkTheme {
+    const Color darkBackground = Color(0xFF0F172A);
+    const Color darkSurface = Color(0xFF1E293B);
+    const Color darkText = Color(0xFFF8FAFC);
+    const Color darkTextSecondary = Color(0xFF94A3B8);
+
+    return ThemeData(
+      scaffoldBackgroundColor: darkBackground,
+      primaryColor: primaryColor,
+      fontFamily: 'Alexandria',
+
+      colorScheme: const ColorScheme.dark(
+        primary: primaryColor,
+        secondary: accentColor,
+        surface: darkSurface,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+      ),
+
+      iconTheme: const IconThemeData(color: Colors.white70),
+      primaryIconTheme: const IconThemeData(color: Colors.white),
+
+      appBarTheme: const AppBarTheme(
+        backgroundColor: darkBackground,
+        surfaceTintColor: darkBackground,
+        titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: IconThemeData(color: Colors.white),
+        elevation: 0,
+      ),
+
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: primaryColor),
+
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: darkText),
+        bodyMedium: TextStyle(color: darkTextSecondary),
+        bodySmall: TextStyle(color: Colors.white54),
+      ),
+
+      brightness: Brightness.dark,
+      primarySwatch: Colors.blue,
+    );
+  }
 }
 
 // =======================

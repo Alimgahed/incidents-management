@@ -46,6 +46,12 @@ class DioFactory {
           return handler.next(options);
         },
         onError: (DioException error, handler) async {
+          if (error.response?.statusCode == 401) {
+            try {
+              final sessionManager = getIt<SessionManager>();
+              sessionManager.logout(sessionExpired: true);
+            } catch (_) {}
+          }
           return handler.next(error);
         },
       ),

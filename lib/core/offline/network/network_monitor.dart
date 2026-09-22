@@ -193,8 +193,10 @@ class NetworkMonitorService {
             validateStatus: (_) => true, // any response = internet works
           ));
       final url = baseUrl!;
+      final cacheBuster = {'_probe_t': DateTime.now().millisecondsSinceEpoch};
       try {
         await dio.head(url,
+            queryParameters: cacheBuster,
             options: Options(receiveTimeout: probeTimeout));
         _updateState(true, triggerReconnect: triggerReconnect);
         return true;
@@ -202,6 +204,7 @@ class NetworkMonitorService {
         // HEAD might not be supported — fall back to GET /
         try {
           await dio.get(url,
+              queryParameters: cacheBuster,
               options: Options(receiveTimeout: probeTimeout));
           _updateState(true, triggerReconnect: triggerReconnect);
           return true;

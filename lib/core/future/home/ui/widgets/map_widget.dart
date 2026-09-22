@@ -546,7 +546,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             const SizedBox(height: 8),
             _buildLegendItem('حرجة', Colors.red),
             _buildLegendItem('عالية', Colors.orange),
-            _buildLegendItem('متوسطة', Colors.yellow[700]!),
+            _buildLegendItem('متوسطة', const Color(0xFFFFC107)),
             _buildLegendItem('منخفضة', Colors.green),
           ],
         ),
@@ -615,7 +615,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
       case 3:
         return Colors.orange;
       case 2:
-        return Colors.yellow[700]!;
+        return const Color(0xFFFFC107);
       case 1:
       default:
         return Colors.green;
@@ -1289,7 +1289,7 @@ class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
       case 3:
         return Colors.orange;
       case 2:
-        return Colors.yellow[700]!;
+        return const Color(0xFFFFC107);
       case 1:
       default:
         return Colors.green;

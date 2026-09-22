@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:incidents_managment/core/constant/colors.dart';
+import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_mission_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
@@ -108,10 +110,17 @@ class _AddIncidentMissionBodyState extends State<Addincidentmission> {
           create: (_) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
         ),
       ],
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 20.0),
-        child: BlocConsumer<AddIncidentMissionCubit, AddincidentMissionsstates>(
-          listener: (context, state) {
+      child: Scaffold(
+        backgroundColor: scaffoldColor,
+        appBar: GlobalAppBar(
+          onBackPress: () => context.pop(),
+          title: 'ربط المهام بالأنواع',
+          leadingIcon: Icons.link_rounded,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 20.0),
+          child: BlocConsumer<AddIncidentMissionCubit, AddincidentMissionsstates>(
+            listener: (context, state) {
             state.when(
               initial: () {
                 _closeDialogIfOpen();
@@ -133,6 +142,7 @@ class _AddIncidentMissionBodyState extends State<Addincidentmission> {
                 _closeDialogIfOpen();
 
                 if (!context.mounted) return;
+                getIt<AllIncidentTypeCubit>().getAllIncidentTypes();
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -401,6 +411,7 @@ class _AddIncidentMissionBodyState extends State<Addincidentmission> {
           },
         ),
       ),
+    ),
     );
   }
 

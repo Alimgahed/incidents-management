@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
@@ -58,10 +58,11 @@ class FileUploadCubit extends Cubit<FileUploadState> {
       );
 
       if (result != null) {
-        final file = File(result.files.single.path!);
-        final fileName = result.files.single.name;
-        final fileSize = await file.length();
+        final platformFile = result.files.single;
+        final fileName = platformFile.name;
+        final fileSize = platformFile.size;
         final fileExtension = fileName.split('.').last;
+        final filePath = platformFile.path ?? '';
 
         if (!_validateFile(fileName, fileSize)) {
           return;
@@ -70,7 +71,7 @@ class FileUploadCubit extends Cubit<FileUploadState> {
         emit(
           FileUploadState.fileSelected(
             fileName: fileName,
-            filePath: file.path,
+            filePath: filePath,
             fileSize: fileSize,
             fileExtension: fileExtension,
           ),
@@ -93,9 +94,8 @@ class FileUploadCubit extends Cubit<FileUploadState> {
       );
 
       if (image != null) {
-        final file = File(image.path);
         final fileName = image.name;
-        final fileSize = await file.length();
+        final fileSize = await image.length();
         final fileExtension = fileName.split('.').last;
 
         if (!_validateFile(fileName, fileSize)) {
@@ -105,7 +105,7 @@ class FileUploadCubit extends Cubit<FileUploadState> {
         emit(
           FileUploadState.fileSelected(
             fileName: fileName,
-            filePath: file.path,
+            filePath: image.path,
             fileSize: fileSize,
             fileExtension: fileExtension,
           ),

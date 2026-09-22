@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/offline/data/models/cached_attachment.dart';
 import 'package:incidents_managment/core/offline/data/repositories/attachment_cache_repository.dart';
@@ -32,9 +34,11 @@ class FileUploadRepository {
     final attachmentRepo = getIt<AttachmentCacheRepository>();
     final monitor = getIt<NetworkMonitorService>();
 
-    final file = File(filePath);
-    if (!await file.exists()) {
-      throw Exception('ملف الصورة غير موجود على الجهاز.');
+    if (!kIsWeb) {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('ملف الصورة غير موجود على الجهاز.');
+      }
     }
 
     // 1. Always register the attachment locally first — the UI shows it
@@ -72,7 +76,12 @@ class FileUploadRepository {
         'description': description,
         'x_axis': xAxis.toString(),
         'y_axis': yAxis.toString(),
-        'photo': await MultipartFile.fromFile(filePath, filename: fileName),
+        'photo': kIsWeb
+            ? MultipartFile.fromBytes(
+                await XFile(filePath).readAsBytes(),
+                filename: fileName,
+              )
+            : await MultipartFile.fromFile(filePath, filename: fileName),
       });
 
       final response = await dio.post(
@@ -169,10 +178,15 @@ class FileUploadRepository {
 
       final List<MultipartFile> files = [];
       for (var path in filePaths) {
-        final file = File(path);
-        if (await file.exists()) {
-          final name = path.split('/').last;
-          files.add(await MultipartFile.fromFile(path, filename: name));
+        final name = path.split('/').last;
+        if (kIsWeb) {
+          final bytes = await XFile(path).readAsBytes();
+          files.add(MultipartFile.fromBytes(bytes, filename: name));
+        } else {
+          final file = File(path);
+          if (await file.exists()) {
+            files.add(await MultipartFile.fromFile(path, filename: name));
+          }
         }
       }
 
@@ -229,6 +243,10 @@ class FileUploadRepository {
   /// Get File Size (Bytes)
   /// ==========================
   Future<int> getFileSize(String filePath) async {
+    if (kIsWeb) {
+      final bytes = await XFile(filePath).readAsBytes();
+      return bytes.length;
+    }
     final file = File(filePath);
     return await file.length();
   }

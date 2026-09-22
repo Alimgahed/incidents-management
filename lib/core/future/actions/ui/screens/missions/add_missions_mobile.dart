@@ -4,11 +4,13 @@ import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/data/models/classes/all_incident_classes.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/add_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/classes_cubit/all_incident_classes.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_missions_states.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/all_incident_classes.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 
 class AddMissionsMobile extends StatefulWidget {
   const AddMissionsMobile({super.key});
@@ -31,6 +33,7 @@ class _AddMissionsMobileState extends State<AddMissionsMobile> {
         listener: (context, state) {
           state.whenOrNull(
             success: () {
+              getIt<AllMissionsCubit>().getAllMissions();
               SuccessDialog.show(context, title: 'تم', message: "تمت إضافة المهمة بنجاح");
             },
             error: (message) {

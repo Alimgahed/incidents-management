@@ -8,8 +8,23 @@ import 'package:incidents_managment/core/future/actions/ui/widgets/missions/miss
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 
-class AllMissionsMobile extends StatelessWidget {
+class AllMissionsMobile extends StatefulWidget {
   const AllMissionsMobile({super.key});
+
+  @override
+  State<AllMissionsMobile> createState() => _AllMissionsMobileState();
+}
+
+class _AllMissionsMobileState extends State<AllMissionsMobile> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        context.read<AllMissionsCubit>().getAllMissions();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +69,11 @@ class AllMissionsMobile extends StatelessWidget {
                 CustomFloatingButton(
                   routeName: Routes.addMissions,
                   text: "إضافة مهمة جديدة",
+                  onReturn: () {
+                    if (context.mounted) {
+                      context.read<AllMissionsCubit>().getAllMissions();
+                    }
+                  },
                 ),
               ],
             ),

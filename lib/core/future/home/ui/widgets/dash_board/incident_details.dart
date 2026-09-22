@@ -89,7 +89,7 @@ class _IncidentDetailContent extends StatelessWidget {
       _MissionsCard(incident: incident),
       SizedBox(height: spacing),
 
-      if (incident.currentIncidentNotes != null) ...[
+      if (incident.currentIncidentNotes != null && incident.currentIncidentNotes!.trim().isNotEmpty) ...[
         SizedBox(height: spacing),
         _NotesCard(notes: incident.currentIncidentNotes!),
         SizedBox(height: spacing),
@@ -107,6 +107,8 @@ class _IncidentDetailContent extends StatelessWidget {
         _AddressCard(address: incident.address!),
         SizedBox(height: spacing),
       ],
+      _DescriptionCard(incident: incident),
+      SizedBox(height: spacing),
       if (incident.currentIncidentId != null) ...[
         IncidentPhotosGrid(
           incident: incident,
@@ -262,7 +264,7 @@ class _DescriptionAndNotesSection extends StatelessWidget {
     return Column(
       children: [
         _DescriptionCard(incident: incident),
-        if (incident.currentIncidentNotes != null) ...[
+        if (incident.currentIncidentNotes != null && incident.currentIncidentNotes!.trim().isNotEmpty) ...[
           const SizedBox(height: 12),
           _NotesCard(notes: incident.currentIncidentNotes!),
         ],
@@ -384,7 +386,7 @@ class _HeaderDecoration {
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: const Color(0xFF0A1628).withOpacity(0.2),
+          color: const Color(0xFF0A1628).withValues(alpha: 0.2),
           blurRadius: 20,
           offset: const Offset(0, 8),
         ),
@@ -434,9 +436,9 @@ class _IconContainer extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.5),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
       ),
       child: Icon(icon, size: 20, color: Colors.white),
     );
@@ -485,7 +487,8 @@ class _HeaderStatusBar extends StatelessWidget {
           const SizedBox(width: 12),
           _InfoChip(icon: Icons.assignment_outlined, label: _getMissionCount()),
           const SizedBox(width: 12),
-
+          _InfoChip(icon: Icons.group_outlined, label: _getAssignedCount()),
+          const SizedBox(width: 12),
           _ActionButtonsGroup(incident: incident),
         ],
       ),
@@ -495,6 +498,21 @@ class _HeaderStatusBar extends StatelessWidget {
   String _getMissionCount() {
     final count = incident.currentIncidentWithMissions?.length ?? 0;
     return count > 0 ? '$count مهمة' : 'بدون مهام';
+  }
+
+  String _getAssignedCount() {
+    final missions = incident.currentIncidentWithMissions ?? [];
+    final Set<int> empIds = {};
+    for (var m in missions) {
+      if (m.assignedEmployees != null) {
+        for (var emp in m.assignedEmployees!) {
+          if (emp.employeeId != null) {
+            empIds.add(emp.employeeId!);
+          }
+        }
+      }
+    }
+    return empIds.length > 0 ? '${empIds.length} مسؤول' : 'بدون مسؤول';
   }
 }
 
@@ -509,9 +527,9 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.5), width: 1.2),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1.2),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -548,9 +566,9 @@ class _SeverityChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.6), width: 1.2),
+        border: Border.all(color: color.withValues(alpha: 0.6), width: 1.2),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -592,9 +610,9 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -602,7 +620,7 @@ class _InfoChip extends StatelessWidget {
           Icon(icon, size: 14, color: Colors.white70),
           const SizedBox(width: 6),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 100),
+            constraints: const BoxConstraints(maxWidth: 250),
             child: Text(
               label,
               style: const TextStyle(
@@ -673,9 +691,9 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
         ),
         child: Material(
           color: Colors.transparent,
@@ -870,12 +888,12 @@ class _PulsingIcon extends StatelessWidget {
         height: 110,
         decoration: BoxDecoration(
           gradient: RadialGradient(
-            colors: [appColor.withOpacity(0.15), appColor.withOpacity(0.04)],
+            colors: [appColor.withValues(alpha: 0.15), appColor.withValues(alpha: 0.04)],
           ),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: appColor.withOpacity(0.12),
+              color: appColor.withValues(alpha: 0.12),
               blurRadius: 28,
               spreadRadius: 4,
             ),
@@ -885,14 +903,14 @@ class _PulsingIcon extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              color: appColor.withOpacity(0.1),
+              color: appColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
-              border: Border.all(color: appColor.withOpacity(0.2), width: 1.5),
+              border: Border.all(color: appColor.withValues(alpha: 0.2), width: 1.5),
             ),
             child: Icon(
               Icons.crisis_alert_rounded,
               size: 44,
-              color: appColor.withOpacity(0.7),
+              color: appColor.withValues(alpha: 0.7),
             ),
           ),
         ),
@@ -965,10 +983,10 @@ class _FeatureHint extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2), width: 1.2),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.06),
+            color: color.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -980,7 +998,7 @@ class _FeatureHint extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 16, color: color),
@@ -1009,14 +1027,14 @@ class _SelectionHint extends StatelessWidget {
         Icon(
           Icons.arrow_forward_rounded,
           size: 16,
-          color: appColor.withOpacity(0.5),
+          color: appColor.withValues(alpha: 0.5),
         ),
         const SizedBox(width: 6),
         Text(
           'اختر من القائمة على اليمين',
           style: TextStyle(
             fontSize: 12,
-            color: appColor.withOpacity(0.6),
+            color: appColor.withValues(alpha: 0.6),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -1196,7 +1214,7 @@ class _MissionItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = mission.currentIncidentMissionStatus ?? 1;
     final order = mission.currentIncidentMissionOrder ?? 0;
-    final missionId = mission.currentIncidentMissionId;
+    final missionId = mission.idCurrentIncidentMission;
     final statusColor = getStatusColor(status);
 
     return Container(
@@ -1235,7 +1253,7 @@ class _MissionOrderBadge extends StatelessWidget {
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: appColor.withOpacity(0.08),
+        color: appColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Center(
@@ -1269,20 +1287,50 @@ class _MissionContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 5),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            getStatusArabicLabel(mission.currentIncidentMissionStatus ?? 1),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: statusColor,
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                getStatusArabicLabel(mission.currentIncidentMissionStatus ?? 1),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: statusColor,
+                ),
+              ),
             ),
-          ),
+            if (mission.assignedEmployees != null && mission.assignedEmployees!.isNotEmpty)
+              ...mission.assignedEmployees!.map((emp) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.person, size: 12, color: Colors.blue),
+                    const SizedBox(width: 4),
+                    Text(
+                      emp.empName ?? 'مستخدم',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+          ],
         ),
       ],
     );
@@ -1448,7 +1496,7 @@ class _TimelineItem extends StatelessWidget {
                   color: const Color(0xFFE2E8F0),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: appColor.withOpacity(0.6),
+                    color: appColor.withValues(alpha: 0.6),
                     width: 1.5,
                   ),
                 ),
@@ -1531,7 +1579,7 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFEDF2F7), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.01),
+            color: Colors.black.withValues(alpha: 0.01),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1561,7 +1609,7 @@ class _SectionCard extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: appColor.withOpacity(0.08),
+                    color: appColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

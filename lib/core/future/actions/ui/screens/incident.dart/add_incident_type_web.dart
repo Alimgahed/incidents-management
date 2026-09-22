@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:incidents_managment/core/future/actions/ui/widgets/incident/shared_incident_type_form.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/data/models/classes/all_incident_classes.dart';
@@ -106,59 +107,7 @@ class _AddIncidentTypeWebState extends State<AddIncidentTypeWeb> {
           const SizedBox(height: 8),
           const Text("يرجى إدخال البيانات الرئيسية لتعريف الأزمة في النظام.", style: TextStyle(color: Color(0xFF64748B), fontSize: 14)),
           const SizedBox(height: 32),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: BlocBuilder<AllIncidentClasses, GetAllIncidentClassesState>(
-                  builder: (context, typeState) {
-                    return typeState.when(
-                      initial: () => const SizedBox.shrink(),
-                      loading: () => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          buildLabel("تصنيف الأزمة *"),
-                          const LinearProgressIndicator(color: appColor),
-                        ],
-                      ),
-                      error: (e) => const Text('Error'),
-                      loaded: (types) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          buildLabel("تصنيف الأزمة *"),
-                          CustomDropdownFormField<int>(
-                            hintText: 'اختر تصنيف الأزمة',
-                            iconData: Icons.category_outlined,
-                            items: types.map((IncidentClass type) {
-                              return DropdownMenuItem<int>(
-                                value: type.incidentClassId,
-                                child: Text(type.incidentClassName),
-                              );
-                            }).toList(),
-                            onChanged: (value) => context.read<AddIncidentTypeCubit>().updateSelectedClass(value),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 32),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    buildLabel("اسم الأزمة *"),
-                    CustomTextFormField(
-                      hintText: 'أدخل اسم الأزمة بالتفصيل',
-                      iconData: Icons.text_fields_rounded,
-                      onChanged: (value) => context.read<AddIncidentTypeCubit>().updateIncidentName(value),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          const SharedIncidentTypeForm(isWeb: true),
           const SizedBox(height: 40),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,

@@ -359,46 +359,78 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       if (data is! Map) return;
 
       final incidentId = data['current_incident_id'] as int?;
-      final missionId = data['current_incident_mission_id'] as int?;
+      // The server might send the primary key as 'id' or 'mission_id'
+      final pkId = data['id'] as int? ?? data['mission_id'] as int?;
+      // And the foreign key (mission type) as 'current_incident_mission_id'
+      final legacyId = data['current_incident_mission_id'] as int?;
       final newStatus = data['current_incident_mission_status'] as int?;
+      // Order can help disambiguate when multiple missions share the same FK
+      final order = data['current_incident_mission_order'] as int?;
 
-      if (incidentId == null || missionId == null || newStatus == null) return;
+      if (incidentId == null || newStatus == null) return;
+      if (pkId == null && legacyId == null) return;
 
-      // إيجاد الـ incident
+      // البحث عن الأزمة
       final incidentIndex = incidentss.indexWhere(
         (i) => i.currentIncidentId == incidentId,
       );
       if (incidentIndex == -1) {
-        // If incident not found, refresh to get latest
         refresh();
         return;
       }
 
       final incident = incidentss[incidentIndex];
-
-      // تحديث المهمة داخل الـ incident
-      // Copy the list so we don't mutate the previous state's list in place.
       final missions = List<CurrentIncidentWithMissions>.from(
         incident.currentIncidentWithMissions ?? const [],
       );
 
-      // Try matching by current_incident_mission_id first (what the server sends),
-      // then fall back to the row id (idCurrentIncidentMission) in case the server
-      // payload's id refers to that.
-      var missionIndex = missions.indexWhere(
-        (m) => m.currentIncidentMissionId == missionId,
-      );
-      if (missionIndex == -1) {
-        missionIndex = missions.indexWhere(
-          (m) => m.idCurrentIncidentMission == missionId,
-        );
+      var missionIndex = -1;
+
+      // 1. Try matching by exact Primary Key (idCurrentIncidentMission)
+      if (pkId != null) {
+        missionIndex = missions.indexWhere((m) => m.idCurrentIncidentMission == pkId);
+      }
+
+      // 2. If not found, try legacyId as a PK (backend might put PK in this field)
+      if (missionIndex == -1 && legacyId != null) {
+        missionIndex = missions.indexWhere((m) => m.idCurrentIncidentMission == legacyId);
+      }
+
+      // 3. If still not found, try matching by FK (mission type) + order for disambiguation
+      if (missionIndex == -1 && legacyId != null) {
+        final fkMatches = <int>[];
+        for (var i = 0; i < missions.length; i++) {
+          if (missions[i].currentIncidentMissionId == legacyId) {
+            fkMatches.add(i);
+          }
+        }
+
+        if (fkMatches.length == 1) {
+          // Only one mission with this FK — safe to update
+          missionIndex = fkMatches.first;
+        } else if (fkMatches.length > 1 && order != null) {
+          // Multiple missions share this FK — use order to disambiguate
+          final orderMatch = fkMatches.where(
+            (i) => missions[i].currentIncidentMissionOrder == order,
+          );
+          if (orderMatch.length == 1) {
+            missionIndex = orderMatch.first;
+          } else {
+            // Can't disambiguate — refresh from server for accurate data
+            refresh();
+            return;
+          }
+        } else if (fkMatches.length > 1) {
+          // Multiple missions share this FK and no order to disambiguate
+          // — refresh from server for accurate data
+          refresh();
+          return;
+        }
       }
 
       if (missionIndex != -1) {
         final mission = missions[missionIndex];
         // Preserve ALL existing fields and only override status + updated_at.
-        // The previous version dropped currentIncidentId and any future fields,
-        // which broke the UI binding.
         final updatedMission = CurrentIncidentWithMissions(
           idCurrentIncidentMission: mission.idCurrentIncidentMission,
           currentIncidentId: mission.currentIncidentId,
@@ -468,9 +500,9 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     // Calls the same logic the socket uses, so the UI updates immediately
     // even if we are offline and haven't received a socket broadcast.
     _handleMissionStatusUpdated({
-      'incident_id': incidentId,
-      'mission_id': missionId,
-      'new_status': newStatus,
+      'current_incident_id': incidentId,
+      'id': missionId,
+      'current_incident_mission_status': newStatus,
     });
   }
 

@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:incidents_managment/core/future/actions/ui/widgets/incident/shared_incident_type_form.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
-import 'package:incidents_managment/core/future/actions/data/models/classes/all_incident_classes.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_type.dart';
-import 'package:incidents_managment/core/future/actions/logic/cubit/classes_cubit/all_incident_classes.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_type_states.dart';
-import 'package:incidents_managment/core/future/actions/logic/states/all_incident_classes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
-import 'package:incidents_managment/core/widget/fields.dart';
 
 class AddIncidentTypeMobile extends StatefulWidget {
   const AddIncidentTypeMobile({super.key});
@@ -50,44 +47,7 @@ class _AddIncidentTypeMobileState extends State<AddIncidentTypeMobile> {
       children: [
         const Globalheader(icon: Icons.edit_note_rounded, title: 'بيانات الأزمة الأساسية'),
         const SizedBox(height: 24),
-        BlocBuilder<AllIncidentClasses, GetAllIncidentClassesState>(
-          builder: (context, typeState) {
-            return typeState.when(
-              initial: () => const SizedBox.shrink(),
-              loading: () => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  buildLabel("تصنيف الأزمة"),
-                  const LinearProgressIndicator(minHeight: 2, color: appColor),
-                  const SizedBox(height: 20),
-                ],
-              ),
-              error: (e) => Error(),
-              loaded: (types) => CustomDropdownFormField<int>(
-                hintText: 'اختر تصنيف الأزمة',
-                iconData: Icons.category_outlined,
-                items: types.map((IncidentClass type) {
-                  return DropdownMenuItem<int>(
-                    value: type.incidentClassId,
-                    child: Text(type.incidentClassName),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  context.read<AddIncidentTypeCubit>().updateSelectedClass(value);
-                },
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 20),
-        buildLabel("اسم الأزمة"),
-        CustomTextFormField(
-          hintText: 'أدخل اسم الأزمة بالتفصيل',
-          iconData: Icons.warning_amber_outlined,
-          onChanged: (value) {
-            context.read<AddIncidentTypeCubit>().updateIncidentName(value);
-          },
-        ),
+        const SharedIncidentTypeForm(isWeb: false),
 
         const SizedBox(height: 40),
         SizedBox(

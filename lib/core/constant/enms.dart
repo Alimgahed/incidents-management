@@ -8,7 +8,7 @@ Color getSeverityColor(int severity) {
   const severityColors = {
     4: warningColor, // High severity - red-ish
     3: infoColor, // Medium-high - blue-ish
-    2: buttonColor, // Medium - primary blue
+    2: accentColor, // Medium - primary blue
     1: successColor, // Low - green
   };
   return severityColors[severity] ?? successColor;

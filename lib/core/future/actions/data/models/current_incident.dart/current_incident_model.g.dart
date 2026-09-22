@@ -118,6 +118,9 @@ CurrentIncidentWithMissions _$CurrentIncidentWithMissionsFromJson(
           json['current_incident_mission_status_updated_at'] as String,
         ),
   missionName: json['mission_name'] as String?,
+  assignedEmployees: (json['assigned_employees'] as List<dynamic>?)
+      ?.map((e) => AssignedEmployee.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
 
 Map<String, dynamic> _$CurrentIncidentWithMissionsToJson(
@@ -134,7 +137,31 @@ Map<String, dynamic> _$CurrentIncidentWithMissionsToJson(
       .currentIncidentMissionStatusUpdatedAt
       ?.toIso8601String(),
   'mission_name': instance.missionName,
+  'assigned_employees': instance.assignedEmployees,
 };
+
+AssignedEmployee _$AssignedEmployeeFromJson(Map<String, dynamic> json) =>
+    AssignedEmployee(
+      id: (json['id'] as num?)?.toInt(),
+      currentIncidentMissionId: (json['current_incident_mission_id'] as num?)
+          ?.toInt(),
+      employeeId: (json['employee_id'] as num?)?.toInt(),
+      empName: json['emp_name'] as String?,
+      assignedBy: json['assigned_by'] as String?,
+      assignedAt: json['assigned_at'] == null
+          ? null
+          : DateTime.parse(json['assigned_at'] as String),
+    );
+
+Map<String, dynamic> _$AssignedEmployeeToJson(AssignedEmployee instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'current_incident_mission_id': instance.currentIncidentMissionId,
+      'employee_id': instance.employeeId,
+      'emp_name': instance.empName,
+      'assigned_by': instance.assignedBy,
+      'assigned_at': instance.assignedAt?.toIso8601String(),
+    };
 
 CurrentIncidentPhoto _$CurrentIncidentPhotoFromJson(
   Map<String, dynamic> json,

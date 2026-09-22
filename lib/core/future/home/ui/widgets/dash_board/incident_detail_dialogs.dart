@@ -126,7 +126,7 @@ void showStatusSelector(
                           // Optimistically update the UI so it doesn't wait for server response/socket broadcast
                           context.read<IncidentMapCubit>().optimisticUpdateMission(
                             incidentId: incidentId,
-                            missionId: mission.currentIncidentMissionId!,
+                            missionId: mission.idCurrentIncidentMission!,
                             newStatus: selectedStatus,
                           );
 

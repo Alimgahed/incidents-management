@@ -20,6 +20,16 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
   bool _isSearchActive = false;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        context.read<AllMissionsCubit>().getAllMissions();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -103,7 +113,12 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   elevation: 0,
                 ),
-                onPressed: () => context.pushNamed(Routes.addMissions),
+                onPressed: () async {
+                  await context.pushNamed(Routes.addMissions);
+                  if (context.mounted) {
+                    context.read<AllMissionsCubit>().getAllMissions();
+                  }
+                },
                 icon: const Icon(Icons.add, color: Colors.white, size: 20),
                 label: const Text("إضافة مهمة جديدة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),

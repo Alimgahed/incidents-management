@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:incidents_managment/core/future/actions/ui/widgets/incident/shared_incident_form.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
@@ -21,10 +22,6 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
-
-  int? selectedTypeId;
-  int? selectedSeverity;
-  int? selectedBranchId;
 
   @override
   Widget build(BuildContext context) {
@@ -64,115 +61,14 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
   Widget _buildForm(BuildContext context) {
     return Container(
       width: 420,
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          IncidentTypeDropdown(
-            onChanged: (value) {
-              selectedTypeId = value;
-            },
-            selectedValue: selectedTypeId,
-          ),
-          const SizedBox(height: 20),
-          CustomDropdownFormField(
-            items: [
-              const DropdownMenuItem(value: 1, child: Text('منخفض')),
-              const DropdownMenuItem(value: 2, child: Text('متوسطة')),
-              const DropdownMenuItem(value: 3, child: Text('مرتفعة')),
-              const DropdownMenuItem(value: 4, child: Text('حرجة')),
-            ],
-            hintText: 'درجة الخطورة',
-            onChanged: (value) => selectedSeverity = value,
-          ),
-          SizedBox(height: 20),
-          CustomDropdownFormField(
-            items: [
-              const DropdownMenuItem(value: 1, child: Text('ديوان عام الشركة')),
-              const DropdownMenuItem(value: 213, child: Text('المنيا')),
-              const DropdownMenuItem(value: 373, child: Text('المنيا الجديدة')),
-              const DropdownMenuItem(value: 173, child: Text('سمالوط')),
-              const DropdownMenuItem(value: 133, child: Text('مطاي')),
-              const DropdownMenuItem(value: 93, child: Text('بني مزار')),
-              const DropdownMenuItem(value: 53, child: Text('مغاغة')),
-              const DropdownMenuItem(value: 13, child: Text('العدوة')),
-              const DropdownMenuItem(value: 253, child: Text('أبو قرقاص')),
-              const DropdownMenuItem(value: 293, child: Text('ملاوي')),
-              const DropdownMenuItem(value: 333, child: Text('ديرمواس')),
-            ],
-            hintText: 'الفرع',
-            onChanged: (value) {
-              selectedBranchId = value;
-            },
-          ),
-          SizedBox(height: 20),
-
-          CustomTextFormField(
-            controller: descriptionController,
-            hintText: "اشرح الحالة بالتفصيل...",
-            maxLines: 6,
-          ),
-          SizedBox(height: 20),
-
-          BlocListener<MapCubit, MapState>(
-            listenWhen: (previous, current) => previous.address != current.address,
-            listener: (context, state) {
-              if (state.address != null) {
-                addressController.text = state.address!;
-              }
-            },
-            child: CustomTextFormField(
-              controller: addressController,
-              hintText: "العنوان بالتفصيل",
-              useValidator: false,
-              maxLines: 2,
-            ),
-          ),
-          SizedBox(height: 20),
-
-          CustomTextFormField(
-            controller: notesController,
-            hintText: "ملاحظات إضافية (اختياري)",
-            useValidator: false,
-            maxLines: 3,
-          ),
-          const Spacer(),
-          BlocBuilder<AddIncidentCubit, AddIncidentStates>(
-            builder: (context, state) {
-              return CustomButton(
-                text: state.maybeWhen(
-                  loading: () => 'جاري الإرسال...',
-                  orElse: () => 'إرسال البلاغ',
-                ),
-                onPressed: () {
-                  context.read<AddIncidentCubit>().submitIncident(
-                    model: CurrentIncidentModel(
-                      currentIncidentTypeId: selectedTypeId!,
-                      currentIncidentSeverity: selectedSeverity!,
-                      branchId: selectedBranchId!,
-                      currentIncidentXAxis: context
-                          .read<MapCubit>()
-                          .state
-                          .selectedLocation
-                          .latitude,
-                      currentIncidentYAxis: context
-                          .read<MapCubit>()
-                          .state
-                          .selectedLocation
-                          .longitude,
-                      currentIncidentDescription: descriptionController.text,
-                      currentIncidentNotes: notesController.text.isEmpty
-                          ? null
-                          : notesController.text,
-                      address: addressController.text.isEmpty
-                          ? null
-                          : addressController.text,
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: SharedIncidentForm(
+          descriptionController: descriptionController,
+          notesController: notesController,
+          addressController: addressController,
+          isWeb: true,
+        ),
       ),
     );
   }

@@ -69,34 +69,54 @@ class IncidentDescriptionPresentation extends StatelessWidget {
         ],
         if (showRawExpansion && parsed.looksStructured) ...[
           const SizedBox(height: 10),
-          Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              childrenPadding: EdgeInsets.zero,
-              title: Text(
-                'النص الكامل من المصدر',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: secondary,
-                  fontWeight: FontWeight.w600,
-                ),
+          if (!compact) ...[
+            Text(
+              'النص الكامل من المصدر',
+              style: TextStyle(
+                fontSize: 13,
+                color: secondary,
+                fontWeight: FontWeight.w600,
               ),
-              children: [
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: SelectableText(
-                    parsed.raw,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: primary.withValues(alpha: 0.85),
-                      height: 1.55,
-                    ),
+            ),
+            const SizedBox(height: 4),
+            SelectableText(
+              parsed.raw,
+              style: TextStyle(
+                fontSize: 14,
+                color: primary.withValues(alpha: 0.85),
+                height: 1.55,
+              ),
+            ),
+          ] else ...[
+            Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                title: Text(
+                  'النص الكامل من المصدر',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: secondary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
+                children: [
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: SelectableText(
+                      parsed.raw,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: primary.withValues(alpha: 0.85),
+                        height: 1.55,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ] else if (!showRawExpansion &&
             parsed.raw.trim().isNotEmpty &&
             !parsed.looksStructured) ...[

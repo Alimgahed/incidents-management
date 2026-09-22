@@ -489,10 +489,12 @@ class SuccessDialog extends StatelessWidget {
 class CustomFloatingButton extends StatelessWidget {
   final String routeName;
   final String text;
+  final VoidCallback? onReturn;
   const CustomFloatingButton({
     super.key,
     required this.routeName,
     required this.text,
+    this.onReturn,
   });
 
   @override
@@ -501,8 +503,11 @@ class CustomFloatingButton extends StatelessWidget {
       bottom: 32.0,
       left: 32.0,
       child: GestureDetector(
-        onTap: () {
-          context.pushNamed(routeName);
+        onTap: () async {
+          await context.pushNamed(routeName);
+          if (onReturn != null) {
+            onReturn!();
+          }
         },
         child: Container(
           margin: const EdgeInsets.only(top: 16),

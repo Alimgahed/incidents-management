@@ -273,15 +273,15 @@ class _KpiCardState extends State<_KpiCard> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: _isHovered
-                ? widget.baseColor.withOpacity(0.4)
+                ? widget.baseColor.withValues(alpha: 0.4)
                 : const Color(0xFFEDF2F7),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
               color: _isHovered
-                  ? widget.baseColor.withOpacity(0.1)
-                  : Colors.black.withOpacity(0.03),
+                  ? widget.baseColor.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.03),
               blurRadius: _isHovered ? 16 : 8,
               offset: Offset(0, _isHovered ? 6 : 3),
             ),
@@ -300,8 +300,8 @@ class _KpiCardState extends State<_KpiCard> {
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      widget.baseColor.withOpacity(0.08),
-                      widget.baseColor.withOpacity(0.01),
+                      widget.baseColor.withValues(alpha: 0.08),
+                      widget.baseColor.withValues(alpha: 0.01),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -337,7 +337,7 @@ class _KpiCardState extends State<_KpiCard> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: widget.baseColor.withOpacity(0.2),
+                          color: widget.baseColor.withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
@@ -420,11 +420,11 @@ class _PulsingDotState extends State<_PulsingDot>
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: widget.color.withOpacity(0.3 + 0.7 * _controller.value),
+            color: widget.color.withValues(alpha: 0.3 + 0.7 * _controller.value),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: widget.color.withOpacity(0.4 * _controller.value),
+                color: widget.color.withValues(alpha: 0.4 * _controller.value),
                 blurRadius: 6,
                 spreadRadius: 2,
               ),

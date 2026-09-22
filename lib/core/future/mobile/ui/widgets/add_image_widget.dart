@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
 
@@ -49,11 +50,26 @@ class FilePreviewCard extends StatelessWidget {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
-                    child: Image.file(
-                      File(filePath),
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                    ),
+                    child: kIsWeb
+                        ? Image.network(
+                            filePath,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Center(
+                                child: Icon(
+                                  Icons.image_rounded,
+                                  size: 64,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              );
+                            },
+                          )
+                        : Image.file(
+                            File(filePath),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                          ),
                   )
                 : Center(
                     child: Column(

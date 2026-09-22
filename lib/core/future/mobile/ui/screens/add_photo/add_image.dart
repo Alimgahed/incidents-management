@@ -134,13 +134,7 @@ class FileUploadScreen extends StatelessWidget {
               fontSize: 24,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'شارك الصور بشكل آمن',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withAlpha(230),
-            ),
-          ),
+       
         ],
       ),
     );
@@ -174,6 +168,7 @@ class FileUploadScreen extends StatelessWidget {
                   icon: const Icon(Icons.close_rounded),
                   label: const Text('إلغاء'),
                   style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
                     backgroundColor: appColor,
 
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -200,6 +195,7 @@ class FileUploadScreen extends StatelessWidget {
                   label: const Text('رفع'),
 
                   style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
                     backgroundColor: appColor,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -260,6 +256,7 @@ class FileUploadScreen extends StatelessWidget {
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('رفع صورة أخرى'),
                   style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
                     backgroundColor: AppTheme.successColor,
                   ),
                 ),
@@ -314,6 +311,7 @@ class FileUploadScreen extends StatelessWidget {
                   icon: const Icon(Icons.refresh_rounded),
                   label: const Text('حاول مرة أخرى'),
                   style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
                     backgroundColor: AppTheme.errorColor,
                   ),
                 ),

@@ -78,6 +78,14 @@ class _MobileDrawerState extends State<MobileDrawer> {
                       },
                     ),
                     _buildDrawerItem(
+                      icon: Icons.hub_outlined,
+                      label: 'ربط مهام بالأزمة',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.pushNamed(Routes.addIncidentMission);
+                      },
+                    ),
+                    _buildDrawerItem(
                       icon: Icons.list_alt_rounded,
                       label: 'جميع المهام',
                       onTap: () {

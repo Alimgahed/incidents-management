@@ -20,6 +20,7 @@ import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incid
 import 'package:incidents_managment/core/future/mobile/ui/screens/add_photo/add_image.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/incident_description_present.dart';
 import 'package:incidents_managment/core/gloable/gloable.dart';
+import 'package:incidents_managment/core/security/authenticated_image.dart';
 import 'package:incidents_managment/core/helpers/date_format.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
@@ -222,7 +223,7 @@ class _MobileStatsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: appColor.withOpacity(0.3),
+            color: appColor.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -237,7 +238,7 @@ class _MobileStatsCard extends StatelessWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [appColor, appColor.withOpacity(0.8)],
+                    colors: [appColor, appColor.withValues(alpha: 0.8)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -253,7 +254,7 @@ class _MobileStatsCard extends StatelessWidget {
                 height: 140,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: goldColor.withOpacity(0.12),
+                  color: goldColor.withValues(alpha: 0.12),
                 ),
               ),
             ),
@@ -266,7 +267,7 @@ class _MobileStatsCard extends StatelessWidget {
                 height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: waterBlue.withOpacity(0.18),
+                  color: waterBlue.withValues(alpha: 0.18),
                 ),
               ),
             ),
@@ -278,9 +279,9 @@ class _MobileStatsCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
                     ),
                     child: const Icon(
                       Icons.warning_amber_rounded,
@@ -320,7 +321,7 @@ class _MobileStatsCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -378,7 +379,7 @@ class _MobileIncidentCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFEDF2F7), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -400,7 +401,7 @@ class _MobileIncidentCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: getSeverityColor(severity).withOpacity(0.08),
+                        color: getSeverityColor(severity).withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -465,10 +466,10 @@ class _MobileIncidentCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: getSeverityColor(severity).withOpacity(0.08),
+                        color: getSeverityColor(severity).withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: getSeverityColor(severity).withOpacity(0.2),
+                          color: getSeverityColor(severity).withValues(alpha: 0.2),
                         ),
                       ),
                       child: Row(
@@ -501,7 +502,7 @@ class _MobileIncidentCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: getStatusColor(status).withOpacity(0.12),
+                        color: getStatusColor(status).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -1155,7 +1156,7 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
                         const SizedBox(height: 16),
 
                         // Notes Section
-                        if (incident.currentIncidentNotes != null)
+                        if (incident.currentIncidentNotes != null && incident.currentIncidentNotes!.trim().isNotEmpty)
                           _MobileSection(
                             title: 'ملاحظات',
                             icon: Icons.sticky_note_2_outlined,
@@ -2158,14 +2159,13 @@ class _MobilePhotosSection extends StatelessWidget {
                       insetPadding: const EdgeInsets.all(8),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: CachedNetworkImage(
+                        child: AuthenticatedImage(
                           imageUrl: imageUrl,
-                          httpHeaders: {'Authorization': 'Bearer $token'},
                           fit: BoxFit.contain,
-                          placeholder: (context, url) => const Center(
+                          placeholder: const Center(
                             child: CircularProgressIndicator(color: Colors.white),
                           ),
-                          errorWidget: (context, url, error) => Container(
+                          errorWidget: Container(
                             color: Colors.white,
                             padding: const EdgeInsets.all(16),
                             child: const Column(
@@ -2189,14 +2189,13 @@ class _MobilePhotosSection extends StatelessWidget {
                       color: Colors.grey[200],
                       border: Border.all(color: Colors.grey[300]!),
                     ),
-                    child: CachedNetworkImage(
+                    child: AuthenticatedImage(
                       imageUrl: imageUrl,
-                      httpHeaders: {'Authorization': 'Bearer $token'},
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => const Center(
+                      placeholder: const Center(
                         child: CircularProgressIndicator(),
                       ),
-                      errorWidget: (context, url, error) => const Icon(
+                      errorWidget: const Icon(
                         Icons.broken_image,
                         color: Colors.grey,
                       ),
