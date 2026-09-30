@@ -6,6 +6,7 @@ import 'package:incidents_managment/core/network/api_constants.dart';
 import 'dart:convert';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
+
 class DioFactory {
   DioFactory._();
 
@@ -91,7 +92,8 @@ class RetryInterceptor extends Interceptor {
     final retryCount = err.requestOptions.extra['retryCount'] ?? 0;
 
     // Only retry on transient network/timeout errors, not server responses
-    final shouldRetry = retryCount < maxRetries &&
+    final shouldRetry =
+        retryCount < maxRetries &&
         (err.type == DioExceptionType.connectionTimeout ||
             err.type == DioExceptionType.sendTimeout ||
             err.type == DioExceptionType.connectionError);
@@ -99,7 +101,9 @@ class RetryInterceptor extends Interceptor {
     if (shouldRetry) {
       final delay = baseDelay * (1 << retryCount); // Exponential back-off
       if (kDebugMode) {
-        debugPrint('Retry ${retryCount + 1}/$maxRetries after ${delay.inMilliseconds}ms for ${err.requestOptions.uri}');
+        debugPrint(
+          'Retry ${retryCount + 1}/$maxRetries after ${delay.inMilliseconds}ms for ${err.requestOptions.uri}',
+        );
       }
       await Future.delayed(delay);
 
@@ -127,9 +131,12 @@ class CacheInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final method = options.method.toUpperCase();
-    
+
     // Clear cache on write operations to ensure subsequent GETs fetch fresh data
-    if (method == 'POST' || method == 'PUT' || method == 'DELETE' || method == 'PATCH') {
+    if (method == 'POST' ||
+        method == 'PUT' ||
+        method == 'DELETE' ||
+        method == 'PATCH') {
       _cache.clear();
       return handler.next(options);
     }
@@ -152,11 +159,7 @@ class CacheInterceptor extends Interceptor {
         debugPrint('Cache HIT: $key');
       }
       return handler.resolve(
-        Response(
-          requestOptions: options,
-          data: entry.data,
-          statusCode: 200,
-        ),
+        Response(requestOptions: options, data: entry.data, statusCode: 200),
       );
     }
 
@@ -189,7 +192,7 @@ class _CacheEntry {
   bool get isExpired => DateTime.now().isAfter(expiry);
 }
 
-/// A custom logging interceptor that automatically strips authorization headers 
+/// A custom logging interceptor that automatically strips authorization headers
 /// and redacts sensitive request parameters in standard debugPrint output.
 class SanitizedLoggerInterceptor extends Interceptor {
   @override
@@ -217,10 +220,13 @@ class SanitizedLoggerInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    debugPrint('<-- Dio Response (${response.statusCode}): ${response.requestOptions.uri}');
+    debugPrint(
+      '<-- Dio Response (${response.statusCode}): ${response.requestOptions.uri}',
+    );
     // Strip user token from logged response body on login endpoint
     var responseData = response.data;
-    if (response.requestOptions.path.contains('/login') && responseData is Map) {
+    if (response.requestOptions.path.contains('/login') &&
+        responseData is Map) {
       responseData = Map<String, dynamic>.from(responseData);
       if (responseData.containsKey('token')) {
         responseData['token'] = '[REDACTED_JWT_TOKEN]';
@@ -232,7 +238,9 @@ class SanitizedLoggerInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    debugPrint('<-- Dio Error: ${err.message} [Code: ${err.response?.statusCode}]');
+    debugPrint(
+      '<-- Dio Error: ${err.message} [Code: ${err.response?.statusCode}]',
+    );
     if (err.response?.data != null) {
       debugPrint('Error Data: ${err.response?.data}');
     }

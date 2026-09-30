@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
@@ -64,7 +64,7 @@ Widget _buildGridView(List<IncidentType> incidentTypes) {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _showIncidentTypeDetails(context, type),
+          onTap: () => _showIncidentTypeDetails(context, type, isWeb),
         borderRadius: BorderRadius.circular(12),
         hoverColor: appColor.withAlpha(10),
         child: Container(
@@ -122,7 +122,7 @@ Widget _buildGridView(List<IncidentType> incidentTypes) {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            'ط§ظ„ظپط¦ط©: ${type.className ?? 'ط؛ظٹط± ظ…ط­ط¯ط¯'}',
+                            'ط·آ§ط¸â€‍ط¸ظ¾ط·آ¦ط·آ©: ${type.className ?? 'ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط·آ­ط·آ¯ط·آ¯'}',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -143,7 +143,7 @@ Widget _buildGridView(List<IncidentType> incidentTypes) {
                   Icon(Icons.task_alt_rounded, size: 16, color: Colors.grey.shade600),
                   const SizedBox(width: 6),
                   Text(
-                    '$missionsCount ظ…ظ‡ظ…ط© ظ…ط±طھط¨ط·ط©',
+                    '$missionsCount ط¸â€¦ط¸â€،ط¸â€¦ط·آ© ط¸â€¦ط·آ±ط·ع¾ط·آ¨ط·آ·ط·آ©',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -195,7 +195,7 @@ class _LoadedView extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     sliver: SliverToBoxAdapter(
                       child: Text(
-                        'ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ط£ظ†ظˆط§ط¹: ${incidentTypes.length}',
+                        'ط·آ¥ط·آ¬ط¸â€¦ط·آ§ط¸â€‍ط¸ظ¹ ط·آ§ط¸â€‍ط·آ£ط¸â€ ط¸ث†ط·آ§ط·آ¹: ${incidentTypes.length}',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
@@ -233,7 +233,7 @@ class _LoadedView extends StatelessWidget {
         // Floating Action Button
         CustomFloatingButton(
           routeName: Routes.addIncidentType,
-          text: "إضافة نوع أزمة",
+          text: "ط¥ط¶ط§ظپط© ظ†ظˆط¹ ط£ط²ظ…ط©",
           onReturn: () {
             if (context.mounted) {
                 context.read<AllIncidentTypeCubit>().getAllIncidentTypes();
@@ -296,7 +296,7 @@ class _IncidentTypeCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => _showIncidentTypeDetails(context, incidentType),
+          onTap: () => _showIncidentTypeDetails(context, incidentType, false),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -347,7 +347,7 @@ class _IncidentTypeCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          'ط§ظ„ظپط¦ط©: ${incidentType.className}',
+                          'ط·آ§ط¸â€‍ط¸ظ¾ط·آ¦ط·آ©: ${incidentType.className}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -375,7 +375,7 @@ class _IncidentTypeCard extends StatelessWidget {
                       Icon(Icons.task_alt_rounded, size: 18, color: cardColor),
                       const SizedBox(width: 6),
                       Text(
-                        '$missionsCount ظ…ظ‡ظ…ط©',
+                        '$missionsCount ط¸â€¦ط¸â€،ط¸â€¦ط·آ©',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -474,7 +474,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'ط§ظ„ظپط¦ط©: ${incidentType.className}',
+                              'ط·آ§ط¸â€‍ط¸ظ¾ط·آ¦ط·آ©: ${incidentType.className}',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -494,7 +494,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                     Icon(Icons.assignment_outlined, color: appColor, size: 24),
                     SizedBox(width: 8),
                     Text(
-                      'ط§ظ„ظ…ظ‡ط§ظ… ط§ظ„ظ…ط±طھط¨ط·ط©',
+                      'ط·آ§ط¸â€‍ط¸â€¦ط¸â€،ط·آ§ط¸â€¦ ط·آ§ط¸â€‍ط¸â€¦ط·آ±ط·ع¾ط·آ¨ط·آ·ط·آ©',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -519,7 +519,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'ظ„ط§ طھظˆط¬ط¯ ظ…ظ‡ط§ظ… ظ…طھط§ط­ط©',
+                    'ط¸â€‍ط·آ§ ط·ع¾ط¸ث†ط·آ¬ط·آ¯ ط¸â€¦ط¸â€،ط·آ§ط¸â€¦ ط¸â€¦ط·ع¾ط·آ§ط·آ­ط·آ©',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -587,7 +587,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                mission.missionClassName ?? 'ط؛ظٹط± ظ…ط­ط¯ط¯',
+                                mission.missionClassName ?? 'ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط·آ­ط·آ¯ط·آ¯',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -596,7 +596,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '#${mission.missionName ?? 'ط؛ظٹط± ظ…ط­ط¯ط¯'}',
+                                '#${mission.missionName ?? 'ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط·آ­ط·آ¯ط·آ¯'}',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -624,15 +624,33 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
 void _showIncidentTypeDetails(
   BuildContext context,
   IncidentType incidentType,
+  bool isWeb,
 ) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) =>
-        _IncidentTypeDetailsSheet(incidentType: incidentType),
-  );
+  if (isWeb || MediaQuery.sizeOf(context).width > 600) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        backgroundColor: Colors.transparent,
+        child: SizedBox(
+          width: 500,
+          child: _IncidentTypeDetailsSheet(incidentType: incidentType),
+        ),
+      ),
+    );
+  } else {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          _IncidentTypeDetailsSheet(incidentType: incidentType),
+    );
+  }
 }
+
 
 
 
