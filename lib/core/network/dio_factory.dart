@@ -126,8 +126,16 @@ class CacheInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final method = options.method.toUpperCase();
+    
+    // Clear cache on write operations to ensure subsequent GETs fetch fresh data
+    if (method == 'POST' || method == 'PUT' || method == 'DELETE' || method == 'PATCH') {
+      _cache.clear();
+      return handler.next(options);
+    }
+
     // Only cache GET requests
-    if (options.method.toUpperCase() != 'GET') {
+    if (method != 'GET') {
       return handler.next(options);
     }
 
