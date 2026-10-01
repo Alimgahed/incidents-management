@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
@@ -42,6 +42,14 @@ class DioFactory {
 
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
+          }
+
+          // Disable browser caching for GET requests on Flutter Web
+          if (options.method.toUpperCase() == 'GET') {
+            options.queryParameters['_t'] = DateTime.now().millisecondsSinceEpoch;
+            options.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+            options.headers['Pragma'] = 'no-cache';
+            options.headers['Expires'] = '0';
           }
 
           return handler.next(options);
@@ -151,7 +159,10 @@ class CacheInterceptor extends Interceptor {
       return handler.next(options);
     }
 
-    final key = options.uri.toString();
+    final uri = options.uri;
+    final queryParams = Map<String, dynamic>.from(uri.queryParameters);
+    queryParams.remove('_t');
+    final key = queryParams.isEmpty ? uri.replace(query: '').toString() : uri.replace(queryParameters: queryParams).toString();
     final entry = _cache[key];
 
     if (entry != null && !entry.isExpired) {
@@ -170,7 +181,10 @@ class CacheInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (response.requestOptions.method.toUpperCase() == 'GET' &&
         response.statusCode == 200) {
-      final key = response.requestOptions.uri.toString();
+      final uri = response.requestOptions.uri;
+      final queryParams = Map<String, dynamic>.from(uri.queryParameters);
+      queryParams.remove('_t');
+      final key = queryParams.isEmpty ? uri.replace(query: '').toString() : uri.replace(queryParameters: queryParams).toString();
       _cache[key] = _CacheEntry(
         data: response.data,
         expiry: DateTime.now().add(cacheDuration),
@@ -247,3 +261,4 @@ class SanitizedLoggerInterceptor extends Interceptor {
     handler.next(err);
   }
 }
+

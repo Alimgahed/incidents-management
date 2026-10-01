@@ -16,6 +16,7 @@ part 'api_services.g.dart';
 @RestApi()
 abstract class ApiService {
   factory ApiService(Dio dio, {String baseUrl}) = _ApiService;
+  @Extra({'noCache': true})
   @GET(ApiConstants.allIncidentTypes)
   Future<List<IncidentType>> getAllIncidentTypes();
   @GET(ApiConstants.addincidentType)

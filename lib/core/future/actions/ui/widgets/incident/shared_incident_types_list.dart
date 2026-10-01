@@ -122,7 +122,7 @@ Widget _buildGridView(List<IncidentType> incidentTypes) {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            'ط·آ§ط¸â€‍ط¸ظ¾ط·آ¦ط·آ©: ${type.className ?? 'ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط·آ­ط·آ¯ط·آ¯'}',
+                            'الفئة: ${type.className ?? 'غير محدد'}',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -182,7 +182,7 @@ class _LoadedView extends StatelessWidget {
         RefreshIndicator(
           color: appColor,
           onRefresh: () async {
-              getIt<AllIncidentTypeCubit>().getAllIncidentTypes();
+              
           },
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -347,7 +347,7 @@ class _IncidentTypeCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          'ط·آ§ط¸â€‍ط¸ظ¾ط·آ¦ط·آ©: ${incidentType.className}',
+                          'الفئة: ${incidentType.className}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -474,7 +474,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'ط·آ§ط¸â€‍ط¸ظ¾ط·آ¦ط·آ©: ${incidentType.className}',
+                              'الفئة: ${incidentType.className}',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -494,7 +494,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                     Icon(Icons.assignment_outlined, color: appColor, size: 24),
                     SizedBox(width: 8),
                     Text(
-                      'ط·آ§ط¸â€‍ط¸â€¦ط¸â€،ط·آ§ط¸â€¦ ط·آ§ط¸â€‍ط¸â€¦ط·آ±ط·ع¾ط·آ¨ط·آ·ط·آ©',
+                      'المهام المرتبطة',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -519,7 +519,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'ط¸â€‍ط·آ§ ط·ع¾ط¸ث†ط·آ¬ط·آ¯ ط¸â€¦ط¸â€،ط·آ§ط¸â€¦ ط¸â€¦ط·ع¾ط·آ§ط·آ­ط·آ©',
+                    'لا توجد مهام متاحة',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -587,7 +587,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                mission.missionClassName ?? 'ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط·آ­ط·آ¯ط·آ¯',
+                                mission.missionClassName ?? 'غير محدد',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -596,7 +596,7 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '#${mission.missionName ?? 'ط·ط›ط¸ظ¹ط·آ± ط¸â€¦ط·آ­ط·آ¯ط·آ¯'}',
+                                '#${mission.missionName ?? 'غير محدد'}',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -650,6 +650,7 @@ void _showIncidentTypeDetails(
     );
   }
 }
+
 
 
 

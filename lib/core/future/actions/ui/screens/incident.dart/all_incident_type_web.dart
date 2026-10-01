@@ -241,9 +241,7 @@ class _AllIncidentTypeWebScreenState extends State<AllIncidentTypeWebScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          // You can navigate to details or show a dialog here
-        },
+        onTap: () => _showMissionsDialog(context, type),
         borderRadius: BorderRadius.circular(12),
         hoverColor: appColor.withAlpha(10),
         child: Container(
@@ -337,6 +335,173 @@ class _AllIncidentTypeWebScreenState extends State<AllIncidentTypeWebScreen> {
                   ),
                 ],
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMissionsDialog(BuildContext context, IncidentType type) {
+    final missions = type.missions ?? [];
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: 520,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [appColor, Color(0xFF2B6CB0)],
+                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(40),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            type.incidentTypeName,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'الفئة: ${type.className ?? "غير محدد"}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withAlpha(200),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              // Missions count
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.assignment_outlined, color: appColor, size: 22),
+                    const SizedBox(width: 8),
+                    Text(
+                      'المهام المرتبطة (${missions.length})',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: appColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Missions list
+              if (missions.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      Icon(Icons.assignment_late_outlined, size: 50, color: Colors.grey[400]),
+                      const SizedBox(height: 12),
+                      Text(
+                        'لا توجد مهام مرتبطة',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    itemCount: missions.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final mission = missions[index];
+                      return Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: appColor.withAlpha(40)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(colors: [appColor, Color(0xFF2B6CB0)]),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${mission.order ?? (index + 1)}',
+                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    mission.missionName ?? 'غير محدد',
+                                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: appColor),
+                                  ),
+                                  if (mission.missionClassName != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      mission.missionClassName!,
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[600]),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
             ],
           ),
         ),

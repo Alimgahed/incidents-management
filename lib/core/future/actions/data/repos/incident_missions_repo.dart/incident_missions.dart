@@ -3,6 +3,7 @@ import 'package:incidents_managment/core/future/actions/data/models/incident_mis
 import 'package:incidents_managment/core/network/api_error_model.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
+import 'package:incidents_managment/future/actions/data/repos/all_incident_type_repo.dart';
 
 class AddIncidentMissionRepo {
   final ApiService apiService;
@@ -12,9 +13,10 @@ class AddIncidentMissionRepo {
   Future<ApiResult> addIncidentMission(IncidentMission incidentMission) async {
     try {
       final response = await apiService.addIncidentMission(incidentMission);
+      // Invalidate the local SharedPreferences cache for incident types!
+      await AllIncidentTypeRepo.invalidateCache();
       return ApiResult.success(response);
     } on DioException catch (e) {
-      // Backend returned an error response
       if (e.response?.data != null) {
         try {
           final errorModel = ApiErrorModel.fromJson(e.response!.data);
@@ -25,7 +27,6 @@ class AddIncidentMissionRepo {
           );
         }
       } else {
-        // No response from server (network issue)
         return ApiResult.error(
           ApiErrorModel(error: 'Network error. Please check your connection'),
         );

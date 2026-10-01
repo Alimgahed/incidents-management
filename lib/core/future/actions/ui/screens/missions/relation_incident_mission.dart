@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
@@ -142,7 +142,7 @@ class _AddIncidentMissionBodyState extends State<Addincidentmission> {
                 _closeDialogIfOpen();
 
                 if (!context.mounted) return;
-                getIt<AllIncidentTypeCubit>().getAllIncidentTypes();
+                
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -666,3 +666,4 @@ class _MissionCard extends StatelessWidget {
     );
   }
 }
+
