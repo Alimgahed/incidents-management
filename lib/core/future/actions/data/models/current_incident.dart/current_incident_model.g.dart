@@ -57,6 +57,11 @@ CurrentIncidentModel _$CurrentIncidentModelFromJson(
               (e) => CurrentIncidentPhoto.fromJson(e as Map<String, dynamic>),
             )
             .toList(),
+        statusName: json['status_name'] as String?,
+        severityName: json['severity_name'] as String?,
+        statusUpdatedByUserName: json['status_updated_by_user_name'] as String?,
+        severityUpdatedByUserName:
+            json['severity_updated_by_user_name'] as String?,
       )
       ..currentIncidentWithMissions = (json['missions'] as List<dynamic>?)
           ?.map(
@@ -96,6 +101,10 @@ Map<String, dynamic> _$CurrentIncidentModelToJson(
   'user_name': instance.username,
   'address': instance.address,
   'photos': instance.photos,
+  'status_name': instance.statusName,
+  'severity_name': instance.severityName,
+  'status_updated_by_user_name': instance.statusUpdatedByUserName,
+  'severity_updated_by_user_name': instance.severityUpdatedByUserName,
 };
 
 CurrentIncidentWithMissions _$CurrentIncidentWithMissionsFromJson(

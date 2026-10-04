@@ -55,6 +55,14 @@ class CurrentIncidentModel {
   final String? address;
   @JsonKey(name: 'photos')
   final List<CurrentIncidentPhoto>? photos;
+  @JsonKey(name: 'status_name')
+  final String? statusName;
+  @JsonKey(name: 'severity_name')
+  final String? severityName;
+  @JsonKey(name: 'status_updated_by_user_name')
+  final String? statusUpdatedByUserName;
+  @JsonKey(name: 'severity_updated_by_user_name')
+  final String? severityUpdatedByUserName;
 
   CurrentIncidentModel({
     this.currentIncidentId,
@@ -79,6 +87,10 @@ class CurrentIncidentModel {
     this.username,
     this.address,
     this.photos,
+    this.statusName,
+    this.severityName,
+    this.statusUpdatedByUserName,
+    this.severityUpdatedByUserName,
   });
 
   factory CurrentIncidentModel.fromJson(Map<String, dynamic> json) =>

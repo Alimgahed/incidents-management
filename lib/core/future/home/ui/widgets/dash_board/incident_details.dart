@@ -90,11 +90,11 @@ class _IncidentDetailContent extends StatelessWidget {
       SizedBox(height: spacing),
 
       if (incident.currentIncidentNotes != null && incident.currentIncidentNotes!.trim().isNotEmpty) ...[
-        SizedBox(height: spacing),
         _NotesCard(notes: incident.currentIncidentNotes!),
         SizedBox(height: spacing),
-        _TimelineCard(incident: incident),
       ],
+
+      _TimelineCard(incident: incident),
     ];
 
     // Left Column widgets (Media, Map & Timeline)
@@ -1406,6 +1406,7 @@ class _TimelineCard extends StatelessWidget {
           title: 'تم إنشاء البلاغ',
           time: incident.currentIncidentCreatedAt!,
           userId: incident.currentIncidentCreatedBy,
+          userName: incident.username,
           isFirst: true,
           isLast: false,
         ),
@@ -1419,6 +1420,7 @@ class _TimelineCard extends StatelessWidget {
           title: 'تحديث حالة الأزمة',
           time: incident.currentIncidentStatusUpdatedAt!,
           userId: incident.currentIncidentStatusUpdatedBy,
+          userName: incident.statusUpdatedByUserName,
           isFirst: false,
           isLast: false,
         ),
@@ -1432,6 +1434,7 @@ class _TimelineCard extends StatelessWidget {
           title: 'تحديث مستوى الخطورة',
           time: incident.currentIncidentSeverityUpdateAt!,
           userId: incident.currentIncidentSeverityUpdateBy,
+          userName: incident.severityUpdatedByUserName,
           isFirst: false,
           isLast: true,
         ),
@@ -1470,6 +1473,7 @@ class _TimelineItem extends StatelessWidget {
     required this.title,
     required this.time,
     this.userId,
+    this.userName,
     required this.isFirst,
     required this.isLast,
   });
@@ -1478,6 +1482,7 @@ class _TimelineItem extends StatelessWidget {
   final String title;
   final DateTime time;
   final int? userId;
+  final String? userName;
   final bool isFirst;
   final bool isLast;
 
@@ -1535,10 +1540,10 @@ class _TimelineItem extends StatelessWidget {
                       color: Color(0xFF64748B),
                     ),
                   ),
-                  if (userId != null) ...[
+                  if (userId != null || userName != null) ...[
                     const SizedBox(height: 2),
                     Text(
-                      'بواسطة المعرّف: #$userId',
+                      'بواسطة: ${userName ?? '#$userId'}',
                       style: const TextStyle(
                         fontSize: 10,
                         color: Color(0xFF94A3B8),
