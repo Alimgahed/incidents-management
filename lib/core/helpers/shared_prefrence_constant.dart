@@ -3,4 +3,5 @@ class SharedPreferenceKeys {
   static const String refreshToken = 'refresh_token';
 
   static const String user = 'user_data';
+  static const String pendingOfflineOwnerId = 'pending_offline_owner_id';
 }

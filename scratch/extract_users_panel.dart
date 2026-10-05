@@ -50,7 +50,7 @@ void main() {
     if (!content.contains(importStmt)) {
       return content.replaceFirst(
         "import 'package:flutter/material.dart';", 
-        "import 'package:flutter/material.dart';\n" + importStmt
+        "import 'package:flutter/material.dart';\n$importStmt"
       );
     }
     return content;
@@ -83,7 +83,7 @@ import 'package:intl/intl.dart';
   final finalComponents = imports + processedComponents;
   
   Directory(widgetsDir).createSync(recursive: true);
-  File(widgetsDir + '/users_panel.dart').writeAsStringSync(finalComponents);
+  File('$widgetsDir/users_panel.dart').writeAsStringSync(finalComponents);
   
   mobileFile.writeAsStringSync(mobileFinal);
   webFile.writeAsStringSync(webFinal);

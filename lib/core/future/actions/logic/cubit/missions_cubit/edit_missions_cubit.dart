@@ -36,6 +36,7 @@ class EditMissionsCubit extends Cubit<AddMissionsState> {
   }
 
   Future<void> saveMission() async {
+    if (state.maybeWhen(loading: () => true, orElse: () => false)) return;
     if (!_isDataValid()) return;
 
     emit(const AddMissionsState.loading());
@@ -57,5 +58,11 @@ class EditMissionsCubit extends Cubit<AddMissionsState> {
         emit(AddMissionsState.error(apiErrorModel));
       },
     );
+  }
+
+  @override
+  Future<void> close() {
+    missionName.dispose();
+    return super.close();
   }
 }

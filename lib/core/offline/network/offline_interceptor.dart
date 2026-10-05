@@ -10,6 +10,7 @@ import '../data/models/sync_enums.dart';
 import '../data/models/sync_queue_item.dart';
 import '../data/repositories/sync_queue_repository.dart';
 import 'network_monitor.dart';
+import 'cache_key.dart';
 
 /// The single seam that turns every existing repository in the app into
 /// an offline-aware one.
@@ -28,10 +29,8 @@ import 'network_monitor.dart';
 ///     keeps its happy path. The synthetic body carries the temp id (if any)
 ///     and a `__offline: true` flag so cubits/blocs can recognise it.
 class OfflineInterceptor extends Interceptor {
-  OfflineInterceptor({
-    required this.queue,
-    required this.networkMonitor,
-  });
+  static const Duration _cacheTtl = Duration(hours: 24);
+  OfflineInterceptor({required this.queue, required this.networkMonitor});
 
   final SyncQueueRepository queue;
   final NetworkMonitorService networkMonitor;
@@ -63,7 +62,8 @@ class OfflineInterceptor extends Interceptor {
     }
 
     final method = options.method.toUpperCase();
-    final isWrite = method == 'POST' ||
+    final isWrite =
+        method == 'POST' ||
         method == 'PUT' ||
         method == 'PATCH' ||
         method == 'DELETE';
@@ -81,68 +81,86 @@ class OfflineInterceptor extends Interceptor {
         if (kDebugMode) {
           debugPrint('OfflineInterceptor: serving cached GET ${options.uri}');
         }
-        return handler.resolve(Response(
-          requestOptions: options,
-          data: cached,
-          statusCode: 200,
-          headers: Headers.fromMap(const {
-            'x-source': ['offline-cache'],
-          }),
-        ));
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: cached,
+            statusCode: 200,
+            headers: Headers.fromMap(const {
+              'x-source': ['offline-cache'],
+            }),
+          ),
+        );
       }
       // No cache — fail with a typed error the repos already handle.
-      return handler.reject(DioException(
-        requestOptions: options,
-        type: DioExceptionType.connectionError,
-        error: 'offline_no_cache',
-        message: 'Offline and no cached data for ${options.path}',
-      ));
+      return handler.reject(
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionError,
+          error: 'offline_no_cache',
+          message: 'Offline and no cached data for ${options.path}',
+        ),
+      );
     }
 
     // Write while offline.
+    if (options.data is FormData) {
+      return handler.reject(
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionError,
+          error: 'offline_multipart_not_durable',
+          message:
+              'Multipart files must be persisted by the attachment repository before queueing.',
+        ),
+      );
+    }
     if (options.extra[kSkipOfflineQueue] == true) {
-      return handler.reject(DioException(
-        requestOptions: options,
-        type: DioExceptionType.connectionError,
-        error: 'offline_no_queue',
-        message: 'This action requires an active internet connection.',
-      ));
+      return handler.reject(
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionError,
+          error: 'offline_no_queue',
+          message: 'This action requires an active internet connection.',
+        ),
+      );
     }
 
     final item = _toQueueItem(options);
-    await queue.add(item);
+    final queuedItem = await queue.addIfNotExists(item);
 
     if (kDebugMode) {
-      debugPrint('OfflineInterceptor: queued ${item.operation.name.toUpperCase()} ${item.endpoint} (id=${item.id})');
+      debugPrint(
+        'OfflineInterceptor: queued ${queuedItem.operation.name.toUpperCase()} ${queuedItem.endpoint} (id=${queuedItem.id})',
+      );
     }
 
     // Synthetic optimistic response so callers don't break.
     final synthetic = <String, dynamic>{
       '__offline': true,
-      '__queue_id': item.id,
+      '__queue_id': queuedItem.id,
       'message': 'Queued for sync',
-      if (item.tempLocalId != null) 'temp_id': item.tempLocalId,
-      if (item.entityRef != null) 'entity_ref': item.entityRef,
+      if (queuedItem.tempLocalId != null) 'temp_id': queuedItem.tempLocalId,
+      if (queuedItem.entityRef != null) 'entity_ref': queuedItem.entityRef,
       // Best-effort echo of the request body so cubits can update the UI.
-      if (item.payload != null) 'data': item.payload,
+      if (queuedItem.payload != null) 'data': queuedItem.payload,
     };
 
-    return handler.resolve(Response(
-      requestOptions: options,
-      data: synthetic,
-      statusCode: 202,
-      statusMessage: 'Accepted (offline queue)',
-      headers: Headers.fromMap(const {
-        'x-source': ['offline-queue'],
-      }),
-    ));
+    return handler.resolve(
+      Response(
+        requestOptions: options,
+        data: synthetic,
+        statusCode: 202,
+        statusMessage: 'Accepted (offline queue)',
+        headers: Headers.fromMap(const {
+          'x-source': ['offline-queue'],
+        }),
+      ),
+    );
   }
 
   @override
-  void onResponse(
-    Response response,
-    ResponseInterceptorHandler handler,
-  ) {
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
     // Cache successful GETs for the offline-read path.
     final method = response.requestOptions.method.toUpperCase();
     if (method == 'GET' && (response.statusCode ?? 0) == 200) {
@@ -157,12 +175,14 @@ class OfflineInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final method = err.requestOptions.method.toUpperCase();
-    final isWrite = method == 'POST' ||
+    final isWrite =
+        method == 'POST' ||
         method == 'PUT' ||
         method == 'PATCH' ||
         method == 'DELETE';
 
-    final isTransport = err.type == DioExceptionType.connectionError ||
+    final isTransport =
+        err.type == DioExceptionType.connectionError ||
         err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.sendTimeout ||
         err.type == DioExceptionType.receiveTimeout;
@@ -177,40 +197,46 @@ class OfflineInterceptor extends Interceptor {
     // Network died mid-flight on a write → queue it and pretend it succeeded.
     if (isWrite && isTransport) {
       if (err.requestOptions.headers['X-Offline-Replay'] == 'true' ||
-          err.requestOptions.extra[kSkipOfflineQueue] == true) {
+          err.requestOptions.extra[kSkipOfflineQueue] == true ||
+          err.requestOptions.extra['noOfflineQueue'] == true ||
+          err.requestOptions.data is FormData) {
         return handler.next(err);
       }
       final item = _toQueueItem(err.requestOptions);
-      await queue.add(item);
+      final queuedItem = await queue.addIfNotExists(item);
 
       final synthetic = <String, dynamic>{
         '__offline': true,
-        '__queue_id': item.id,
+        '__queue_id': queuedItem.id,
         '__reason': 'transport_failure',
         'message': 'Queued for sync (network dropped)',
-        if (item.tempLocalId != null) 'temp_id': item.tempLocalId,
-        if (item.payload != null) 'data': item.payload,
+        if (queuedItem.tempLocalId != null) 'temp_id': queuedItem.tempLocalId,
+        if (queuedItem.payload != null) 'data': queuedItem.payload,
       };
-      return handler.resolve(Response(
-        requestOptions: err.requestOptions,
-        data: synthetic,
-        statusCode: 202,
-        statusMessage: 'Accepted (offline queue after failure)',
-      ));
+      return handler.resolve(
+        Response(
+          requestOptions: err.requestOptions,
+          data: synthetic,
+          statusCode: 202,
+          statusMessage: 'Accepted (offline queue after failure)',
+        ),
+      );
     }
 
     // GET that died on transport → try cache.
     if (!isWrite && isTransport) {
       final cached = _readCachedGet(err.requestOptions);
       if (cached != null) {
-        return handler.resolve(Response(
-          requestOptions: err.requestOptions,
-          data: cached,
-          statusCode: 200,
-          headers: Headers.fromMap(const {
-            'x-source': ['offline-cache-after-failure'],
-          }),
-        ));
+        return handler.resolve(
+          Response(
+            requestOptions: err.requestOptions,
+            data: cached,
+            statusCode: 200,
+            headers: Headers.fromMap(const {
+              'x-source': ['offline-cache-after-failure'],
+            }),
+          ),
+        );
       }
     }
 
@@ -262,7 +288,8 @@ class OfflineInterceptor extends Interceptor {
       endpoint: _relativePath(options),
       payloadJson: payloadJson,
       queryParamsJson: queryJson,
-      headersJson: null, // intentionally drop — auth header is re-added on replay
+      headersJson:
+          null, // intentionally drop — auth header is re-added on replay
       entityRef: entityRef,
       tempLocalId: tempLocalId,
       attachmentPath: attachmentPath,
@@ -281,7 +308,7 @@ class OfflineInterceptor extends Interceptor {
 
   void _writeCachedGet(Response response) {
     try {
-      final key = response.requestOptions.uri.toString();
+      final key = CacheKey.fromUri(response.requestOptions.uri);
       final payload = jsonEncode({
         'data': response.data,
         'at': DateTime.now().millisecondsSinceEpoch,
@@ -294,10 +321,17 @@ class OfflineInterceptor extends Interceptor {
 
   dynamic _readCachedGet(RequestOptions options) {
     try {
-      final key = options.uri.toString();
+      final key = CacheKey.fromUri(options.uri);
       final raw = LocalDatabase.getCache.get(key);
       if (raw == null) return null;
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final cachedAt = decoded['at'];
+      if (cachedAt is! int ||
+          DateTime.now().millisecondsSinceEpoch - cachedAt >
+              _cacheTtl.inMilliseconds) {
+        LocalDatabase.getCache.delete(key);
+        return null;
+      }
       return decoded['data'];
     } catch (_) {
       return null;

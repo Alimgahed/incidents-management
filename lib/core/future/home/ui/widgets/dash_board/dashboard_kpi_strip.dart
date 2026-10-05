@@ -25,6 +25,7 @@ class DashboardKpiStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final total = incidents.length;
     final critical = incidents
         .where((i) => i.currentIncidentSeverity == 4)
@@ -36,7 +37,7 @@ class DashboardKpiStrip extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(compact ? 12 : 16),
         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.8)),
         boxShadow: compact
@@ -204,13 +205,14 @@ class _KpiCardState extends State<_KpiCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     if (widget.compact) {
       return Container(
         padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 10, 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFFAFBFC),
+          color: colors.surfaceContainerLow,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFEDF2F7)),
+          border: Border.all(color: colors.outlineVariant),
         ),
         child: Row(
           children: [
@@ -233,10 +235,10 @@ class _KpiCardState extends State<_KpiCard> {
                 children: [
                   Text(
                     widget.value,
-                    style: const TextStyle(
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: colors.onSurface,
                       height: 1,
                     ),
                   ),
@@ -245,10 +247,10 @@ class _KpiCardState extends State<_KpiCard> {
                     widget.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF64748B),
+                      color: colors.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -266,10 +268,10 @@ class _KpiCardState extends State<_KpiCard> {
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutCubic,
         transform: _isHovered
-            ? (Matrix4.identity()..translate(0, -4, 0))
+            ? (Matrix4.identity()..translateByDouble(0, -4, 0, 1))
             : Matrix4.identity(),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: _isHovered
@@ -353,23 +355,25 @@ class _KpiCardState extends State<_KpiCard> {
                       children: [
                         Text(
                           widget.value,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0F172A),
-                            height: 1.1,
-                          ),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: colors.onSurface,
+                                height: 1.1,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           widget.label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF64748B),
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: colors.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),
@@ -420,7 +424,9 @@ class _PulsingDotState extends State<_PulsingDot>
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: widget.color.withValues(alpha: 0.3 + 0.7 * _controller.value),
+            color: widget.color.withValues(
+              alpha: 0.3 + 0.7 * _controller.value,
+            ),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(

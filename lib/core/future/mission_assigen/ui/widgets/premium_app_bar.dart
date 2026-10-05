@@ -29,6 +29,21 @@ class PremiumAppBar extends StatelessWidget {
 
     return Container(
       // SafeArea naturally handles the top padding properly, avoiding manual MediaQuery padding risks
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [_kGradientStart, _kGradientEnd],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _kGradientEnd.withAlpha(80),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      // SafeArea naturally handles the top padding properly, avoiding manual MediaQuery padding risks
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -134,20 +149,6 @@ class PremiumAppBar extends StatelessWidget {
             ],
           ),
         ),
-      ),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [_kGradientStart, _kGradientEnd],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _kGradientEnd.withAlpha(80),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
     );
   }

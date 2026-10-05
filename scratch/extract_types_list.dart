@@ -56,7 +56,7 @@ ${wGridContent.replaceAll('Widget _buildGridView', 'Widget _buildGridView')}
 
 }
 
-${mLoadedViewContent}
+$mLoadedViewContent
 ''';
 
   final sharedFile = File('c:/Users/ali/incidents_managment/lib/core/future/actions/ui/widgets/incident/shared_incident_types_list.dart');

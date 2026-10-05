@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,31 +16,37 @@ class FileUploadCubit extends Cubit<FileUploadState> {
   /// ==========================
   bool _validateFile(String fileName, int fileSize) {
     final extension = fileName.split('.').last.toLowerCase();
-    
+
     // 1. Limit file size to 10MB
     const int maxBytes = 10 * 1024 * 1024;
     if (fileSize > maxBytes) {
-      emit(const FileUploadState.uploadError(
-        error: 'حجم الملف يتجاوز الحد الأقصى المسموح به (10 ميجابايت).',
-      ));
+      emit(
+        const FileUploadState.uploadError(
+          error: 'حجم الملف يتجاوز الحد الأقصى المسموح به (10 ميجابايت).',
+        ),
+      );
       return false;
     }
 
     // 2. Allowed extensions
     const allowed = ['jpg', 'jpeg', 'png', 'pdf'];
     if (!allowed.contains(extension)) {
-      emit(const FileUploadState.uploadError(
-        error: 'نوع الملف غير مدعوم. المسموح به فقط: JPG, JPEG, PNG, PDF.',
-      ));
+      emit(
+        const FileUploadState.uploadError(
+          error: 'نوع الملف غير مدعوم. المسموح به فقط: JPG, JPEG, PNG, PDF.',
+        ),
+      );
       return false;
     }
 
     // 3. Explicitly reject malicious scripts and large archives
     const rejected = ['exe', 'php', 'sh', 'js', 'zip', 'apk'];
     if (rejected.contains(extension)) {
-      emit(const FileUploadState.uploadError(
-        error: 'نوع الملف مرفوض لدواعي أمنية.',
-      ));
+      emit(
+        const FileUploadState.uploadError(
+          error: 'نوع الملف مرفوض لدواعي أمنية.',
+        ),
+      );
       return false;
     }
 
@@ -200,7 +205,7 @@ class FileUploadCubit extends Cubit<FileUploadState> {
       // If position is null, permission failed and error state already emitted
       if (position == null) return;
 
-      await repository.uploadFile(
+      final result = await repository.uploadFile(
         filePath: filePath,
         fileName: fileName,
         incidentId: incidentId,
@@ -216,7 +221,9 @@ class FileUploadCubit extends Cubit<FileUploadState> {
 
       emit(
         FileUploadState.uploadSuccess(
-          message: 'File uploaded successfully!',
+          message: result['data'] is Map && result['data']['__offline'] == true
+              ? 'تم حفظ الملف محلياً وسيتم رفعه عند عودة الاتصال.'
+              : 'تم رفع الملف بنجاح.',
           fileName: fileName,
         ),
       );

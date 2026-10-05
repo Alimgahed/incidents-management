@@ -2,13 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/shared_incident_type_form.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
-import 'package:incidents_managment/core/future/actions/data/models/classes/all_incident_classes.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_type.dart';
-import 'package:incidents_managment/core/future/actions/logic/cubit/classes_cubit/all_incident_classes.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_type_states.dart';
-import 'package:incidents_managment/core/future/actions/logic/states/all_incident_classes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
-import 'package:incidents_managment/core/widget/fields.dart';
 
 class AddIncidentTypeWeb extends StatefulWidget {
   const AddIncidentTypeWeb({super.key});

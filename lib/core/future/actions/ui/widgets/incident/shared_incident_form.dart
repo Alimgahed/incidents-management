@@ -91,7 +91,8 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
         ),
         const SizedBox(height: 16),
         BlocListener<MapCubit, MapState>(
-          listenWhen: (previous, current) => previous.address != current.address,
+          listenWhen: (previous, current) =>
+              previous.address != current.address,
           listener: (context, state) {
             if (state.address != null) {
               widget.addressController.text = state.address!;
@@ -120,6 +121,10 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
                 orElse: () => 'إرسال البلاغ',
               ),
               onPressed: () => _submit(context),
+              isLoading: state.maybeWhen(
+                loading: () => true,
+                orElse: () => false,
+              ),
             );
           },
         ),
@@ -128,7 +133,9 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
   }
 
   void _submit(BuildContext context) {
-    if (selectedTypeId == null || selectedSeverity == null || selectedBranchId == null) {
+    if (selectedTypeId == null ||
+        selectedSeverity == null ||
+        selectedBranchId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('يرجى تعبئة جميع الحقول المطلوبة')),
       );
@@ -136,14 +143,20 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
     }
 
     if (widget.descriptionController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('برجاء كتابة وصف الأزمة')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('برجاء كتابة وصف الأزمة')));
       return;
     }
 
     final location = context.read<MapCubit>().state.selectedLocation;
-    
+    if (location == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('يرجى تحديد موقع البلاغ على الخريطة')),
+      );
+      return;
+    }
+
     context.read<AddIncidentCubit>().submitIncident(
       model: CurrentIncidentModel(
         currentIncidentTypeId: selectedTypeId!,
@@ -152,8 +165,12 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
         currentIncidentXAxis: location.latitude,
         currentIncidentYAxis: location.longitude,
         currentIncidentDescription: widget.descriptionController.text.trim(),
-        currentIncidentNotes: widget.notesController.text.trim().isEmpty ? null : widget.notesController.text.trim(),
-        address: widget.addressController.text.trim().isEmpty ? null : widget.addressController.text.trim(),
+        currentIncidentNotes: widget.notesController.text.trim().isEmpty
+            ? null
+            : widget.notesController.text.trim(),
+        address: widget.addressController.text.trim().isEmpty
+            ? null
+            : widget.addressController.text.trim(),
       ),
     );
   }

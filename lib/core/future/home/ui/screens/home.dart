@@ -24,7 +24,7 @@ class CrisisDashboard extends StatefulWidget {
 }
 
 class _CrisisDashboardState extends State<CrisisDashboard> {
-  final List<bool> _isBuilt = List.generate(9, (i) => i == 0 || i == 1);
+  final List<Widget?> _tabs = List<Widget?>.filled(9, null);
 
   static const _titles = <String>[
     'لوحة التحكم',
@@ -112,12 +112,6 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                       (HomeCubit c) => c.selectedIndex,
                     );
 
-                    if (index < _isBuilt.length) {
-                      _isBuilt[index] = true;
-                    }
-
-                    final isDashboard = index == 0;
-
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (context.mounted &&
                           Scaffold.maybeOf(context)?.isDrawerOpen == true) {
@@ -125,88 +119,75 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                       }
                     });
 
-                    Widget content;
-                    switch (index) {
-                      case 0:
-                        content = const DashboardView();
-                        break;
-                      case 1:
-                        content = const IncidentsMapScreen();
-                        break;
-                      case 2:
-                        content = const ActiveTeamsScreen();
-                        break;
-                      case 3:
-                        content = const AnalyticsOverviewScreen();
-                        break;
-                      case 4:
-                        content = const AddIncidentScreen();
-                        break;
-                      case 5:
-                        content = const AllIncidentType();
-                        break;
-                      case 6:
-                        content = const AllMissions();
-                        break;
-                      case 7:
-                        content = const Addincidentmission();
-                        break;
-                      case 8:
-                        content = const WebValveMapScreen();
-                        break;
-                      default:
-                        content = const SizedBox.shrink();
+                    if (index >= 0 &&
+                        index < _tabs.length &&
+                        _tabs[index] == null) {
+                      _tabs[index] = switch (index) {
+                        0 => const DashboardView(),
+                        1 => const IncidentsMapScreen(),
+                        2 => const ActiveTeamsScreen(),
+                        3 => const AnalyticsOverviewScreen(),
+                        4 => const AddIncidentScreen(),
+                        5 => const AllIncidentType(),
+                        6 => const AllMissions(),
+                        7 => const Addincidentmission(),
+                        8 => const WebValveMapScreen(),
+                        _ => const SizedBox.shrink(),
+                      };
                     }
 
-                    if (isMobile) {
-                      return ColoredBox(
-                        color: AppTheme.backgroundColor,
-                        child: content,
-                      );
-                    }
-
-                    return Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        isDashboard ? 10 : 16,
-                        isDashboard ? 8 : 14,
-                        isDashboard ? 10 : 20,
-                        isDashboard ? 8 : 16,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _DesktopSectionHeader(
-                            title: index >= 0 && index < _titles.length
-                                ? _titles[index]
-                                : '',
-                          ),
-                          SizedBox(height: isDashboard ? 6 : 12),
-                          Expanded(
-                            child: Material(
-                              elevation: 0,
-                              shadowColor: Colors.black26,
-                              color: isDashboard
-                                  ? Colors.transparent
-                                  : AppTheme.surfaceColor,
-                              surfaceTintColor: Colors.transparent,
-                              shape: isDashboard
-                                  ? null
-                                  : RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      side: BorderSide(
-                                        color: AppTheme.borderColor.withValues(
-                                          alpha: 0.65,
+                    final children = List<Widget>.generate(_tabs.length, (i) {
+                      final content = _tabs[i];
+                      if (content == null) return const SizedBox.shrink();
+                      if (isMobile) {
+                        return ColoredBox(
+                          color: AppTheme.backgroundColor,
+                          child: content,
+                        );
+                      }
+                      final dashboardTab = i == 0;
+                      return Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          dashboardTab ? 10 : 16,
+                          dashboardTab ? 8 : 14,
+                          dashboardTab ? 10 : 20,
+                          dashboardTab ? 8 : 16,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _DesktopSectionHeader(
+                              title: i < _titles.length ? _titles[i] : '',
+                            ),
+                            SizedBox(height: dashboardTab ? 6 : 12),
+                            Expanded(
+                              child: Material(
+                                color: dashboardTab
+                                    ? Colors.transparent
+                                    : AppTheme.surfaceColor,
+                                surfaceTintColor: Colors.transparent,
+                                shape: dashboardTab
+                                    ? null
+                                    : RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        side: BorderSide(
+                                          color: AppTheme.borderColor
+                                              .withValues(alpha: 0.65),
                                         ),
                                       ),
-                                    ),
-                              clipBehavior: isDashboard
-                                  ? Clip.none
-                                  : Clip.antiAlias,
-                              child: content,
+                                clipBehavior: dashboardTab
+                                    ? Clip.none
+                                    : Clip.antiAlias,
+                                child: content,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      );
+                    });
+                    return IndexedStack(
+                      index: index.clamp(0, children.length - 1),
+                      children: children,
                     );
                   },
                 ),

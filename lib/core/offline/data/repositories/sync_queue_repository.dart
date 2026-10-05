@@ -21,14 +21,30 @@ class SyncQueueRepository {
   /// this to drive a “pending count” badge in real time.
   Stream<BoxEvent> watch() => _box.watch();
 
-  Future<void> add(SyncQueueItem item) =>
-      _lock.synchronized(() => _box.put(item.id, item));
+  Future<void> add(SyncQueueItem item) => addIfNotExists(item).then((_) {});
+
+  /// Reuse an identical active operation if another tap or transport retry
+  /// queued it concurrently.
+  Future<SyncQueueItem> addIfNotExists(SyncQueueItem item) =>
+      _lock.synchronized(() async {
+        for (final existing in _box.values) {
+          if (existing.operation == item.operation &&
+              existing.endpoint == item.endpoint &&
+              existing.payloadJson == item.payloadJson &&
+              existing.queryParamsJson == item.queryParamsJson &&
+              existing.entityRef == item.entityRef &&
+              existing.state != SyncState.synced) {
+            return existing;
+          }
+        }
+        await _box.put(item.id, item);
+        return item;
+      });
 
   Future<void> update(SyncQueueItem item) =>
       _lock.synchronized(() => _box.put(item.id, item));
 
-  Future<void> remove(String id) =>
-      _lock.synchronized(() => _box.delete(id));
+  Future<void> remove(String id) => _lock.synchronized(() => _box.delete(id));
 
   SyncQueueItem? get(String id) => _box.get(id);
 
@@ -42,8 +58,7 @@ class SyncQueueRepository {
       // honor exponential-backoff "do not retry before" windows
       if (i.nextEligibleAtMs != null && i.nextEligibleAtMs! > now) return false;
       return true;
-    }).toList()
-      ..sort((a, b) => a.createdAtMs.compareTo(b.createdAtMs));
+    }).toList()..sort((a, b) => a.createdAtMs.compareTo(b.createdAtMs));
     return items;
   }
 
@@ -51,7 +66,9 @@ class SyncQueueRepository {
   /// conflicting with server state).
   List<SyncQueueItem> problematic() {
     return _box.values
-        .where((i) => i.state == SyncState.failed || i.state == SyncState.conflict)
+        .where(
+          (i) => i.state == SyncState.failed || i.state == SyncState.conflict,
+        )
         .toList();
   }
 
@@ -65,28 +82,28 @@ class SyncQueueRepository {
   int totalCount() => _box.length;
 
   Future<void> markSyncing(String id) => _lock.synchronized(() async {
-        final item = _box.get(id);
-        if (item == null) return;
-        item.state = SyncState.syncing;
-        item.lastAttemptAtMs = DateTime.now().millisecondsSinceEpoch;
-        await _box.put(id, item);
-      });
+    final item = _box.get(id);
+    if (item == null) return;
+    item.state = SyncState.syncing;
+    item.lastAttemptAtMs = DateTime.now().millisecondsSinceEpoch;
+    await _box.put(id, item);
+  });
 
   Future<void> markSynced(String id) => _lock.synchronized(() async {
-        // Drop synced items from disk — successful operations don't need to
-        // linger in the queue.
-        await _box.delete(id);
-      });
+    // Drop synced items from disk — successful operations don't need to
+    // linger in the queue.
+    await _box.delete(id);
+  });
 
-  Future<void> markFailed(String id, String error,
-      {Duration? backoff}) =>
+  Future<void> markFailed(String id, String error, {Duration? backoff}) =>
       _lock.synchronized(() async {
         final item = _box.get(id);
         if (item == null) return;
         item.retryCount += 1;
         item.lastError = error;
         item.state = SyncState.failed;
-        final delay = backoff ??
+        final delay =
+            backoff ??
             Duration(milliseconds: 500 * (1 << item.retryCount.clamp(0, 8)));
         item.nextEligibleAtMs =
             DateTime.now().millisecondsSinceEpoch + delay.inMilliseconds;
@@ -103,11 +120,12 @@ class SyncQueueRepository {
       });
 
   Future<void> markRetryable(String id) => _lock.synchronized(() async {
-        final item = _box.get(id);
-        if (item == null) return;
-        item.state = SyncState.pending;
-        await _box.put(id, item);
-      });
+    final item = _box.get(id);
+    if (item == null) return;
+    item.state = SyncState.pending;
+    item.nextEligibleAtMs = null;
+    await _box.put(id, item);
+  });
 
   /// Removes everything in the queue. Used by Logout.
   Future<void> clear() => _lock.synchronized(() => _box.clear());
@@ -117,14 +135,14 @@ class SyncQueueRepository {
   /// [pending] (which only returns `pending` and `failed`) and stay stuck
   /// forever. Called once during bootstrap.
   Future<int> resetStuckSyncing() => _lock.synchronized(() async {
-        var count = 0;
-        for (final item in _box.values.toList()) {
-          if (item.state == SyncState.syncing) {
-            item.state = SyncState.pending;
-            await _box.put(item.id, item);
-            count += 1;
-          }
-        }
-        return count;
-      });
+    var count = 0;
+    for (final item in _box.values.toList()) {
+      if (item.state == SyncState.syncing) {
+        item.state = SyncState.pending;
+        await _box.put(item.id, item);
+        count += 1;
+      }
+    }
+    return count;
+  });
 }

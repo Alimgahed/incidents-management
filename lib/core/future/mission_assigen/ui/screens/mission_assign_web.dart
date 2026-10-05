@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../widgets/users_panel.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,10 +14,6 @@ import 'package:incidents_managment/core/future/home/ui/widgets/incident_descrip
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 const _kWideBreakpoint = 800.0;
-const _kSidebarWidth = 220.0;
-
-const _kGradientStart = appColor;
-const _kGradientEnd = Color(0xFF0D3B6E);
 
 // Severity color helpers
 Color _severityColor(int? severity) {
@@ -177,15 +172,19 @@ class _MissionAssignView extends StatelessWidget {
               _PremiumAppBar(incident: incident, isWide: isWide),
               Expanded(
                 child: isWide
-                    ? _buildWideLayout(context, missions, () => _showConfirmSheet(context))
+                    ? _buildWideLayout(
+                        context,
+                        missions,
+                        () => _showConfirmSheet(context),
+                      )
                     : _buildNarrowLayout(context, missions),
               ),
               if (!isWide)
                 BottomActionBar(
-                incident: incident,
-                onAssign: () => _showConfirmSheet(context),
-                isWide: isWide,
-              ),
+                  incident: incident,
+                  onAssign: () => _showConfirmSheet(context),
+                  isWide: isWide,
+                ),
             ],
           ),
         ),
@@ -193,7 +192,7 @@ class _MissionAssignView extends StatelessWidget {
     );
   }
 
-  // 
+  //
   // WIDE LAYOUT (Web / Desktop)
   Widget _buildWideLayout(
     BuildContext context,
@@ -224,9 +223,7 @@ class _MissionAssignView extends StatelessWidget {
                 width: 320,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8FAFC),
-                  border: Border(
-                    left: BorderSide(color: Colors.grey.shade200),
-                  ),
+                  border: Border(left: BorderSide(color: Colors.grey.shade200)),
                 ),
                 child: _MissionsSidebar(missions: missions, incident: incident),
               ),
@@ -235,9 +232,7 @@ class _MissionAssignView extends StatelessWidget {
                   color: Colors.white,
                   child: Column(
                     children: [
-                      Expanded(
-                        child: UsersPanel(isWide: true),
-                      ),
+                      Expanded(child: UsersPanel(isWide: true)),
                       BottomActionBar(
                         incident: incident,
                         onAssign: onAssign,
@@ -263,7 +258,7 @@ class _MissionAssignView extends StatelessWidget {
         _IncidentInfoCard(incident: incident),
         MissionHorizontalTabs(missions: missions),
         const SizedBox(height: 4),
-        // ─── Users 
+        // ─── Users
         Expanded(child: UsersPanel(isWide: false)),
       ],
     );
@@ -370,7 +365,11 @@ class _PremiumAppBar extends StatelessWidget {
                 border: Border.all(color: Colors.grey.shade300),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.arrow_back_ios_rounded, color: Colors.black87, size: 18),
+              child: const Icon(
+                Icons.arrow_back_ios_rounded,
+                color: Colors.black87,
+                size: 18,
+              ),
             ),
           ),
           const SizedBox(width: 24),
@@ -381,9 +380,26 @@ class _PremiumAppBar extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text("الرئيسية", style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                    const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Icon(Icons.chevron_left, size: 16, color: Colors.grey)),
-                    Text("تعيين المهام", style: TextStyle(color: appColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                    Text(
+                      "الرئيسية",
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Icon(
+                        Icons.chevron_left,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Text(
+                      "تعيين المهام",
+                      style: TextStyle(
+                        color: appColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -467,33 +483,6 @@ class _PremiumAppBar extends StatelessWidget {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _GlassIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _GlassIconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(30),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withAlpha(38)),
-          ),
-          child: Icon(icon, color: Colors.white, size: 18),
-        ),
       ),
     );
   }

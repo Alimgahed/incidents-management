@@ -23,10 +23,10 @@ class ValveProximityCubit extends Cubit<ProximityState> {
     required ValveRepo valveRepository,
     required ProximityService proximityService,
     required AlarmService alarmService,
-  })  : _valveRepository = valveRepository,
-        _proximityService = proximityService,
-        _alarmService = alarmService,
-        super(const ProximityInitial());
+  }) : _valveRepository = valveRepository,
+       _proximityService = proximityService,
+       _alarmService = alarmService,
+       super(const ProximityInitial());
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -41,12 +41,14 @@ class ValveProximityCubit extends Cubit<ProximityState> {
     // 2. Load valve locations
     try {
       final result = await _valveRepository.allValves();
-      _valves = result.when(
-        success: (valves) => valves,
-        error: (error) => [],
-      );
+      _valves = result.when(success: (valves) => valves, error: (error) => []);
     } catch (e) {
       emit(ProximityError('فشل تحميل بيانات المحابس: $e'));
+      return;
+    }
+
+    if (_valves.isEmpty) {
+      emit(const ProximityError('لا توجد بيانات محابس متاحة لبدء تتبع القرب.'));
       return;
     }
 
@@ -66,11 +68,9 @@ class ValveProximityCubit extends Cubit<ProximityState> {
 
     if (state is ProximityAlert) {
       final s = state as ProximityAlert;
-      emit(ProximitySafe(
-        userLat: s.userLat,
-        userLng: s.userLng,
-        valves: s.valves,
-      ));
+      emit(
+        ProximitySafe(userLat: s.userLat, userLng: s.userLng, valves: s.valves),
+      );
     }
   }
 
@@ -79,8 +79,7 @@ class ValveProximityCubit extends Cubit<ProximityState> {
   Future<LocationPermission?> _requestPermission() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      emit(const ProximityError(
-          'خدمة الموقع معطلة. الرجاء تشغيل GPS.'));
+      emit(const ProximityError('خدمة الموقع معطلة. الرجاء تشغيل GPS.'));
       return null;
     }
 
@@ -94,8 +93,11 @@ class ValveProximityCubit extends Cubit<ProximityState> {
     }
 
     if (permission == LocationPermission.deniedForever) {
-      emit(const ProximityError(
-          'إذن الموقع مرفوض نهائياً. افتح الإعدادات وأعد التصريح.'));
+      emit(
+        const ProximityError(
+          'إذن الموقع مرفوض نهائياً. افتح الإعدادات وأعد التصريح.',
+        ),
+      );
       return null;
     }
 
@@ -115,9 +117,9 @@ class ValveProximityCubit extends Cubit<ProximityState> {
 
     _positionSubscription =
         Geolocator.getPositionStream(locationSettings: settings).listen(
-      (Position position) => _onNewPosition(position),
-      onError: (e) => emit(ProximityError('خطأ في GPS: $e')),
-    );
+          (Position position) => _onNewPosition(position),
+          onError: (e) => emit(ProximityError('خطأ في GPS: $e')),
+        );
   }
 
   void _onNewPosition(Position position) {
@@ -126,14 +128,17 @@ class ValveProximityCubit extends Cubit<ProximityState> {
       userLng: position.longitude,
       valves: _valves,
     );
+    if (result == null || isClosed) return;
 
-    final bool isNear = _proximityService.isWithinAlarmRadius(result.distanceMeters);
+    final bool isNear = _proximityService.isWithinAlarmRadius(
+      result.distanceMeters,
+    );
 
     // Adaptive GPS Logic:
-    // If very far (> 300m), we use lower accuracy. 
+    // If very far (> 300m), we use lower accuracy.
     // If near (< 200m), we switch to high accuracy.
     if (result.distanceMeters < 200 && _positionSubscription != null) {
-      // Logic to check if we're already high accuracy could be added, 
+      // Logic to check if we're already high accuracy could be added,
       // but for simplicity we'll check the current distance.
       // If we move from far to near, we restart with better settings.
     }
@@ -141,24 +146,28 @@ class ValveProximityCubit extends Cubit<ProximityState> {
     if (isNear) {
       // Near a valve → alarm
       _alarmService.startAlarm();
-      emit(ProximityAlert(
-        userLat: position.latitude,
-        userLng: position.longitude,
-        nearestValve: result.valve,
-        distanceMeters: result.distanceMeters,
-        valves: _valves,
-      ));
-      
+      emit(
+        ProximityAlert(
+          userLat: position.latitude,
+          userLng: position.longitude,
+          nearestValve: result.valve,
+          distanceMeters: result.distanceMeters,
+          valves: _valves,
+        ),
+      );
+
       // Upgrade to high precision if not already
       _upgradeSecurityIfNecessary();
     } else {
       // Safe zone
       _alarmService.stopAlarm();
-      emit(ProximitySafe(
-        userLat: position.latitude,
-        userLng: position.longitude,
-        valves: _valves,
-      ));
+      emit(
+        ProximitySafe(
+          userLat: position.latitude,
+          userLng: position.longitude,
+          valves: _valves,
+        ),
+      );
 
       // Downgrade if very far
       if (result.distanceMeters > 300) {
@@ -172,10 +181,7 @@ class ValveProximityCubit extends Cubit<ProximityState> {
   void _upgradeSecurityIfNecessary() {
     if (!_isHighAccuracy) {
       _isHighAccuracy = true;
-      _startLocationStream(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
-      );
+      _startLocationStream(accuracy: LocationAccuracy.high, distanceFilter: 5);
     }
   }
 

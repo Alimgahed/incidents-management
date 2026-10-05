@@ -1,23 +1,18 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
-import 'package:incidents_managment/core/constant/enms.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/mission_assign_cubit.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/mission_selction_cubit.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
-import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
-import 'package:incidents_managment/core/future/actions/data/models/classes/all_incident_classes.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/all_active_user_cubit.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/all_active_user_state.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/mission_assign_states.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/mission_selection_state.dart';
-import 'package:intl/intl.dart';
 
 class MissionHorizontalTabs extends StatelessWidget {
   final List<CurrentIncidentWithMissions> missions;
-  const MissionHorizontalTabs({required this.missions});
+  const MissionHorizontalTabs({super.key, required this.missions});
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +163,7 @@ class MissionHorizontalTabs extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════════
 class UsersPanel extends StatelessWidget {
   final bool isWide;
-  const UsersPanel({required this.isWide});
+  const UsersPanel({super.key, required this.isWide});
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +221,7 @@ class UsersList extends StatelessWidget {
   final List<dynamic> users;
   final bool isWide;
 
-  const UsersList({required this.users, required this.isWide});
+  const UsersList({super.key, required this.users, required this.isWide});
 
   @override
   Widget build(BuildContext context) {
@@ -495,6 +490,7 @@ class FilterDropdown extends StatelessWidget {
   final void Function(String?) onChanged;
 
   const FilterDropdown({
+    super.key,
     required this.label,
     required this.value,
     required this.items,
@@ -571,6 +567,7 @@ class UserCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const UserCard({
+    super.key,
     required this.user,
     required this.isSelected,
     required this.onTap,
@@ -778,6 +775,7 @@ class BottomActionBar extends StatelessWidget {
   final bool isWide;
 
   const BottomActionBar({
+    super.key,
     required this.incident,
     required this.onAssign,
     required this.isWide,
@@ -981,7 +979,7 @@ class BottomActionBar extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════════
 class EmptyMissionPlaceholder extends StatelessWidget {
   final bool isWide;
-  const EmptyMissionPlaceholder({required this.isWide});
+  const EmptyMissionPlaceholder({super.key, required this.isWide});
 
   @override
   Widget build(BuildContext context) {
@@ -1039,7 +1037,7 @@ class EmptyMissionPlaceholder extends StatelessWidget {
 
 class ErrorWidget extends StatelessWidget {
   final String message;
-  const ErrorWidget({required this.message});
+  const ErrorWidget({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -1092,6 +1090,7 @@ class ConfirmDialogDesktop extends StatelessWidget {
   final VoidCallback onConfirm;
 
   const ConfirmDialogDesktop({
+    super.key,
     required this.incident,
     required this.onConfirm,
   });
@@ -1371,7 +1370,11 @@ class ConfirmBottomSheet extends StatelessWidget {
   final CurrentIncidentModel incident;
   final VoidCallback onConfirm;
 
-  const ConfirmBottomSheet({required this.incident, required this.onConfirm});
+  const ConfirmBottomSheet({
+    super.key,
+    required this.incident,
+    required this.onConfirm,
+  });
 
   @override
   Widget build(BuildContext context) {

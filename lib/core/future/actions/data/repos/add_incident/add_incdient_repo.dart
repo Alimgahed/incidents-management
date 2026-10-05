@@ -27,8 +27,7 @@ import 'package:incidents_managment/core/offline/network/offline_interceptor.dar
 /// work without modification.
 class AddIncdientRepo {
   final ApiService apiService;
-  final IncidentCacheRepository _cache =
-      getIt<IncidentCacheRepository>();
+  final IncidentCacheRepository _cache = getIt<IncidentCacheRepository>();
   final NetworkMonitorService _monitor = getIt<NetworkMonitorService>();
   final Dio _dio = getIt<Dio>();
 
@@ -42,48 +41,55 @@ class AddIncdientRepo {
     if (tempId == 0) tempId = TempIdGenerator.nextNumeric();
 
     final payload = mission.toJson();
-    if (isOffline) {
-      payload['current_incident_id'] = tempId;
-    }
+    // The same identifier is sent for both the first request and a possible
+    // offline replay so the optimistic row and replay metadata stay aligned.
+    if (isOffline) payload['current_incident_id'] = tempId;
 
     final optimistic = CachedIncident.fromMap(
       payload,
-      idOrTempId: isOffline ? tempId : (mission.currentIncidentId ?? tempId),
+      idOrTempId: tempId,
       hasPendingChanges: isOffline,
     );
     await _cache.upsert(optimistic);
 
     // ── 2. Either go through the interceptor (queue) or the real API ────────
     try {
-      if (isOffline) {
-        // Use the raw Dio so we can pass extra metadata for the interceptor.
-        final response = await _dio.post(
-          ApiConstants.addcurrentincdient,
-          data: payload,
-          options: Options(
-            extra: {
-              OfflineInterceptor.kEntityRef: 'incident:$tempId',
-              OfflineInterceptor.kTempLocalId: tempId.toString(),
-            },
-          ),
-        );
+      final response = await _dio.post(
+        ApiConstants.addcurrentincdient,
+        data: payload,
+        options: Options(
+          extra: {
+            OfflineInterceptor.kEntityRef: 'incident:$tempId',
+            OfflineInterceptor.kTempLocalId: tempId.toString(),
+          },
+        ),
+      );
+      final queued =
+          response.statusCode == 202 ||
+          (response.data is Map && response.data['__offline'] == true);
+      if (queued) {
+        await _cache.markPending(tempId, true);
         return ApiResult.success(response.data);
-      } else {
-        final response = await apiService.addCurrentIncident(mission);
-
-        // Replace the optimistic temp row with the server's authoritative copy.
-        if (response is Map<String, dynamic>) {
-          final serverId = response['current_incident_id'] ?? response['id'];
-          if (serverId is int && serverId > 0) {
-            await _cache.remove(tempId);
-            await _cache.upsert(
-              CachedIncident.fromMap(response, idOrTempId: serverId),
-            );
-          }
-        }
-        return ApiResult.success(response);
       }
+
+      // Replace the optimistic temp row with the server's authoritative copy.
+      final responseData = response.data;
+      if (responseData is Map<String, dynamic>) {
+        final serverId =
+            responseData['current_incident_id'] ?? responseData['id'];
+        final parsedServerId = serverId is int
+            ? serverId
+            : int.tryParse('$serverId');
+        if (parsedServerId != null && parsedServerId > 0) {
+          await _cache.remove(tempId);
+          await _cache.upsert(
+            CachedIncident.fromMap(responseData, idOrTempId: parsedServerId),
+          );
+        }
+      }
+      return ApiResult.success(responseData);
     } on DioException catch (e) {
+      await _cache.remove(tempId);
       // The interceptor already handled the "offline transport failure" case
       // by resolving with a synthetic 202; anything reaching here is a real
       // server error worth surfacing.
@@ -102,6 +108,7 @@ class AddIncdientRepo {
         );
       }
     } catch (e) {
+      await _cache.remove(tempId);
       return ApiResult.error(
         ApiErrorModel(error: 'An unexpected error occurred'),
       );

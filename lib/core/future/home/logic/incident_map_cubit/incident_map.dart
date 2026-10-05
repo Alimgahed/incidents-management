@@ -9,7 +9,7 @@ import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/in
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
-import 'package:incidents_managment/core/network/api_constants.dart';
+import 'package:incidents_managment/core/future/home/logic/incident_picker_bridge.dart';
 
 // ---------------------------------------------------------------------------
 // Top-level isolate helpers (must live outside the class for compute())
@@ -19,11 +19,15 @@ import 'package:incidents_managment/core/network/api_constants.dart';
 /// Using [List.generate] pre-allocates the backing array to the exact capacity
 /// needed, avoiding repeated reallocation that a growable list would incur.
 List<CurrentIncidentModel> _parseIncidentList(List<dynamic> data) {
-  final list = List<CurrentIncidentModel>.generate(
-    data.length,
-    (i) => CurrentIncidentModel.fromJson(data[i] as Map<String, dynamic>),
-    growable: true,
-  );
+  final list = <CurrentIncidentModel>[];
+  for (final row in data) {
+    if (row is! Map) continue;
+    try {
+      list.add(CurrentIncidentModel.fromJson(Map<String, dynamic>.from(row)));
+    } catch (_) {
+      // Keep other valid rows when one socket payload is malformed.
+    }
+  }
   list.sort((a, b) {
     final aTime = a.currentIncidentCreatedAt;
     final bTime = b.currentIncidentCreatedAt;
@@ -46,11 +50,12 @@ extension _CurrentIncidentModelCopy on CurrentIncidentModel {
   }) {
     try {
       final map = (this as dynamic).toJson() as Map<String, dynamic>;
-      
+
       if (currentIncidentWithMissions != null) {
         map['missions'] = currentIncidentWithMissions
             .map(
-              (m) => (m as dynamic).toJson != null ? (m as dynamic).toJson() : m,
+              (m) =>
+                  (m as dynamic).toJson != null ? (m as dynamic).toJson() : m,
             )
             .toList();
       }
@@ -58,7 +63,7 @@ extension _CurrentIncidentModelCopy on CurrentIncidentModel {
       if (currentIncidentStatus != null) {
         map['current_incident_status'] = currentIncidentStatus;
       }
-      
+
       if (currentIncidentSeverity != null) {
         map['current_incident_severity'] = currentIncidentSeverity;
       }
@@ -68,7 +73,8 @@ extension _CurrentIncidentModelCopy on CurrentIncidentModel {
       // fallback
       try {
         if (currentIncidentWithMissions != null) {
-          (this as dynamic).currentIncidentWithMissions = currentIncidentWithMissions;
+          (this as dynamic).currentIncidentWithMissions =
+              currentIncidentWithMissions;
         }
         return this;
       } catch (_) {
@@ -94,6 +100,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isAlertPlaying = false;
+  Future<void>? _initializeFuture;
 
   // ================= ALERT STATE =================
 
@@ -109,23 +116,35 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   // ===========================================================================
   // SOCKET INITIALIZATION
   // ===========================================================================
-  Future<void> initialize() async {
+  Future<void> initialize() {
+    if (_socket?.connected == true) return Future<void>.value();
+    final running = _initializeFuture;
+    if (running != null) return running;
+    final future = _initialize();
+    _initializeFuture = future;
+    return future.whenComplete(() => _initializeFuture = null);
+  }
+
+  Future<void> _initialize() async {
     try {
       // 1. Get token from storage securely
       final token = await getIt<SecureStorageService>().getUserToken();
-      
+      if (isClosed) return;
+
       // 2. ONLY connect if token exists
       if (token == null || token.trim().isEmpty) {
         return;
       }
-      
+
+      _socket?.dispose();
+      _socket = null;
+
       // As requested, hardcode the external URL for the websocket in all cases
       final String socketUrl = 'https://crises.miniawater.com';
       final String socketPath = '/api/socket.io';
-      
-      print('🔌 Socket URL: $socketUrl');
-      print('🔌 Socket Path: $socketPath');
-      
+
+      if (kDebugMode) debugPrint('Initializing Socket.IO transport');
+
       // 4. Configure socket with auth and correct path
       // IMPORTANT: Transports configuration is an intentional, permanent decision.
       // Do NOT change mobile back to ['websocket']. The IIS/ARR reverse proxy on our backend
@@ -134,39 +153,41 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       // which corrupts them for strict clients like Dart's web_socket_channel. Browsers tolerate this,
       // which is why kIsWeb can use ['polling', 'websocket'].
       final opts = io.OptionBuilder()
-            .setTransports(kIsWeb ? ['polling', 'websocket'] : ['polling'])
-            .setPath(socketPath)
-            .setReconnectionAttempts(_maxReconnectAttempts)
-            .setReconnectionDelay(3000)
-            .disableAutoConnect() // Don't connect until listeners are ready
-            .disableMultiplex() // Force new connection, bypasses dead cache
-            .setAuth({'token': token}) // Pass token in auth object
-            .setExtraHeaders({'Authorization': 'Bearer $token'}) // And in headers just in case
-            .build();
+          .setTransports(kIsWeb ? ['polling', 'websocket'] : ['polling'])
+          .setPath(socketPath)
+          .setReconnectionAttempts(_maxReconnectAttempts)
+          .setReconnectionDelay(3000)
+          .disableAutoConnect() // Don't connect until listeners are ready
+          .disableMultiplex() // Force new connection, bypasses dead cache
+          .setAuth({'token': token}) // Pass token in auth object
+          .setExtraHeaders({
+            'Authorization': 'Bearer $token',
+          }) // And in headers just in case
+          .build();
 
       // Manually inject the upgrade:false flag into the built options map,
       // since OptionBuilder doesn't expose a method for it directly.
       opts['upgrade'] = false;
-      opts['forceNew'] = true; // CRITICAL: Prevent reusing old authenticated connection
+      opts['forceNew'] =
+          true; // CRITICAL: Prevent reusing old authenticated connection
 
       if (kDebugMode) {
-        debugPrint('🔍 Socket opts: $opts');
-        debugPrint('🔍 Socket url: $socketUrl');
+        debugPrint('Socket.IO transport configured');
       }
 
       _socket = io.io(socketUrl, opts);
 
-      // DEBUG - add temporarily
-      _socket?.onAny((event, data) {
-        print('🔌 Socket event: $event | data: $data');
+      _socket?.onAny((event, _) {
+        if (kDebugMode) debugPrint('Socket.IO event received: $event');
       });
 
-      _socket?.on('connect_error', (data) {
-        print('❌ Connect error: $data');
+      _socket?.on('connect_error', (_) {
+        if (kDebugMode)
+          debugPrint('Socket.IO connection error (details redacted)');
       });
 
-      _socket?.on('error', (data) {
-        print('❌ Socket error: $data');
+      _socket?.on('error', (_) {
+        if (kDebugMode) debugPrint('Socket.IO error (details redacted)');
       });
 
       // 3. Attach listeners BEFORE connecting to avoid race condition
@@ -174,11 +195,6 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
       // 4. Now connect manually
       _socket?.connect();
-
-      Future.delayed(const Duration(seconds: 3), () {
-        print('🔌 Socket connected: ${_socket?.connected}');
-        print('🔌 Socket id: ${_socket?.id}');
-      });
     } catch (e) {
       emit(IncidentMapError(message: 'فشل في إنشاء اتصال Socket.IO'));
     }
@@ -199,7 +215,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     });
 
     _socket?.onError((_) {
-       emit(IncidentMapError(message: 'خطأ في الاتصال بالخادم'));
+      emit(IncidentMapError(message: 'خطأ في الاتصال بالخادم'));
     });
 
     _socket?.on('incident_snapshot', _handleIncidentSnapshot);
@@ -267,6 +283,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   /// avoid jank on large payloads. [List.generate] inside the helper
   /// pre-allocates the backing array to the exact capacity needed.
   Future<void> _handleIncidentSnapshot(dynamic data) async {
+    if (isClosed) return;
     try {
       if (data is! List) {
         emit(IncidentMapError(message: 'تنسيق بيانات غير صحيح'));
@@ -276,6 +293,8 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       // Defensively copy to a plain List<dynamic> so it can be sent across
       // isolate boundaries safely (socket.io may return a non-growable view).
       incidentss = await compute(_parseIncidentList, List<dynamic>.from(data));
+      if (isClosed) return;
+      getIt<IncidentPickerBridge>().resolvePending(incidentss);
 
       _bumpPayloadTime();
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
@@ -287,7 +306,8 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   void _handleIncidentCreated(dynamic data) {
     final newIncident = CurrentIncidentModel.fromJson(data);
 
-    final updated = List<CurrentIncidentModel>.of(incidentss)..insert(0, newIncident);
+    final updated = List<CurrentIncidentModel>.of(incidentss)
+      ..insert(0, newIncident);
     updated.sort((a, b) {
       final aTime = a.currentIncidentCreatedAt;
       final bTime = b.currentIncidentCreatedAt;
@@ -309,7 +329,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       _isAlertPlaying = true;
       await _audioPlayer.setVolume(1.0);
       await _audioPlayer.play(AssetSource('sounds/alarm.ogg'));
-      
+
       _alertTimer?.cancel();
       _alertTimer = Timer(const Duration(seconds: 5), () async {
         await _audioPlayer.stop();
@@ -388,12 +408,16 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
       // 1. Try matching by exact Primary Key (idCurrentIncidentMission)
       if (pkId != null) {
-        missionIndex = missions.indexWhere((m) => m.idCurrentIncidentMission == pkId);
+        missionIndex = missions.indexWhere(
+          (m) => m.idCurrentIncidentMission == pkId,
+        );
       }
 
       // 2. If not found, try legacyId as a PK (backend might put PK in this field)
       if (missionIndex == -1 && legacyId != null) {
-        missionIndex = missions.indexWhere((m) => m.idCurrentIncidentMission == legacyId);
+        missionIndex = missions.indexWhere(
+          (m) => m.idCurrentIncidentMission == legacyId,
+        );
       }
 
       // 3. If still not found, try matching by FK (mission type) + order for disambiguation
@@ -474,7 +498,9 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     required int newStatus,
     required int newSeverity,
   }) {
-    final index = incidentss.indexWhere((i) => i.currentIncidentId == incidentId);
+    final index = incidentss.indexWhere(
+      (i) => i.currentIncidentId == incidentId,
+    );
     if (index != -1) {
       final updatedIncident = incidentss[index].copyWith(
         currentIncidentStatus: newStatus,
@@ -559,9 +585,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   /// Get a specific incident by ID from the current list
   CurrentIncidentModel? getIncidentById(int incidentId) {
     try {
-      return incidentss.firstWhere(
-        (i) => i.currentIncidentId == incidentId,
-      );
+      return incidentss.firstWhere((i) => i.currentIncidentId == incidentId);
     } catch (_) {
       return null;
     }

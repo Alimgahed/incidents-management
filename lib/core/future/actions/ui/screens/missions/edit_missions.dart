@@ -19,7 +19,7 @@ class EditMissions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final editCubit = context.read<EditMissionsCubit>();
-    if (mission != null) {
+    if (mission != null && editCubit.id == 0) {
       editCubit.id = mission!.missionId!;
       editCubit.selectedClassId = mission!.classId;
       editCubit.missionName.text = mission!.missionName;

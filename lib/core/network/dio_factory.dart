@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
@@ -6,6 +6,7 @@ import 'package:incidents_managment/core/network/api_constants.dart';
 import 'dart:convert';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
+import 'package:incidents_managment/core/offline/network/cache_key.dart';
 
 class DioFactory {
   DioFactory._();
@@ -46,8 +47,10 @@ class DioFactory {
 
           // Disable browser caching for GET requests on Flutter Web
           if (options.method.toUpperCase() == 'GET') {
-            options.queryParameters['_t'] = DateTime.now().millisecondsSinceEpoch;
-            options.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+            options.queryParameters['_t'] =
+                DateTime.now().millisecondsSinceEpoch;
+            options.headers['Cache-Control'] =
+                'no-cache, no-store, must-revalidate';
             options.headers['Pragma'] = 'no-cache';
             options.headers['Expires'] = '0';
           }
@@ -55,10 +58,14 @@ class DioFactory {
           return handler.next(options);
         },
         onError: (DioException error, handler) async {
-          if (error.response?.statusCode == 401) {
+          final requestPath = error.requestOptions.path;
+          if (error.response?.statusCode == 401 &&
+              !requestPath.endsWith(ApiConstants.logout) &&
+              !requestPath.endsWith('/login') &&
+              getIt<SessionManager>().isLoggingOut == false) {
             try {
               final sessionManager = getIt<SessionManager>();
-              sessionManager.logout(sessionExpired: true);
+              unawaited(sessionManager.logout(sessionExpired: true));
             } catch (_) {}
           }
           return handler.next(error);
@@ -159,10 +166,7 @@ class CacheInterceptor extends Interceptor {
       return handler.next(options);
     }
 
-    final uri = options.uri;
-    final queryParams = Map<String, dynamic>.from(uri.queryParameters);
-    queryParams.remove('_t');
-    final key = queryParams.isEmpty ? uri.replace(query: '').toString() : uri.replace(queryParameters: queryParams).toString();
+    final key = CacheKey.fromUri(options.uri);
     final entry = _cache[key];
 
     if (entry != null && !entry.isExpired) {
@@ -181,10 +185,7 @@ class CacheInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (response.requestOptions.method.toUpperCase() == 'GET' &&
         response.statusCode == 200) {
-      final uri = response.requestOptions.uri;
-      final queryParams = Map<String, dynamic>.from(uri.queryParameters);
-      queryParams.remove('_t');
-      final key = queryParams.isEmpty ? uri.replace(query: '').toString() : uri.replace(queryParameters: queryParams).toString();
+      final key = CacheKey.fromUri(response.requestOptions.uri);
       _cache[key] = _CacheEntry(
         data: response.data,
         expiry: DateTime.now().add(cacheDuration),
@@ -261,4 +262,3 @@ class SanitizedLoggerInterceptor extends Interceptor {
     handler.next(err);
   }
 }
-

@@ -17,16 +17,6 @@ class AllMissionsMobile extends StatefulWidget {
 
 class _AllMissionsMobileState extends State<AllMissionsMobile> {
   @override
-  void initState() {
-    super.initState();
-    Future.microtask(() {
-      if (mounted) {
-        context.read<AllMissionsCubit>().getAllMissions();
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -58,7 +48,8 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
                               message: 'ابدأ بإضافة مهمة جديدة',
                             ),
                             loading: () => const Loadding(),
-                            loaded: (missions) => _MissionsList(missions: missions),
+                            loaded: (missions) =>
+                                _MissionsList(missions: missions),
                             error: (message) => Error(),
                           );
                         },
@@ -113,7 +104,8 @@ class _SearchAndFilterBarState extends State<_SearchAndFilterBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      // Keep the last row reachable above the floating create button.
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 112),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [

@@ -17,10 +17,10 @@ import 'package:incidents_managment/main.dart';
 class WebScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.trackpad,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+  };
 }
 
 class Incidents extends StatelessWidget {
@@ -65,7 +65,10 @@ class Incidents extends StatelessWidget {
                 scrollBehavior: WebScrollBehavior(),
                 // Set the app's locale to Arabic
                 locale: const Locale('ar', 'AE'), // Arabic (UAE) locale
-                supportedLocales: const [Locale('en', 'US'), Locale('ar', 'AE')],
+                supportedLocales: const [
+                  Locale('en', 'US'),
+                  Locale('ar', 'AE'),
+                ],
                 localizationsDelegates: const [
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,
@@ -82,7 +85,9 @@ class Incidents extends StatelessWidget {
                       child: ResponsiveBreakpoints.builder(
                         child: MediaQuery(
                           data: MediaQuery.of(context).copyWith(
-                            textScaler: const TextScaler.linear(1.0), // Prevent system text scaling issues
+                            textScaler: MediaQuery.textScalerOf(
+                              context,
+                            ).clamp(minScaleFactor: 0.9, maxScaleFactor: 2.0),
                           ),
                           // Wrap the child so OfflineBanner always sits at the top of the visible UI.
                           child: Column(
@@ -95,8 +100,16 @@ class Incidents extends StatelessWidget {
                         breakpoints: [
                           const Breakpoint(start: 0, end: 599, name: MOBILE),
                           const Breakpoint(start: 600, end: 1023, name: TABLET),
-                          const Breakpoint(start: 1024, end: 1439, name: DESKTOP),
-                          const Breakpoint(start: 1440, end: double.infinity, name: '4K'),
+                          const Breakpoint(
+                            start: 1024,
+                            end: 1439,
+                            name: DESKTOP,
+                          ),
+                          const Breakpoint(
+                            start: 1440,
+                            end: double.infinity,
+                            name: '4K',
+                          ),
                         ],
                       ),
                     ),

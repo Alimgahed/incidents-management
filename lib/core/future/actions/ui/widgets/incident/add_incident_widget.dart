@@ -58,18 +58,6 @@ class IncidentMapWidget extends StatefulWidget {
 
 class _IncidentMapWidgetState extends State<IncidentMapWidget> {
   @override
-  void initState() {
-    super.initState();
-
-    /// Set default location when screen opens
-    Future.microtask(() {
-      context.read<MapCubit>().setCurrentLocation(
-        const LatLng(30.0444, 31.2357),
-      );
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return BlocBuilder<MapCubit, MapState>(
       builder: (context, state) {
@@ -82,7 +70,9 @@ class _IncidentMapWidgetState extends State<IncidentMapWidget> {
                 borderRadius: BorderRadius.circular(16),
                 child: FlutterMap(
                   options: MapOptions(
-                    initialCenter: state.selectedLocation,
+                    initialCenter:
+                        state.selectedLocation ??
+                        const LatLng(28.0871, 30.7501),
                     initialZoom: state.zoom,
                     onTap: (_, point) {
                       context.read<MapCubit>().setLocation(point);
@@ -96,16 +86,17 @@ class _IncidentMapWidgetState extends State<IncidentMapWidget> {
                     ),
                     MarkerLayer(
                       markers: [
-                        Marker(
-                          point: state.selectedLocation,
-                          width: 50,
-                          height: 50,
-                          child: Icon(
-                            Icons.location_on,
-                            color: warningColor,
-                            size: 40,
+                        if (state.selectedLocation != null)
+                          Marker(
+                            point: state.selectedLocation!,
+                            width: 50,
+                            height: 50,
+                            child: Icon(
+                              Icons.location_on,
+                              color: warningColor,
+                              size: 40,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ],
@@ -138,12 +129,17 @@ class _IncidentMapWidgetState extends State<IncidentMapWidget> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
+          if (context.watch<MapCubit>().state.locationError != null)
+            Expanded(
+              child: Text(
+                context.watch<MapCubit>().state.locationError!,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.my_location, color: appColor),
             onPressed: () {
-              context.read<MapCubit>().setCurrentLocation(
-                const LatLng(30.0444, 31.2357),
-              );
+              context.read<MapCubit>().locateCurrentPosition();
             },
           ),
         ],

@@ -16,11 +16,20 @@ class AllMissionsCubit extends Cubit<GetAllMissionState> {
 
   // Current search query
   String _currentSearchQuery = '';
+  Future<void>? _loadInFlight;
 
   AllMissionsCubit({required this.allMissionsRepo})
     : super(const GetAllMissionState.initial());
 
-  Future<void> getAllMissions() async {
+  Future<void> getAllMissions() {
+    final inFlight = _loadInFlight;
+    if (inFlight != null) return inFlight;
+    final request = _loadMissions();
+    _loadInFlight = request;
+    return request.whenComplete(() => _loadInFlight = null);
+  }
+
+  Future<void> _loadMissions() async {
     emit(const GetAllMissionState.loading());
 
     final result = await allMissionsRepo.getAllMissions();
@@ -66,7 +75,7 @@ class AllMissionsCubit extends Cubit<GetAllMissionState> {
       final missionNameMatch = mission.missionName.toLowerCase().contains(
         lowercaseQuery,
       );
-      final classNameMatch = mission.className!.toLowerCase().contains(
+      final classNameMatch = (mission.className ?? '').toLowerCase().contains(
         lowercaseQuery,
       );
       final missionIdMatch = mission.missionId.toString().contains(query);

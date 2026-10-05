@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/constant/enms.dart';
@@ -64,7 +65,9 @@ class _IncidentCardState extends State<IncidentCard> {
 
     final cardBgColor = widget.isSelected
         ? appColor.withAlpha((0.04 * 255).toInt())
-        : (_isHovered ? const Color(0xFFF8FAFC) : theme.colorScheme.surface);
+        : (_isHovered
+              ? theme.colorScheme.surfaceContainerLow
+              : theme.colorScheme.surface);
 
     final headline = incidentDescriptionHeadline(
       widget.incident.currentIncidentDescription,
@@ -83,7 +86,13 @@ class _IncidentCardState extends State<IncidentCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
+          transform: Matrix4.identity()
+            ..scaleByDouble(
+              _isHovered ? 1.02 : 1.0,
+              _isHovered ? 1.02 : 1.0,
+              1,
+              1,
+            ),
           decoration: BoxDecoration(
             color: cardBgColor,
             borderRadius: BorderRadius.circular(12),
@@ -230,7 +239,13 @@ class _IncidentCardState extends State<IncidentCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
+        transform: Matrix4.identity()
+          ..scaleByDouble(
+            _isHovered ? 1.02 : 1.0,
+            _isHovered ? 1.02 : 1.0,
+            1,
+            1,
+          ),
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
         decoration: BoxDecoration(
           color: cardBgColor,
@@ -268,24 +283,26 @@ class _IncidentCardState extends State<IncidentCard> {
                   // Row 1: ID + Title + Status
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '#$id',
-                          style: TextStyles.size10(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textSecondary,
+                      if (id != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '#$id',
+                            style: TextStyles.size10(
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textSecondary,
+                            ),
                           ),
                         ),
-                      ),
-                      if (id != null) const SizedBox(width: 8),
+                        const SizedBox(width: 8),
+                      ],
                       Expanded(
                         child: Text(
                           title,
@@ -469,9 +486,11 @@ class IncidentsList extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(useWebGrid ? 12 : 16),
-            border: Border.all(color: AppTheme.borderColor),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -494,7 +513,7 @@ class IncidentsList extends StatelessWidget {
                   child: incidents.isEmpty
                       ? _buildEmptyState()
                       : ListView.builder(
-                          cacheExtent: 500,
+                          scrollCacheExtent: ScrollCacheExtent.pixels(500),
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           itemCount: incidents.length,
                           itemBuilder: (context, index) {
@@ -512,7 +531,11 @@ class IncidentsList extends StatelessWidget {
                                 useWebTileLayout: useWebGrid,
                                 onTap: () {
                                   cubit.selectIncident(incident);
-                                  // onIncidentTap?.call(incident);
+                                  // On narrow layouts the detail panel is a
+                                  // separate route, so selection must open it.
+                                  if (MediaQuery.sizeOf(context).width <= 768) {
+                                    onIncidentTap?.call(incident);
+                                  }
                                 },
                               ),
                             );

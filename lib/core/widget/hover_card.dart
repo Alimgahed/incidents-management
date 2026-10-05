@@ -25,7 +25,7 @@ class _HoverCardState extends State<HoverCard> {
         boxShadow: _isHovered
             ? [
                 BoxShadow(
-                  color: Theme.of(context).primaryColor.withOpacity(0.15),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 )

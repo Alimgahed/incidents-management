@@ -7,15 +7,12 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/incident/edi
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/update_statues.dart';
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_state.dart';
-import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
-import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dashboard_kpi_strip.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_detail_dialogs.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_photo_gallery.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/incident_description_present.dart';
 import 'package:incidents_managment/core/helpers/date_format.dart';
 import 'package:incidents_managment/core/helpers/incident_description_parse.dart';
 import 'package:incidents_managment/core/helpers/responsive.dart';
-import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 
@@ -89,7 +86,8 @@ class _IncidentDetailContent extends StatelessWidget {
       _MissionsCard(incident: incident),
       SizedBox(height: spacing),
 
-      if (incident.currentIncidentNotes != null && incident.currentIncidentNotes!.trim().isNotEmpty) ...[
+      if (incident.currentIncidentNotes != null &&
+          incident.currentIncidentNotes!.trim().isNotEmpty) ...[
         _NotesCard(notes: incident.currentIncidentNotes!),
         SizedBox(height: spacing),
       ],
@@ -235,40 +233,6 @@ class _BackNavigation extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ==================== DESCRIPTION & NOTES SECTION ====================
-class _DescriptionAndNotesSection extends StatelessWidget {
-  const _DescriptionAndNotesSection({required this.incident});
-  final CurrentIncidentModel incident;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 768;
-        if (isWide) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [Expanded(flex: 3, child: _buildContent())],
-          );
-        }
-        return _buildContent();
-      },
-    );
-  }
-
-  Widget _buildContent() {
-    return Column(
-      children: [
-        _DescriptionCard(incident: incident),
-        if (incident.currentIncidentNotes != null && incident.currentIncidentNotes!.trim().isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _NotesCard(notes: incident.currentIncidentNotes!),
-        ],
-      ],
     );
   }
 }
@@ -438,7 +402,10 @@ class _IconContainer extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 1.5,
+        ),
       ),
       child: Icon(icon, size: 20, color: Colors.white),
     );
@@ -512,7 +479,7 @@ class _HeaderStatusBar extends StatelessWidget {
         }
       }
     }
-    return empIds.length > 0 ? '${empIds.length} مسؤول' : 'بدون مسؤول';
+    return empIds.isNotEmpty ? '${empIds.length} مسؤول' : 'بدون مسؤول';
   }
 }
 
@@ -612,7 +579,10 @@ class _InfoChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -661,11 +631,10 @@ class _ActionButtonsGroup extends StatelessWidget {
         _ActionButton(
           icon: Icons.person_add_alt_1_outlined,
           tooltip: 'تعيين مسؤول',
-          onPressed: () =>
-              Navigator.of(context, rootNavigator: true).pushNamed(
-                Routes.missionAssign,
-                arguments: incident,
-              ),
+          onPressed: () => Navigator.of(
+            context,
+            rootNavigator: true,
+          ).pushNamed(Routes.missionAssign, arguments: incident),
         ),
       ],
     );
@@ -693,7 +662,10 @@ class _ActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.15),
+            width: 1,
+          ),
         ),
         child: Material(
           color: Colors.transparent,
@@ -888,7 +860,10 @@ class _PulsingIcon extends StatelessWidget {
         height: 110,
         decoration: BoxDecoration(
           gradient: RadialGradient(
-            colors: [appColor.withValues(alpha: 0.15), appColor.withValues(alpha: 0.04)],
+            colors: [
+              appColor.withValues(alpha: 0.15),
+              appColor.withValues(alpha: 0.04),
+            ],
           ),
           shape: BoxShape.circle,
           boxShadow: [
@@ -905,7 +880,10 @@ class _PulsingIcon extends StatelessWidget {
             decoration: BoxDecoration(
               color: appColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
-              border: Border.all(color: appColor.withValues(alpha: 0.2), width: 1.5),
+              border: Border.all(
+                color: appColor.withValues(alpha: 0.2),
+                width: 1.5,
+              ),
             ),
             child: Icon(
               Icons.crisis_alert_rounded,
@@ -1307,29 +1285,35 @@ class _MissionContent extends StatelessWidget {
                 ),
               ),
             ),
-            if (mission.assignedEmployees != null && mission.assignedEmployees!.isNotEmpty)
-              ...mission.assignedEmployees!.map((emp) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.person, size: 12, color: Colors.blue),
-                    const SizedBox(width: 4),
-                    Text(
-                      emp.empName ?? 'مستخدم',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+            if (mission.assignedEmployees != null &&
+                mission.assignedEmployees!.isNotEmpty)
+              ...mission.assignedEmployees!.map(
+                (emp) => Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.person, size: 12, color: Colors.blue),
+                      const SizedBox(width: 4),
+                      Text(
+                        emp.empName ?? 'مستخدم',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              )),
+              ),
           ],
         ),
       ],

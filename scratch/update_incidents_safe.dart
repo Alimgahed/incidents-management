@@ -54,7 +54,7 @@ void main() {
     // Indent lines inside GetMaterialApp by 4 spaces (except the builder function lines which we won't touch to avoid breaking things, 
     // actually, let's just leave the indentation as is, Flutter doesn't care).
     if (insideGetMaterialApp) {
-      newLines.add('  ' + line);
+      newLines.add('  $line');
     } else {
       newLines.add(line);
     }

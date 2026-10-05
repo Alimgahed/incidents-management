@@ -2,12 +2,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
-import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
-import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
-import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/widget/hover_card.dart';
 
 class SharedIncidentTypesList extends StatelessWidget {

@@ -8,6 +8,9 @@ import 'package:incidents_managment/core/future/mobile/logic/file_upload_cubit.d
 import 'package:incidents_managment/core/future/mobile/logic/file_upload_state.dart';
 import 'package:incidents_managment/core/future/mobile/ui/widgets/add_image_widget.dart';
 
+bool _isQueuedUploadMessage(String message) =>
+    message.contains('سيتم رفع') || message.contains('وسيتم رفع');
+
 class FileUploadScreen extends StatelessWidget {
   final int? incidentId;
   final int? userId;
@@ -16,79 +19,86 @@ class FileUploadScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('رفع صور الأزمة'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () {
-              context.read<FileUploadCubit>().resetState();
-            },
-            tooltip: 'إعادة تعيين',
-          ),
-        ],
-      ),
-      body: BlocProvider(
-        create: (context) =>
-            FileUploadCubit(repository: FileUploadRepository()),
-        child: BlocConsumer<FileUploadCubit, FileUploadState>(
-          listener: (context, state) {
-            state.maybeWhen(
-              uploadSuccess: (message, fileName) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(Icons.check_circle, color: Colors.white),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(message)),
-                      ],
-                    ),
-                    backgroundColor: AppTheme.successColor,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    margin: const EdgeInsets.all(16),
-                  ),
-                );
-              },
-              uploadError: (error) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(Icons.error, color: Colors.white),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(error)),
-                      ],
-                    ),
-                    backgroundColor: AppTheme.errorColor,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    margin: const EdgeInsets.all(16),
-                  ),
-                );
-              },
-              orElse: () {},
-            );
-          },
-          builder: (context, state) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeaderSection(context),
-                  const SizedBox(height: 32),
-                  _buildMainContent(context, state),
-                ],
+    return BlocProvider(
+      create: (_) => FileUploadCubit(repository: FileUploadRepository()),
+      child: Builder(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('رفع صور الأزمة'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: () {
+                  context.read<FileUploadCubit>().resetState();
+                },
+                tooltip: 'إعادة تعيين',
               ),
-            );
-          },
+            ],
+          ),
+          body: BlocConsumer<FileUploadCubit, FileUploadState>(
+            listener: (context, state) {
+              state.maybeWhen(
+                uploadSuccess: (message, fileName) {
+                  final queued = _isQueuedUploadMessage(message);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(
+                            queued ? Icons.schedule_send : Icons.check_circle,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(message)),
+                        ],
+                      ),
+                      backgroundColor: queued
+                          ? AppTheme.queuedColor
+                          : AppTheme.successColor,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      margin: const EdgeInsets.all(16),
+                    ),
+                  );
+                },
+                uploadError: (error) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.error, color: Colors.white),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(error)),
+                        ],
+                      ),
+                      backgroundColor: AppTheme.errorColor,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      margin: const EdgeInsets.all(16),
+                    ),
+                  );
+                },
+                orElse: () {},
+              );
+            },
+            builder: (context, state) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildHeaderSection(context),
+                    const SizedBox(height: 32),
+                    _buildMainContent(context, state),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -134,7 +144,6 @@ class FileUploadScreen extends StatelessWidget {
               fontSize: 24,
             ),
           ),
-       
         ],
       ),
     );
@@ -210,60 +219,10 @@ class FileUploadScreen extends StatelessWidget {
       ),
       uploading: (progress, fileName) =>
           UploadProgressCard(progress: progress, fileName: fileName),
-      uploadSuccess: (message, fileName) => Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: AppTheme.successColor.withAlpha(26),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppTheme.successColor.withAlpha(77),
-                width: 2,
-              ),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.successColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    size: 48,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'تم الرفع بنجاح!',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.successColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  fileName,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () => context.read<FileUploadCubit>().resetState(),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('رفع صورة أخرى'),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: AppTheme.successColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      uploadSuccess: (message, fileName) => UploadCompletionView(
+        message: message,
+        fileName: fileName,
+        onUploadAnother: () => context.read<FileUploadCubit>().resetState(),
       ),
       uploadError: (error) => Column(
         children: [
@@ -321,6 +280,78 @@ class FileUploadScreen extends StatelessWidget {
         ],
       ),
       orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+class UploadCompletionView extends StatelessWidget {
+  final String message;
+  final String fileName;
+  final VoidCallback onUploadAnother;
+
+  const UploadCompletionView({
+    super.key,
+    required this.message,
+    required this.fileName,
+    required this.onUploadAnother,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final queued = _isQueuedUploadMessage(message);
+    final statusColor = queued ? AppTheme.queuedColor : AppTheme.successColor;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: statusColor.withAlpha(26),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: statusColor.withAlpha(77), width: 2),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              queued ? Icons.schedule_send_rounded : Icons.check_rounded,
+              size: 48,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            queued ? 'تم حفظ الملف للمزامنة' : 'تم الرفع بنجاح!',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: statusColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$fileName\n$message',
+            style: Theme.of(context).textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: onUploadAnother,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('رفع صورة أخرى'),
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: statusColor,
+              minimumSize: const Size(48, 48),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

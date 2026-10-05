@@ -342,6 +342,7 @@ class _CustomTextFormFieldState extends State<CustomTextFormField> {
 
     if (widget.enableTogglePassword && widget.obscureText) {
       return IconButton(
+        tooltip: _isObscured ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور',
         icon: Icon(
           _isObscured
               ? Icons.visibility_off_outlined
@@ -583,28 +584,37 @@ class CustomButton extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(borderRadius),
-          onTap: isLoading ? null : onPressed,
-          child: Center(
-            child: isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    text,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: textColor,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+        child: Semantics(
+          button: true,
+          enabled: !isLoading,
+          label: text,
+          child: ExcludeSemantics(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(borderRadius),
+              onTap: isLoading ? null : onPressed,
+              child: Center(
+                child: isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        text,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: textColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+              ),
+            ),
           ),
         ),
       ),

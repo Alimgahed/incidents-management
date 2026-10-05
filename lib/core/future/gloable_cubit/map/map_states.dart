@@ -1,20 +1,23 @@
 import 'package:latlong2/latlong.dart';
 
 class MapState {
-  final LatLng selectedLocation;
+  final LatLng? selectedLocation;
+  final String? locationError;
   final double zoom;
   final String? address;
 
   const MapState({
-    required this.selectedLocation,
+    this.selectedLocation,
     required this.zoom,
     this.address,
+    this.locationError,
   });
 
   MapState copyWith({
     LatLng? selectedLocation,
     double? zoom,
     String? address,
+    String? locationError,
   }) {
     return MapState(
       selectedLocation: selectedLocation ?? this.selectedLocation,
@@ -23,6 +26,7 @@ class MapState {
       // Wait, we need to be able to update address when we pass it explicitly.
       // We will do address: address ?? this.address. But if we want to overwrite with null? Not needed here.
       address: address ?? this.address,
+      locationError: locationError,
     );
   }
 }

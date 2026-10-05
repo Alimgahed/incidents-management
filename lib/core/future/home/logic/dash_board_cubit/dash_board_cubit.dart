@@ -56,22 +56,29 @@ class DashboardCubit extends Cubit<DashboardState> {
 
     // Apply search query filter
     if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
+      final q = _searchQuery.trim().toLowerCase();
       filtered = filtered.where((i) {
         return (i.currentIncidentDescription ?? '').toLowerCase().contains(q) ||
             (i.currentIncidentNotes ?? '').toLowerCase().contains(q) ||
+            (i.currentIncidentTypeName ?? '').toLowerCase().contains(q) ||
+            (i.branchName ?? '').toLowerCase().contains(q) ||
+            (i.address ?? '').toLowerCase().contains(q) ||
             (i.currentIncidentId?.toString() ?? '').contains(q);
       });
     }
 
     // Apply status filter (added)
     if (_selectedStatus != null) {
-      filtered = filtered.where((i) => i.currentIncidentStatus == _selectedStatus);
+      filtered = filtered.where(
+        (i) => i.currentIncidentStatus == _selectedStatus,
+      );
     }
 
     // Apply severity filter (added)
     if (_selectedSeverity != null) {
-      filtered = filtered.where((i) => i.currentIncidentSeverity == _selectedSeverity);
+      filtered = filtered.where(
+        (i) => i.currentIncidentSeverity == _selectedSeverity,
+      );
     }
 
     // Apply branch filter (added)
@@ -175,7 +182,8 @@ class DashboardCubit extends Cubit<DashboardState> {
   // Sync single incident after mission update
   void syncSelectedIncident(CurrentIncidentModel updatedIncident) {
     if (_selectedIncident == null) return;
-    if (_selectedIncident!.currentIncidentId != updatedIncident.currentIncidentId) {
+    if (_selectedIncident!.currentIncidentId !=
+        updatedIncident.currentIncidentId) {
       return;
     }
 

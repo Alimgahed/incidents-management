@@ -16,7 +16,6 @@ import 'package:incidents_managment/core/future/home/logic/incident_picker_bridg
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dashboard_kpi_strip.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_details.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incient_list.dart';
-import 'package:incidents_managment/core/theming/app_theme.dart';
 
 /// Routes inside the home dashboard tab (not the app root navigator).
 abstract final class DashboardRoutes {
@@ -251,9 +250,11 @@ class _DashboardViewState extends State<DashboardView> {
                     },
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppTheme.borderColor),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
@@ -371,14 +372,21 @@ class _DashboardIncidentsScreen extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.borderColor),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: IncidentDetailsPanel(
-                            contentPadding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                            contentPadding: const EdgeInsets.fromLTRB(
+                              16,
+                              16,
+                              16,
+                              16,
+                            ),
                           ),
                         ),
                       ),

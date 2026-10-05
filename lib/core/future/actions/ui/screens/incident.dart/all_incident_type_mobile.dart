@@ -53,67 +53,68 @@ class _LoadedView extends StatelessWidget {
     return SizedBox.expand(
       child: Stack(
         children: [
-        // Main content
-        RefreshIndicator(
-          color: appColor,
-          onRefresh: () async {
-            context.read<AllIncidentTypeCubit>().getAllIncidentTypes();
-          },
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              final crossAxisCount = _calculateCrossAxisCount(width);
-
-              return CustomScrollView(
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.all(16),
-                    sliver: SliverToBoxAdapter(
-                      child: Text(
-                        'إجمالي الأنواع: ${incidentTypes.length}',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                          color: appColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    sliver: SliverGrid(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: _calculateAspectRatio(
-                          width,
-                          crossAxisCount,
-                        ),
-                      ),
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        return _IncidentTypeCard(
-                          incidentType: incidentTypes[index],
-                          index: index,
-                        );
-                      }, childCount: incidentTypes.length),
-                    ),
-                  ),
-                ],
-              );
+          // Main content
+          RefreshIndicator(
+            color: appColor,
+            onRefresh: () async {
+              context.read<AllIncidentTypeCubit>().getAllIncidentTypes();
             },
-          ),
-        ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final crossAxisCount = _calculateCrossAxisCount(width);
 
-        // Floating Action Button
-        CustomFloatingButton(
-          routeName: Routes.addIncidentType,
-          text: "أضافة نوع ازمة",
-        ),
-      ],
-    ),
-  );
-}
+                return CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.all(16),
+                      sliver: SliverToBoxAdapter(
+                        child: Text(
+                          'إجمالي الأنواع: ${incidentTypes.length}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            color: appColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      // Reserve scroll space for the floating create button.
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 112),
+                      sliver: SliverGrid(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: _calculateAspectRatio(
+                            width,
+                            crossAxisCount,
+                          ),
+                        ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          return _IncidentTypeCard(
+                            incidentType: incidentTypes[index],
+                            index: index,
+                          );
+                        }, childCount: incidentTypes.length),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+
+          // Floating Action Button
+          CustomFloatingButton(
+            routeName: Routes.addIncidentType,
+            text: "أضافة نوع ازمة",
+          ),
+        ],
+      ),
+    );
+  }
 
   int _calculateCrossAxisCount(double width) {
     if (width > 1200) return 6;
@@ -501,4 +502,3 @@ class _IncidentTypeDetailsSheet extends StatelessWidget {
     );
   }
 }
-

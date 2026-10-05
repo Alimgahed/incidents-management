@@ -8,7 +8,10 @@ import 'package:incidents_managment/core/helpers/shared_preference.dart';
 import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
 import 'package:incidents_managment/core/network/fcm_service.dart';
-import 'package:incidents_managment/core/offline/offline_bootstrap.dart';
+import 'package:incidents_managment/core/offline/domain/sync_manager.dart';
+import 'package:incidents_managment/core/offline/data/repositories/attachment_cache_repository.dart';
+import 'package:incidents_managment/core/offline/data/repositories/sync_queue_repository.dart';
+import 'package:incidents_managment/core/offline/network/network_monitor.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 
@@ -16,9 +19,11 @@ class SessionManager {
   final SecureStorageService _secureStorage;
   CurrentUser? _currentUser;
   bool _isSessionExpiredAlertShowing = false;
+  Future<void>? _logoutInFlight;
+  bool get isLoggingOut => _logoutInFlight != null;
 
   SessionManager({SecureStorageService? secureStorage})
-      : _secureStorage = secureStorage ?? getIt<SecureStorageService>();
+    : _secureStorage = secureStorage ?? getIt<SecureStorageService>();
 
   /// Load user details on app start if they exist
   Future<void> initializeSession() async {
@@ -46,7 +51,10 @@ class SessionManager {
     if (_currentUser == null) return false;
     final role = _currentUser?.authorityName?.trim();
     // In Arabic, "مشرف" = Supervisor, "مسؤول" or "المسؤول" = Admin/Supervisor
-    return role == 'مشرف' || role == 'مسؤول' || role == 'المسؤول' || (_currentUser?.authorityLevelId ?? 0) >= 2;
+    return role == 'مشرف' ||
+        role == 'مسؤول' ||
+        role == 'المسؤول' ||
+        (_currentUser?.authorityLevelId ?? 0) >= 2;
   }
 
   /// Check login status
@@ -56,7 +64,67 @@ class SessionManager {
   }
 
   /// Global proactive logout flow
-  Future<void> logout({bool sessionExpired = false}) async {
+  Future<void> logout({bool sessionExpired = false}) {
+    final inFlight = _logoutInFlight;
+    if (inFlight != null) return inFlight;
+    final operation = _logoutFlow(sessionExpired: sessionExpired);
+    _logoutInFlight = operation;
+    return operation.whenComplete(() => _logoutInFlight = null);
+  }
+
+  Future<void> _logoutFlow({required bool sessionExpired}) async {
+    if (!sessionExpired && await _hasPendingWork()) {
+      try {
+        if (getIt<NetworkMonitorService>().isOnline &&
+            getIt.isRegistered<SyncManager>()) {
+          await getIt<SyncManager>().syncNow();
+        }
+      } catch (_) {}
+      if (await _hasPendingWork()) {
+        await _showPendingWorkNotice();
+        return;
+      }
+    }
+    await _performLogout(sessionExpired: sessionExpired);
+  }
+
+  Future<bool> _hasPendingWork() async {
+    try {
+      final queued = getIt<SyncQueueRepository>().totalCount();
+      final attachments = getIt<AttachmentCacheRepository>().countPending();
+      return queued > 0 || attachments > 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _showPendingWorkNotice() async {
+    if (Get.isDialogOpen == true) return;
+    await Get.dialog<void>(
+      AlertDialog(
+        title: const Text('توجد أعمال لم تتم مزامنتها'),
+        content: const Text(
+          'تم الاحتفاظ بالبلاغات والملفات المعلقة. اتصل بالإنترنت وأعد المحاولة بعد اكتمال المزامنة قبل تسجيل الخروج.',
+        ),
+        actions: [TextButton(onPressed: Get.back, child: const Text('حسناً'))],
+      ),
+      barrierDismissible: true,
+    );
+  }
+
+  Future<void> _performLogout({required bool sessionExpired}) async {
+    if (sessionExpired && await _hasPendingWork()) {
+      final ownerId = _currentUser?.userId;
+      if (ownerId != null) {
+        await SharedPreferencesHelper.saveData<int>(
+          SharedPreferenceKeys.pendingOfflineOwnerId,
+          ownerId,
+        );
+      }
+    }
+    try {
+      if (getIt.isRegistered<SyncManager>()) await getIt<SyncManager>().stop();
+    } catch (_) {}
     // 0. Notify backend to clear device token
     try {
       final fcmToken = await FcmService.getToken();
@@ -82,11 +150,8 @@ class SessionManager {
       }
     } catch (_) {}
 
-    // 4. Wipe the offline cache so the next user doesn't inherit pending
-    //    queue items, cached lists, or attachments from this session.
-    try {
-      await OfflineBootstrap.resetOnLogout();
-    } catch (_) {}
+    // Preserve queued writes and cached attachments across logout so work
+    // created offline is not silently discarded.
 
     // 5. Redirect to login
     if (sessionExpired) {
@@ -135,7 +200,10 @@ class SessionManager {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('تسجيل الدخول', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'تسجيل الدخول',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),

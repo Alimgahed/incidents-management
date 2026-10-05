@@ -25,7 +25,6 @@ import 'package:incidents_managment/core/helpers/date_format.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/theming/styling.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:incidents_managment/core/network/api_constants.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
@@ -281,7 +280,10 @@ class _MobileStatsCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        width: 1,
+                      ),
                     ),
                     child: const Icon(
                       Icons.warning_amber_rounded,
@@ -306,7 +308,7 @@ class _MobileStatsCard extends StatelessWidget {
                         const Text(
                           'إجمالي الأزمات النشطة',
                           style: TextStyle(
-                            fontSize: 13, 
+                            fontSize: 13,
                             color: Colors.white70,
                             fontWeight: FontWeight.w500,
                           ),
@@ -315,7 +317,10 @@ class _MobileStatsCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
@@ -401,7 +406,9 @@ class _MobileIncidentCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: getSeverityColor(severity).withValues(alpha: 0.08),
+                        color: getSeverityColor(
+                          severity,
+                        ).withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -466,10 +473,14 @@ class _MobileIncidentCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: getSeverityColor(severity).withValues(alpha: 0.08),
+                        color: getSeverityColor(
+                          severity,
+                        ).withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: getSeverityColor(severity).withValues(alpha: 0.2),
+                          color: getSeverityColor(
+                            severity,
+                          ).withValues(alpha: 0.2),
                         ),
                       ),
                       child: Row(
@@ -1105,7 +1116,8 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
                         const SizedBox(height: 16),
 
                         // Address Section
-                        if (incident.address != null && incident.address!.isNotEmpty)
+                        if (incident.address != null &&
+                            incident.address!.isNotEmpty)
                           _MobileSection(
                             title: 'العنوان',
                             icon: Icons.location_on_outlined,
@@ -1119,7 +1131,8 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
                             ),
                           ),
 
-                        if (incident.address != null && incident.address!.isNotEmpty)
+                        if (incident.address != null &&
+                            incident.address!.isNotEmpty)
                           const SizedBox(height: 16),
 
                         // Missions Section
@@ -1156,7 +1169,8 @@ class MobileIncidentDetailsScreen extends StatelessWidget {
                         const SizedBox(height: 16),
 
                         // Notes Section
-                        if (incident.currentIncidentNotes != null && incident.currentIncidentNotes!.trim().isNotEmpty)
+                        if (incident.currentIncidentNotes != null &&
+                            incident.currentIncidentNotes!.trim().isNotEmpty)
                           _MobileSection(
                             title: 'ملاحظات',
                             icon: Icons.sticky_note_2_outlined,
@@ -1217,7 +1231,9 @@ class _MobileSliverAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = incident.currentIncidentStatus ?? 1;
     final severity = incident.currentIncidentSeverity ?? 1;
-    final headline = incidentDescriptionHeadline(incident.currentIncidentDescription);
+    final headline = incidentDescriptionHeadline(
+      incident.currentIncidentDescription,
+    );
 
     return SliverAppBar(
       expandedHeight: 200,
@@ -2126,7 +2142,7 @@ class _MobilePhotosSection extends StatelessWidget {
       child: FutureBuilder<String?>(
         future: getIt<SecureStorageService>().getUserToken(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState != ConnectionState.done) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
@@ -2134,7 +2150,14 @@ class _MobilePhotosSection extends StatelessWidget {
               ),
             );
           }
-          final token = snapshot.data!;
+          if (snapshot.hasError || snapshot.data?.trim().isNotEmpty != true) {
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'تعذر التحقق من الجلسة لعرض الصور. سجل الدخول مجدداً.',
+              ),
+            );
+          }
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -2163,7 +2186,9 @@ class _MobilePhotosSection extends StatelessWidget {
                           imageUrl: imageUrl,
                           fit: BoxFit.contain,
                           placeholder: const Center(
-                            child: CircularProgressIndicator(color: Colors.white),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
                           ),
                           errorWidget: Container(
                             color: Colors.white,
@@ -2171,7 +2196,11 @@ class _MobilePhotosSection extends StatelessWidget {
                             child: const Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.broken_image, size: 64, color: Colors.grey),
+                                Icon(
+                                  Icons.broken_image,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
                                 SizedBox(height: 16),
                                 Text('تعذر تحميل الصورة'),
                               ],

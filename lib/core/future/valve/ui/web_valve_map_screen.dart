@@ -86,7 +86,7 @@ class _WebValveMapScreenState extends State<WebValveMapScreen> with SingleTicker
                     initialZoom: 13,
                     maxZoom: 19,
                     minZoom: 5,
-                    onTap: (_, __) => _closePanel(),
+                    onTap: (_, _) => _closePanel(),
                   ),
                   children: [
                     TileLayer(

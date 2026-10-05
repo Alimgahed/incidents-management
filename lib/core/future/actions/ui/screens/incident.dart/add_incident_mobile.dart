@@ -1,16 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/shared_incident_form.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/add_incident_widget.dart';
-import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
-import 'package:latlong2/latlong.dart';
 
-import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
-import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
-import 'package:incidents_managment/core/widget/fields.dart';
 
 class AddIncidentMobileScreen extends StatefulWidget {
   const AddIncidentMobileScreen({super.key});
@@ -28,11 +23,6 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      context.read<MapCubit>().setCurrentLocation(
-        const LatLng(30.0444, 31.2357),
-      );
-    });
   }
 
   @override
@@ -60,8 +50,17 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
           listener: (context, state) {
             state.whenOrNull(
               success: () {
+                final queued = context
+                    .read<AddIncidentCubit>()
+                    .lastSubmissionQueued;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم إضافة الأزمة بنجاح')),
+                  SnackBar(
+                    content: Text(
+                      queued
+                          ? 'تم حفظ البلاغ محلياً وسيُرسل عند عودة الاتصال.'
+                          : 'تم إضافة الأزمة بنجاح',
+                    ),
+                  ),
                 );
               },
               error: (e) {

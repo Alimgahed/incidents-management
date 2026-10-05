@@ -58,14 +58,20 @@ class FileUploadRepository {
 
     // 2. Offline or referencing a not-yet-synced incident → defer upload.
     if (monitor.isOffline || incidentId < 0) {
+      // CachedAttachment currently persists a path, not the selected bytes.
+      // Browser picker paths are session scoped and cannot be replayed after
+      // reload, so never claim durable offline success on web.
+      if (kIsWeb) {
+        await attachmentRepo.remove(cached.localId);
+        throw Exception(
+          'لا يمكن حفظ الملف دون اتصال على هذا المتصفح. اتصل بالإنترنت ثم أعد المحاولة.',
+        );
+      }
       onProgress(1.0); // optimistic completion for UI
       return {
         'success': true,
         'message': 'تم حفظ الصورة محلياً وسيتم رفعها عند الاتصال',
-        'data': {
-          'local_id': cached.localId,
-          '__offline': true,
-        },
+        'data': {'local_id': cached.localId, '__offline': true},
         'statusCode': 202,
       };
     }
@@ -92,12 +98,14 @@ class FileUploadRepository {
             onProgress(sent / total);
           }
         },
+        options: Options(extra: {'noOfflineQueue': true}),
       );
 
       if (response.statusCode == 200) {
         int serverId = 0;
         if (response.data is Map<String, dynamic>) {
-          final v = (response.data as Map<String, dynamic>)['id'] ??
+          final v =
+              (response.data as Map<String, dynamic>)['id'] ??
               (response.data as Map<String, dynamic>)['photo_id'];
           if (v is int) serverId = v;
         }
@@ -114,7 +122,9 @@ class FileUploadRepository {
         };
       } else {
         await attachmentRepo.recordFailure(
-            cached.localId, 'HTTP ${response.statusCode}');
+          cached.localId,
+          'HTTP ${response.statusCode}',
+        );
         throw Exception('فشل الرفع برمز الحالة: ${response.statusCode}');
       }
     } on DioException catch (e) {
@@ -125,20 +135,22 @@ class FileUploadRepository {
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.connectionError) {
         await attachmentRepo.recordFailure(
-            cached.localId, e.message ?? 'Transport error');
+          cached.localId,
+          e.message ?? 'Transport error',
+        );
         return {
           'success': true,
           'message': 'سيتم رفع الصورة تلقائياً عند الاتصال',
-          'data': {
-            'local_id': cached.localId,
-            '__offline': true,
-          },
+          'data': {'local_id': cached.localId, '__offline': true},
           'statusCode': 202,
         };
       }
       await attachmentRepo.recordFailure(
-          cached.localId, e.response?.data?.toString() ?? e.message ?? 'Error');
-      final errorMsg = e.response?.data?['error'] ??
+        cached.localId,
+        e.response?.data?.toString() ?? e.message ?? 'Error',
+      );
+      final errorMsg =
+          e.response?.data?['error'] ??
           e.response?.data?['message'] ??
           e.message;
       throw Exception('فشل الرفع: $errorMsg');
@@ -173,61 +185,29 @@ class FileUploadRepository {
     required double xAxis,
     required double yAxis,
   }) async {
-    try {
-      final dio = getIt<Dio>();
-
-      final List<MultipartFile> files = [];
-      for (var path in filePaths) {
-        final name = path.split('/').last;
-        if (kIsWeb) {
-          final bytes = await XFile(path).readAsBytes();
-          files.add(MultipartFile.fromBytes(bytes, filename: name));
-        } else {
-          final file = File(path);
-          if (await file.exists()) {
-            files.add(await MultipartFile.fromFile(path, filename: name));
-          }
-        }
-      }
-
-      if (files.isEmpty) {
-        throw Exception('قائمة الملفات المحددة فارغة أو غير صالحة.');
-      }
-
-      final formData = FormData.fromMap({
-        'description': description,
-        'user_id': userId.toString(),
-        'x_axis': xAxis.toString(),
-        'y_axis': yAxis.toString(),
-        'photo': files,
-      });
-
-      final response = await dio.post(
-        '/upload-incident-photo/$incidentId',
-        data: formData,
-        onSendProgress: (sent, total) {
-          if (total > 0) {
-            onProgress(sent / total);
-          }
-        },
+    if (filePaths.isEmpty)
+      throw Exception('قائمة الملفات المحددة فارغة أو غير صالحة.');
+    final results = <Map<String, dynamic>>[];
+    for (var i = 0; i < filePaths.length; i++) {
+      final path = filePaths[i];
+      final name = path.split('/').last;
+      final result = await uploadFile(
+        filePath: path,
+        fileName: name,
+        incidentId: incidentId,
+        description: description,
+        xAxis: xAxis,
+        yAxis: yAxis,
+        onProgress: (progress) => onProgress((i + progress) / filePaths.length),
       );
-
-      if (response.statusCode == 200) {
-        return {
-          'success': true,
-          'message': 'تم رفع الملفات بنجاح',
-          'data': response.data,
-          'statusCode': response.statusCode,
-        };
-      } else {
-        throw Exception('فشل الرفع برمز الحالة: ${response.statusCode}');
-      }
-    } on DioException catch (e) {
-      final errorMsg = e.response?.data?['error'] ?? e.response?.data?['message'] ?? e.message;
-      throw Exception('فشل الرفع المتعدد: $errorMsg');
-    } catch (e) {
-      throw Exception('فشل الرفع المتعدد: $e');
+      results.add(result);
     }
+    return {
+      'success': true,
+      'message': 'تم رفع الملفات بنجاح',
+      'data': results,
+      'statusCode': 200,
+    };
   }
 
   /// ==========================

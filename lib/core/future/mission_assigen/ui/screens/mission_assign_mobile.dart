@@ -1,14 +1,11 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../widgets/users_panel.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/model/mission_assgien_model.dart';
-import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/all_active_user_cubit.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/mission_assign_cubit.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/mission_selction_cubit.dart';
-import 'package:incidents_managment/core/future/mission_assigen/logic/states/all_active_user_state.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/mission_assign_states.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/mission_selection_state.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/incident_description_present.dart';
@@ -17,7 +14,6 @@ import 'package:incidents_managment/core/future/home/ui/widgets/incident_descrip
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 const _kWideBreakpoint = 800.0;
-const _kSidebarWidth = 220.0;
 
 const _kGradientStart = appColor;
 const _kGradientEnd = Color(0xFF0D3B6E);
@@ -179,9 +175,7 @@ class _MissionAssignView extends StatelessWidget {
               // ─── Premium AppBar ──────────────────────────────────────
               _PremiumAppBar(incident: incident, isWide: isWide),
               // ─── Body ────────────────────────────────────────────────
-              Expanded(
-                child: _buildNarrowLayout(context, missions),
-              ),
+              Expanded(child: _buildNarrowLayout(context, missions)),
               // ─── Bottom Bar ──────────────────────────────────────────
               BottomActionBar(
                 incident: incident,
@@ -191,74 +185,6 @@ class _MissionAssignView extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // WIDE LAYOUT (Web / Desktop)
-  // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildWideLayout(
-    BuildContext context,
-    List<CurrentIncidentWithMissions> missions,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ─── Brand Dashboard Header ──────────────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1B4F8A), Color(0xFF2B6CB0)],
-                begin: Alignment.centerRight,
-                end: Alignment.centerLeft,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: const Color(0xFF1B4F8A).withAlpha(40), blurRadius: 10, offset: const Offset(0, 4)),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.white.withAlpha(40), borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.dashboard_customize_rounded, color: Colors.white),
-                ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("لوحة إدارة الأزمات المتقدمة", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                      SizedBox(height: 4),
-                      Text("سحب وإفلات لتعيين المهام بسرعة (Drag & Drop UI)", style: TextStyle(color: Color(0xFFCDA349), fontSize: 13, fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ─── Missions Sidebar ─────────────────────────────
-                SizedBox(
-                  width: 280,
-                  child: _MissionsSidebar(missions: missions, incident: incident),
-                ),
-                const SizedBox(width: 24),
-                // ─── Users Panel ──────────────────────────────────
-                Expanded(child: UsersPanel(isWide: true)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -656,260 +582,4 @@ class _IncidentInfoCard extends StatelessWidget {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MISSIONS SIDEBAR (Web)
-// ═══════════════════════════════════════════════════════════════════════════════
-class _MissionsSidebar extends StatelessWidget {
-  final List<CurrentIncidentWithMissions> missions;
-  final CurrentIncidentModel incident;
-
-  const _MissionsSidebar({required this.missions, required this.incident});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(8),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1.5),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: appColor.withAlpha(20),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.assignment_rounded,
-                    color: appColor,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    "المهام المطلوبة",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                      color: primaryTextColor,
-                    ),
-                  ),
-                ),
-                BlocBuilder<MissionSelectionCubit, MissionSelectionState>(
-                  builder: (context, state) {
-                    final count = context
-                        .read<MissionSelectionCubit>()
-                        .assignedMissionsCount;
-                    if (count == 0) return const SizedBox.shrink();
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [appColor, Color(0xFF2B6CB0)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        "$count",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          // Mission list
-          Expanded(
-            child: BlocBuilder<MissionSelectionCubit, MissionSelectionState>(
-              builder: (context, state) {
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                  itemCount: missions.length,
-                  itemBuilder: (context, index) {
-                    final mission = missions[index];
-                    final mId = mission.idCurrentIncidentMission!;
-                    final isActive = state.activeMissionId == mId;
-                    final assignedCount =
-                        state.missionUserMap[mId]?.length ?? 0;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => context
-                              .read<MissionSelectionCubit>()
-                              .setActiveMission(mId),
-                          borderRadius: BorderRadius.circular(14),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeOutCubic,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: isActive
-                                  ? LinearGradient(
-                                      colors: [
-                                        appColor.withAlpha(20),
-                                        appColor.withAlpha(8),
-                                      ],
-                                      begin: Alignment.centerRight,
-                                      end: Alignment.centerLeft,
-                                    )
-                                  : null,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: isActive
-                                    ? appColor.withAlpha(60)
-                                    : Colors.transparent,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                // Active indicator bar
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  width: 4,
-                                  height: isActive ? 28 : 0,
-                                  decoration: BoxDecoration(
-                                    gradient: isActive
-                                        ? const LinearGradient(
-                                            colors: [appColor, waterBlue],
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                          )
-                                        : null,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                                SizedBox(width: isActive ? 12 : 0),
-                                // Mission icon
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: isActive
-                                        ? appColor
-                                        : const Color(0xFFF1F5F9),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      "${index + 1}",
-                                      style: TextStyle(
-                                        color: isActive
-                                            ? Colors.white
-                                            : secondaryTextColor,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    mission.missionName ?? "مهمة",
-                                    style: TextStyle(
-                                      color: isActive
-                                          ? appColor
-                                          : primaryTextColor,
-                                      fontWeight: isActive
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      fontSize: 14,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (assignedCount > 0) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isActive
-                                          ? appColor
-                                          : successColor.withAlpha(25),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.person_rounded,
-                                          size: 12,
-                                          color: isActive
-                                              ? Colors.white
-                                              : successColor,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          "$assignedCount",
-                                          style: TextStyle(
-                                            color: isActive
-                                                ? Colors.white
-                                                : successColor,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MISSION HORIZONTAL TABS (Mobile)
 // ═══════════════════════════════════════════════════════════════════════════════

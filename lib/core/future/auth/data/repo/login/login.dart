@@ -7,6 +7,9 @@ import 'package:incidents_managment/core/network/api_services.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
+import 'package:incidents_managment/core/offline/domain/sync_manager.dart';
+import 'package:incidents_managment/core/helpers/shared_preference.dart';
+import 'package:incidents_managment/core/helpers/shared_prefrence_constant.dart';
 
 class LoginRepo {
   final ApiService apiService;
@@ -17,8 +20,28 @@ class LoginRepo {
 
       // Securely cache token and current user profile
       if (response.token != null && response.currentUser != null) {
+        final pendingOwnerId = await SharedPreferencesHelper.getData<int>(
+          SharedPreferenceKeys.pendingOfflineOwnerId,
+        );
+        if (pendingOwnerId != null &&
+            response.currentUser!.userId != pendingOwnerId) {
+          return ApiResult.error(
+            ApiErrorModel(
+              error:
+                  'توجد أعمال غير متزامنة مرتبطة بحساب آخر. سجل الدخول بالحساب الأصلي لمزامنتها أولاً.',
+            ),
+          );
+        }
+        if (pendingOwnerId != null) {
+          await SharedPreferencesHelper.removeData(
+            SharedPreferenceKeys.pendingOfflineOwnerId,
+          );
+        }
         await getIt<SecureStorageService>().saveUserToken(response.token!);
         await getIt<SessionManager>().setCurrentUser(response.currentUser!);
+        if (getIt.isRegistered<SyncManager>()) {
+          await getIt<SyncManager>().start();
+        }
         return ApiResult.success(response);
       } else {
         return ApiResult.error(

@@ -19,28 +19,10 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearchActive = false;
 
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() {
-      if (mounted) {
-        context.read<AllMissionsCubit>().getAllMissions();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   void _clearSearch() {
     _searchController.clear();
     context.read<AllMissionsCubit>().clearSearch();
-    setState(() {
-      _isSearchActive = false;
-    });
+    setState(() => _isSearchActive = false);
   }
 
   @override
@@ -60,7 +42,9 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
                       message: 'ابدأ بإضافة مهمة جديدة',
                     ),
                   ),
-                  loading: () => const Center(child: CircularProgressIndicator(color: appColor)),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: appColor),
+                  ),
                   loaded: (missions) {
                     if (missions.isEmpty) {
                       return const Center(
@@ -72,7 +56,12 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
                     }
                     return _buildGridView(missions);
                   },
-                  error: (message) => const Center(child: Text("حدث خطأ في تحميل المهام", style: TextStyle(color: Colors.red))),
+                  error: (message) => const Center(
+                    child: Text(
+                      "حدث خطأ في تحميل المهام",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
                 );
               },
             ),
@@ -88,7 +77,13 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 4, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(5),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,18 +94,50 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
             children: [
               Row(
                 children: [
-                  Text("الرئيسية", style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Icon(Icons.chevron_left, size: 16, color: Colors.grey)),
-                  Text("المهام", style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Icon(Icons.chevron_left, size: 16, color: Colors.grey)),
-                  const Text("إدارة جميع المهام القياسية", style: TextStyle(color: appColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                  Text(
+                    "الرئيسية",
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(
+                      Icons.chevron_left,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Text(
+                    "المهام",
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(
+                      Icons.chevron_left,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const Text(
+                    "إدارة جميع المهام القياسية",
+                    style: TextStyle(
+                      color: appColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: appColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   elevation: 0,
                 ),
                 onPressed: () async {
@@ -120,7 +147,13 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
                   }
                 },
                 icon: const Icon(Icons.add, color: Colors.white, size: 20),
-                label: const Text("إضافة مهمة جديدة", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                label: const Text(
+                  "إضافة مهمة جديدة",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -132,7 +165,11 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
             children: [
               const Text(
                 "المهام القياسية",
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1E293B),
+                ),
               ),
               Row(
                 children: [
@@ -151,11 +188,22 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
                         fillColor: const Color(0xFFF8FAFC),
                         filled: true,
                         hintText: 'ابحث عن اسم أو تصنيف المهمة...',
-                        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                        prefixIcon: Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 14,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey.shade500,
+                          size: 20,
+                        ),
                         suffixIcon: _isSearchActive
                             ? IconButton(
-                                icon: Icon(Icons.clear, color: Colors.grey.shade500, size: 18),
+                                icon: Icon(
+                                  Icons.clear,
+                                  color: Colors.grey.shade500,
+                                  size: 18,
+                                ),
                                 onPressed: _clearSearch,
                                 splashRadius: 20,
                               )
@@ -170,9 +218,15 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: appColor, width: 2),
+                          borderSide: const BorderSide(
+                            color: appColor,
+                            width: 2,
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0,
+                          horizontal: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -186,7 +240,11 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: IconButton(
-                      icon: Icon(Icons.tune, color: Colors.grey.shade700, size: 20),
+                      icon: Icon(
+                        Icons.tune,
+                        color: Colors.grey.shade700,
+                        size: 20,
+                      ),
                       onPressed: () {
                         // Filter logic could go here
                       },
@@ -230,7 +288,10 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
     );
   }
 
-  Widget _buildEnterpriseMissionCard(BuildContext context, AllMissionModel mission) {
+  Widget _buildEnterpriseMissionCard(
+    BuildContext context,
+    AllMissionModel mission,
+  ) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -274,7 +335,11 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Center(
-                      child: Icon(Icons.assignment_outlined, color: appColor, size: 24),
+                      child: Icon(
+                        Icons.assignment_outlined,
+                        color: appColor,
+                        size: 24,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -294,7 +359,10 @@ class _AllMissionsWebState extends State<AllMissionsWeb> {
                         ),
                         const SizedBox(height: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(6),

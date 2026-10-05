@@ -451,7 +451,7 @@ class _AllIncidentTypeWebScreenState extends State<AllIncidentTypeWebScreen> {
                     shrinkWrap: true,
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     itemCount: missions.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final mission = missions[index];
                       return Container(

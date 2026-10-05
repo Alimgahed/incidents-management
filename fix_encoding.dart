@@ -18,9 +18,9 @@ void main() {
         final bytes = latin1.encode(content);
         final fixed = utf8.decode(bytes);
         f.writeAsStringSync(fixed, encoding: utf8);
-        print('Fixed file: ' + file);
+        print('Fixed file: $file');
       } catch (e) {
-        print('Could not fix file: ' + file + ' Error: ' + e.toString());
+        print('Could not fix file: $file Error: $e');
       }
     }
   }

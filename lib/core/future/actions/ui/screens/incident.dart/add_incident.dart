@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/shared_incident_form.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
-import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/add_incident_widget.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
-import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
-import 'package:incidents_managment/core/widget/fields.dart';
 
 class AddIncidentScreen extends StatefulWidget {
   const AddIncidentScreen({super.key});
@@ -37,8 +34,17 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
         listener: (context, state) {
           state.whenOrNull(
             success: () {
+              final queued = context
+                  .read<AddIncidentCubit>()
+                  .lastSubmissionQueued;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تم إرسال البلاغ بنجاح')),
+                SnackBar(
+                  content: Text(
+                    queued
+                        ? 'تم حفظ البلاغ محلياً وسيُرسل عند عودة الاتصال.'
+                        : 'تم إرسال البلاغ بنجاح',
+                  ),
+                ),
               );
             },
             error: (e) {
@@ -48,19 +54,41 @@ class _AddIncidentScreenState extends State<AddIncidentScreen> {
             },
           );
         },
-        child: Row(
-          children: [
-            _buildForm(context),
-            const Expanded(child: IncidentMapWidget()),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 900) {
+              return SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildForm(context, constraints.maxWidth),
+                    const SizedBox(height: 360, child: IncidentMapWidget()),
+                  ],
+                ),
+              );
+            }
+            return Row(
+              children: [
+                _buildForm(context, 420),
+                const Expanded(child: IncidentMapWidget()),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildForm(BuildContext context) {
-    return Container(
-      width: 420,
+  @override
+  void dispose() {
+    descriptionController.dispose();
+    notesController.dispose();
+    addressController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildForm(BuildContext context, double width) {
+    return SizedBox(
+      width: width,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: SharedIncidentForm(

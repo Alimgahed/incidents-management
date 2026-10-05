@@ -49,12 +49,18 @@ final getIt = GetIt.instance;
 
 Future<void> setup() async {
   // Security Services
-  getIt.registerLazySingleton<SecureStorageService>(() => SecureStorageService());
+  getIt.registerLazySingleton<SecureStorageService>(
+    () => SecureStorageService(),
+  );
   getIt.registerLazySingleton<SessionManager>(() => SessionManager());
-  getIt.registerLazySingleton<IncidentPickerBridge>(() => IncidentPickerBridge());
+  getIt.registerLazySingleton<IncidentPickerBridge>(
+    () => IncidentPickerBridge(),
+  );
 
   // File Upload Repository
-  getIt.registerLazySingleton<FileUploadRepository>(() => FileUploadRepository());
+  getIt.registerLazySingleton<FileUploadRepository>(
+    () => FileUploadRepository(),
+  );
 
   // Core Services
   Dio dio = DioFactory.getDioInstance();
@@ -131,18 +137,16 @@ Future<void> setup() async {
       alarmService: getIt<AlarmService>(),
     ),
   );
-  
+
   getIt.registerFactory<WebValveMapCubit>(
-    () => WebValveMapCubit(
-      valveRepository: getIt<ValveRepo>(),
-    ),
+    () => WebValveMapCubit(valveRepository: getIt<ValveRepo>()),
   );
 
   getIt.registerLazySingleton<ValveRepo>(
     () => ValveRepo(apiService: getIt<ApiService>()),
   );
   getIt.registerLazySingleton<ProximityService>(() => ProximityService());
-  getIt.registerLazySingleton<AlarmService>(() => AlarmService());
+  getIt.registerFactory<AlarmService>(() => AlarmService());
 
   getIt.registerFactory<AllIncidentTypeCubit>(
     () =>

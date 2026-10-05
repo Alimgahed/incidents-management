@@ -37,7 +37,7 @@ void main() {
     if (wGridStart != -1) {
       wContent = wContent.substring(0, wGridStart);
       // However, we need to make sure we close the _AllIncidentTypeWebScreenState class.
-      wContent = wContent + '\n}\n';
+      wContent = '$wContent\n}\n';
     }
     
     // Add import

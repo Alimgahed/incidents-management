@@ -44,7 +44,7 @@ class AppRouter {
   Route generateRoute(RouteSettings settings) {
     // 1. Resolve SessionManager
     final sessionManager = getIt<SessionManager>();
-    
+
     // 2. Define public routes that do NOT require authentication
     final publicRoutes = [Routes.login];
 
@@ -71,7 +71,8 @@ class AppRouter {
               BlocProvider(create: (_) => getIt<AddIncidentCubit>()),
               BlocProvider(create: (_) => getIt<MapCubit>()),
               BlocProvider(
-                create: (_) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+                create: (_) =>
+                    getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
               ),
             ],
             child: const AddIncidentScreen(),
@@ -84,7 +85,8 @@ class AppRouter {
               BlocProvider(create: (_) => getIt<AddIncidentCubit>()),
               BlocProvider(create: (_) => getIt<MapCubit>()),
               BlocProvider(
-                create: (_) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+                create: (_) =>
+                    getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
               ),
             ],
             child: const AddIncidentMobileScreen(),
@@ -104,7 +106,10 @@ class AppRouter {
           ),
         );
       case Routes.editMissions:
-        final mission = settings.arguments as AllMissionModel?;
+        final rawMission = settings.arguments;
+        final mission = rawMission is AllMissionModel ? rawMission : null;
+        if (mission == null)
+          return _invalidArguments('بيانات المهمة غير صالحة.');
         return MaterialPageRoute(
           builder: (_) => MultiBlocProvider(
             providers: [
@@ -131,17 +136,7 @@ class AppRouter {
           ),
         );
       case Routes.allMissions:
-        return MaterialPageRoute(
-          builder: (_) => MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (_) => getIt<AllMissionsCubit>()..getAllMissions(),
-              ),
-              BlocProvider(create: (_) => getIt<AddMissionCubit>()),
-            ],
-            child: const AllMissions(),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const AllMissions());
       case Routes.addImageScreen:
         return MaterialPageRoute(builder: (_) => FileUploadScreen());
       case Routes.addIncidentMission:
@@ -154,7 +149,8 @@ class AppRouter {
               ),
               BlocProvider(create: (_) => getIt<AddIncidentMissionCubit>()),
               BlocProvider(
-                create: (_) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+                create: (_) =>
+                    getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
               ),
             ],
             child: const Addincidentmission(),
@@ -198,6 +194,10 @@ class AppRouter {
           ),
         );
       case Routes.missionAssign:
+        final rawIncident = settings.arguments;
+        if (rawIncident is! CurrentIncidentModel) {
+          return _invalidArguments('بيانات البلاغ غير صالحة.');
+        }
         return MaterialPageRoute(
           builder: (_) {
             final allActiveUserCubit = getIt<AllActiveUserCubit>();
@@ -206,7 +206,7 @@ class AppRouter {
             final anotherCubit = getIt<MissionAssignCubit>();
 
             // get passed data
-            final incident = settings.arguments as CurrentIncidentModel;
+            final incident = rawIncident;
 
             // call APIs
             allActiveUserCubit.allActiveUsers();
@@ -248,4 +248,16 @@ class AppRouter {
         );
     }
   }
+
+  Route _invalidArguments(String message) => MaterialPageRoute(
+    builder: (_) => Scaffold(
+      appBar: AppBar(title: const Text('تعذر فتح الصفحة')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(message, textAlign: TextAlign.center),
+        ),
+      ),
+    ),
+  );
 }
