@@ -251,10 +251,14 @@ class _DashboardViewState extends State<DashboardView> {
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
@@ -288,11 +292,16 @@ class _DashboardViewState extends State<DashboardView> {
 }
 
 /// Incident grid — first screen inside the home dashboard tab.
-class _DashboardIncidentsScreen extends StatelessWidget {
+class _DashboardIncidentsScreen extends StatefulWidget {
   const _DashboardIncidentsScreen({required this.onIncidentTap});
 
   final void Function(CurrentIncidentModel incident) onIncidentTap;
 
+  @override
+  State<_DashboardIncidentsScreen> createState() => _DashboardIncidentsScreenState();
+}
+
+class _DashboardIncidentsScreenState extends State<_DashboardIncidentsScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<IncidentMapCubit, IncidentMapState>(
@@ -323,7 +332,7 @@ class _DashboardIncidentsScreen extends StatelessWidget {
                   child: IncidentsList(
                     allIncidents: allIncidents,
                     useWebGrid: false,
-                    onIncidentTap: onIncidentTap,
+                    onIncidentTap: widget.onIncidentTap,
                   ),
                 ),
               ),
@@ -344,55 +353,60 @@ class _DashboardIncidentsScreen extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: Row(
-                children: [
-                  // LEFT PANEL: Incident List
-                  Expanded(
-                    flex: 25,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                            child: IncidentsList(
-                              allIncidents: allIncidents,
-                              useWebGrid: false,
-                              onIncidentTap: onIncidentTap,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // RIGHT PANEL: Incident Details
-                  Expanded(
-                    flex: 65,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                child: Row(
+                  children: [
+                    // LEFT PANEL: Incident List
+                    Expanded(
+                      flex: 28,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 12,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: IncidentDetailsPanel(
-                            contentPadding: const EdgeInsets.fromLTRB(
-                              16,
-                              16,
-                              16,
-                              16,
-                            ),
+                          borderRadius: BorderRadius.circular(16),
+                          child: IncidentsList(
+                            allIncidents: allIncidents,
+                            useWebGrid: false,
+                            onIncidentTap: widget.onIncidentTap,
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    // RIGHT PANEL: Incident Details
+                    Expanded(
+                      flex: 72,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 12,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: IncidentDetailsPanel(
+                            contentPadding: const EdgeInsets.all(16),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

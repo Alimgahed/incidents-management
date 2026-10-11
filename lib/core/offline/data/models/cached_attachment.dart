@@ -48,6 +48,9 @@ class CachedAttachment extends HiveObject {
   /// Last error message, for the UI.
   String? lastError;
 
+  /// Whether to update incident coordinates with photo coordinates.
+  bool updateLocation;
+
   CachedAttachment({
     required this.localId,
     required this.incidentIdOrTempId,
@@ -63,6 +66,7 @@ class CachedAttachment extends HiveObject {
     this.uploadedAtMs,
     this.retryCount = 0,
     this.lastError,
+    this.updateLocation = false,
   });
 }
 
@@ -91,13 +95,14 @@ class CachedAttachmentAdapter extends TypeAdapter<CachedAttachment> {
       uploadedAtMs: fields[11] as int?,
       retryCount: fields[12] as int? ?? 0,
       lastError: fields[13] as String?,
+      updateLocation: fields[14] as bool? ?? false,
     );
   }
 
   @override
   void write(BinaryWriter writer, CachedAttachment obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.localId)
       ..writeByte(1)
@@ -125,6 +130,8 @@ class CachedAttachmentAdapter extends TypeAdapter<CachedAttachment> {
       ..writeByte(12)
       ..write(obj.retryCount)
       ..writeByte(13)
-      ..write(obj.lastError);
+      ..write(obj.lastError)
+      ..writeByte(14)
+      ..write(obj.updateLocation);
   }
 }

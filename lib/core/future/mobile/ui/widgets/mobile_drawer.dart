@@ -3,6 +3,7 @@ import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
+import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 
 class MobileDrawer extends StatefulWidget {
   const MobileDrawer({super.key});
@@ -64,9 +65,13 @@ class _MobileDrawerState extends State<MobileDrawer> {
                     _buildDrawerItem(
                       icon: Icons.add_circle_outline_rounded,
                       label: 'إضافة أزمة',
-                      onTap: () {
+                      onTap: () async {
                         Navigator.pop(context);
-                        context.pushNamed(Routes.addIncidentMobile);
+                        await context.pushNamed(Routes.addIncidentMobile);
+                        if (context.mounted &&
+                            getIt.isRegistered<IncidentMapCubit>()) {
+                          getIt<IncidentMapCubit>().refresh();
+                        }
                       },
                     ),
                     _buildDrawerItem(

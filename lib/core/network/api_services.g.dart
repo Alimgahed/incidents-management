@@ -425,12 +425,39 @@ class _ApiService implements ApiService {
   }
 
   @override
-  Future<List<ValveModel>> allValves() async {
+  Future<AllValvesResponse> allValves({
+    int? page,
+    int? pageSize,
+    double? latMin,
+    double? latMax,
+    double? longMin,
+    double? longMax,
+    int? valveTypeId,
+    String? status,
+    int? diameter,
+    int? pipeDiameter,
+    String? direction,
+    int? inServiceYear,
+  }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'page': page,
+      r'page_size': pageSize,
+      r'lat_min': latMin,
+      r'lat_max': latMax,
+      r'long_min': longMin,
+      r'long_max': longMax,
+      r'valve_type_id': valveTypeId,
+      r'status': status,
+      r'diameter': diameter,
+      r'pipe_diameter': pipeDiameter,
+      r'direction': direction,
+      r'in_service_year': inServiceYear,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<ValveModel>>(
+    final _options = _setStreamType<AllValvesResponse>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -440,12 +467,10 @@ class _ApiService implements ApiService {
           )
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
-    final _result = await _dio.fetch<List<dynamic>>(_options);
-    late List<ValveModel> _value;
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late AllValvesResponse _value;
     try {
-      _value = _result.data!
-          .map((dynamic i) => ValveModel.fromJson(i as Map<String, dynamic>))
-          .toList();
+      _value = AllValvesResponse.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;

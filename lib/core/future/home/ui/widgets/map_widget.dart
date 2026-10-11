@@ -10,6 +10,11 @@ import 'package:incidents_managment/core/future/actions/data/models/current_inci
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/incident_description_present.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/map/map_filters_panel.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/map/map_incidents_list_panel.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/map/map_incident_details_modal.dart';
+import 'package:incidents_managment/core/future/home/logic/map_filter_cubit.dart';
+import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dashboard_kpi_strip.dart';
 import 'package:latlong2/latlong.dart';
 
 class IncidentsMapScreen extends StatefulWidget {
@@ -25,6 +30,21 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
   List<CurrentIncidentModel> _cachedIncidents = [];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final cubit = context.read<IncidentMapCubit>();
+        if (!cubit.isConnected) {
+          cubit.initialize();
+        } else if (cubit.state is IncidentMapInitial || cubit.state is IncidentMapError || cubit.incidents.isEmpty) {
+          cubit.refresh();
+        }
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _filterNotifier.dispose();
     _mapController.dispose();
@@ -33,49 +53,60 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<IncidentMapCubit, IncidentMapState>(
-      builder: (context, state) {
-        final currentIncidents = state is IncidentMapLoaded
-            ? state.incidents
-            : _cachedIncidents;
+    return BlocProvider(
+      create: (_) => MapFilterCubit(),
+      child: BlocBuilder<IncidentMapCubit, IncidentMapState>(
+        builder: (context, state) {
+          final currentIncidents = state is IncidentMapLoaded
+              ? state.incidents
+              : _cachedIncidents;
 
-        if (state is IncidentMapLoaded) {
-          _cachedIncidents = state.incidents;
-        }
+          if (state is IncidentMapLoaded) {
+            _cachedIncidents = state.incidents;
+          }
 
-        if (state is IncidentMapError && _cachedIncidents.isEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.white),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(state.message)),
-                  ],
+          if (state is IncidentMapError && _cachedIncidents.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.white),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(state.message)),
+                    ],
+                  ),
+                  backgroundColor: Colors.red,
+                  action: SnackBarAction(
+                    label: 'إعادة المحاولة',
+                    textColor: Colors.white,
+                    onPressed: () => context.read<IncidentMapCubit>().refresh(),
+                  ),
                 ),
-                backgroundColor: Colors.red,
-                action: SnackBarAction(
-                  label: 'إعادة المحاولة',
-                  textColor: Colors.white,
-                  onPressed: () => context.read<IncidentMapCubit>().refresh(),
+              );
+            });
+          }
+
+          return Column(
+            children: [
+              DashboardKpiStrip(
+                incidents: currentIncidents,
+                connected: state is! IncidentMapError && state is! IncidentMapInitial,
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Builder(
+                    builder: (context) {
+                      return _buildMapContent(state, currentIncidents);
+                    }
+                  ),
                 ),
               ),
-            );
-          });
-        }
-
-        return Column(
-          children: [
-            _buildMapHeader(
-              currentIncidents.length,
-              state is IncidentMapLoading,
-              context,
-            ),
-            Expanded(child: _buildMapContent(state, currentIncidents)),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -83,19 +114,69 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
     IncidentMapState state,
     List<CurrentIncidentModel> incidents,
   ) {
-    if (state is IncidentMapInitial) {
-      return _buildInitialState();
-    }
+    return BlocConsumer<MapFilterCubit, MapFilterState>(
+      listener: (context, filterState) {
+        final filteredIncidents = context.read<MapFilterCubit>().filterIncidents(incidents);
+        if (filteredIncidents.isNotEmpty) {
+          _fitMapToBounds(filteredIncidents);
+        }
+      },
+      builder: (context, filterState) {
+        final filteredIncidents = context.read<MapFilterCubit>().filterIncidents(incidents);
 
-    if (state is IncidentMapLoading && incidents.isEmpty) {
-      return _buildLoadingState();
-    }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            MapFiltersPanel(
+              rawIncidents: incidents,
+              filteredCount: filteredIncidents.length,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: _buildMap(filteredIncidents, state),
+              ),
+            ),
+            const SizedBox(width: 16),
+            MapIncidentsListPanel(
+              filteredIncidents: filteredIncidents,
+              onIncidentTap: (incident) {
+                final lat = incident.currentIncidentXAxis;
+                final lng = incident.currentIncidentYAxis;
+                if (lat != null && lng != null) {
+                  _mapController.move(LatLng(lat, lng), 17);
+                }
+                showDialog(
+                  context: context,
+                  barrierColor: Colors.black54,
+                  builder: (_) => MapIncidentDetailsModal(
+                    incident: incident,
+                    onClose: () => Navigator.of(context).pop(),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-    if (state is IncidentMapError && incidents.isEmpty) {
-      return _buildErrorState(state.message);
-    }
+  void _fitMapToBounds(List<CurrentIncidentModel> incidents) {
+    final validPoints = incidents
+        .where((inc) => inc.currentIncidentXAxis != null && inc.currentIncidentYAxis != null)
+        .map((inc) => LatLng(inc.currentIncidentXAxis!, inc.currentIncidentYAxis!))
+        .toList();
 
-    return _buildMap(incidents);
+    if (validPoints.isEmpty) return;
+
+    if (validPoints.length == 1) {
+      _mapController.move(validPoints.first, 15);
+    } else {
+      final bounds = LatLngBounds.fromPoints(validPoints);
+      _mapController.fitCamera(CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(50)));
+    }
   }
 
   Widget _buildInitialState() {
@@ -300,8 +381,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
     );
   }
 
-  Widget _buildMap(List<CurrentIncidentModel> incidents) {
-    final filteredIncidents = _getFilteredIncidents(incidents);
+  Widget _buildMap(List<CurrentIncidentModel> filteredIncidents, IncidentMapState state) {
     final markers = _buildMarkers(filteredIncidents);
 
     return Stack(
@@ -324,7 +404,43 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             ],
           ),
         ),
-        if (filteredIncidents.isEmpty)
+        if (state is IncidentMapInitial || state is IncidentMapLoading)
+          Container(
+            color: Colors.white.withValues(alpha: 0.5),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (state is IncidentMapError && filteredIncidents.isEmpty)
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 8),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 12),
+                  Text(
+                    state.message,
+                    style: const TextStyle(fontSize: 16, color: Colors.red),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.read<IncidentMapCubit>().refresh(),
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (filteredIncidents.isEmpty)
           Center(
             child: Container(
               padding: const EdgeInsets.all(24),
@@ -358,21 +474,6 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
     );
   }
 
-  List<CurrentIncidentModel> _getFilteredIncidents(
-    List<CurrentIncidentModel> incidents,
-  ) {
-    if (_filterNotifier.value == 'الكل') {
-      return incidents;
-    }
-
-    const severityMap = {'حرجة': 4, 'عالية': 3, 'متوسطة': 2, 'منخفضة': 1};
-    final targetSeverity = severityMap[_filterNotifier.value];
-
-    return incidents
-        .where((i) => i.currentIncidentSeverity == targetSeverity)
-        .toList();
-  }
-
   List<Marker> _buildMarkers(List<CurrentIncidentModel> incidents) {
     return incidents
         .where(
@@ -393,7 +494,14 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             child: GestureDetector(
               onTap: () {
                 _mapController.move(LatLng(lat, lng), 17);
-                _showEnhancedIncidentDetails(incident);
+                showDialog(
+                  context: context,
+                  barrierColor: Colors.black54,
+                  builder: (_) => MapIncidentDetailsModal(
+                    incident: incident,
+                    onClose: () => Navigator.of(context).pop(),
+                  ),
+                );
               },
               child: _buildMarkerWidget(severity, status),
             ),
@@ -572,41 +680,7 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
     );
   }
 
-  void _showEnhancedIncidentDetails(CurrentIncidentModel incident) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
-      builder: (context) => _IncidentDetailsPanel(
-        incident: incident,
-        onZoomToLocation: (lat, lng) {
-          Navigator.of(context).pop();
-          _mapController.move(LatLng(lat, lng), 18);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 12),
-                  Text('تم الانتقال إلى موقع الحادثة على الخريطة'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        },
-        onMissionStatusChanged: (missionId, newStatus) async {
-          // // Send update to backend via Socket.IO
-          // context.read<IncidentMapCubit>().updateMissionStatus(
-          //   incidentId: incident.currentIncidentId!,
-          //   missionId: missionId,
-          //   newStatus: newStatus,
-          // );
-        },
-      ),
-    );
-  }
+
 
   Color _getSeverityColor(int severity) {
     switch (severity) {
@@ -625,735 +699,3 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
 
 // ============================================================================
 // INCIDENT DETAILS PANEL WITH MISSION MANAGEMENT
-// ============================================================================
-class _IncidentDetailsPanel extends StatefulWidget {
-  final CurrentIncidentModel incident;
-  final Function(double lat, double lng) onZoomToLocation;
-  final Function(int missionId, int newStatus) onMissionStatusChanged;
-
-  const _IncidentDetailsPanel({
-    required this.incident,
-    required this.onZoomToLocation,
-    required this.onMissionStatusChanged,
-  });
-
-  @override
-  State<_IncidentDetailsPanel> createState() => _IncidentDetailsPanelState();
-}
-
-class _IncidentDetailsPanelState extends State<_IncidentDetailsPanel> {
-  late List<CurrentIncidentWithMissions> _missions;
-  final bool _isUpdating = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _missions = widget.incident.currentIncidentWithMissions ?? [];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          width: 450,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topRight: Radius.circular(24),
-              bottomRight: Radius.circular(24),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black26,
-                blurRadius: 20,
-                offset: Offset(-5, 0),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildIncidentHeader(),
-                      const SizedBox(height: 24),
-                      const Divider(),
-                      const SizedBox(height: 16),
-                      _buildDetailSection(
-                        'الوصف',
-                        Icons.description,
-                        IncidentDescriptionPresentation(
-                          description: widget.incident.currentIncidentDescription,
-                          textColor: const Color(0xFF1B4F8A),
-                          secondaryColor: Colors.grey[700],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      if (widget.incident.currentIncidentXAxis != null &&
-                          widget.incident.currentIncidentYAxis != null) ...[
-                        _buildLocationSection(),
-                        const SizedBox(height: 16),
-                      ],
-                      // MISSIONS SECTION - NEW!
-                      if (_missions.isNotEmpty) ...[
-                        _buildMissionsSection(),
-                        const SizedBox(height: 16),
-                      ],
-                      if (widget.incident.currentIncidentNotes != null) ...[
-                        _buildDetailSection(
-                          'ملاحظات',
-                          Icons.notes,
-                          Text(
-                            widget.incident.currentIncidentNotes!,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1B4F8A),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      _buildTimestampsSection(),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1B4F8A),
-        borderRadius: BorderRadius.only(topRight: Radius.circular(24)),
-      ),
-      child: Row(
-        children: [
-          const Text(
-            'تفاصيل الأزمة',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const Spacer(),
-          if (_isUpdating)
-            const Padding(
-              padding: EdgeInsets.only(left: 12),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(Colors.white),
-                ),
-              ),
-            ),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close, color: Colors.white),
-            tooltip: 'إغلاق',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIncidentHeader() {
-    final severity = widget.incident.currentIncidentSeverity ?? 1;
-    final status = widget.incident.currentIncidentStatus ?? 1;
-
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: _getStatusColor(status).withAlpha(26),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            Icons.warning_amber_rounded,
-            color: _getStatusColor(status),
-            size: 32,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'أزمة #${widget.incident.currentIncidentId}',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1B4F8A),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(status),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _getStatusArabic(status),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getSeverityColor(severity).withAlpha(51),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _getSeverityColor(severity)),
-                    ),
-                    child: Text(
-                      _getSeverityArabic(severity),
-                      style: TextStyle(
-                        color: _getSeverityColor(severity),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ============================================================================
-  // MISSIONS SECTION - NEW!
-  // ============================================================================
-  Widget _buildMissionsSection() {
-    final sortedMissions = List<CurrentIncidentWithMissions>.from(_missions)
-      ..sort(
-        (a, b) => (a.currentIncidentMissionOrder ?? 0).compareTo(
-          b.currentIncidentMissionOrder ?? 0,
-        ),
-      );
-
-    final completedCount = sortedMissions
-        .where((m) => m.currentIncidentMissionStatus == 2)
-        .length;
-    final totalCount = sortedMissions.length;
-    final progressPercent = totalCount > 0 ? completedCount / totalCount : 0.0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue[50]!, Colors.blue[100]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue[300]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2B6CB0),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.task_alt,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'المهام',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1B4F8A),
-                      ),
-                    ),
-                    Text(
-                      'قائمة المهام المطلوب إنجازها',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: progressPercent == 1.0 ? Colors.green : Colors.orange,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '$completedCount / $totalCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Progress Bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: progressPercent,
-              minHeight: 8,
-              backgroundColor: Colors.grey[300],
-              valueColor: AlwaysStoppedAnimation(
-                progressPercent == 1.0 ? Colors.green : const Color(0xFF2B6CB0),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Mission List
-          ...sortedMissions.asMap().entries.map((entry) {
-            final index = entry.key;
-            final mission = entry.value;
-            return _buildMissionItem(mission, index);
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMissionItem(CurrentIncidentWithMissions mission, int index) {
-    final isCompleted = mission.currentIncidentMissionStatus == 2;
-    final missionId = mission.currentIncidentMissionId ?? 0;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isCompleted ? Colors.green[300]! : Colors.grey[300]!,
-          width: 1.5,
-        ),
-        boxShadow: [
-          if (isCompleted)
-            BoxShadow(
-              color: Colors.green.withAlpha(26),
-              blurRadius: 4,
-              spreadRadius: 1,
-            ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Checkbox
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: isCompleted ? Colors.green : Colors.white,
-              border: Border.all(
-                color: isCompleted ? Colors.green : Colors.grey[400]!,
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: isCompleted
-                ? const Icon(Icons.check, color: Colors.white, size: 18)
-                : null,
-          ),
-          const SizedBox(width: 12),
-          // Mission Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'مهمة #$missionId',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: isCompleted ? Colors.grey : const Color(0xFF1B4F8A),
-                    decoration: isCompleted ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                if (mission.currentIncidentMissionOrder != null)
-                  Text(
-                    'الترتيب: ${mission.currentIncidentMissionOrder}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                  ),
-                Text(
-                  mission.missionName ?? 'نوع المهمة غير محدد',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
-          // Status Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: isCompleted
-                  ? Colors.green.withAlpha(26)
-                  : Colors.orange.withAlpha(26),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isCompleted ? Colors.green : Colors.orange,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isCompleted ? Icons.check_circle : Icons.pending,
-                  size: 14,
-                  color: isCompleted ? Colors.green : Colors.orange,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isCompleted ? 'مكتملة' : 'قيد التنفيذ',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isCompleted ? Colors.green : Colors.orange,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailSection(String title, IconData icon, Widget content) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: const Color(0xFF2B6CB0), size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                content,
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLocationSection() {
-    final lat = widget.incident.currentIncidentXAxis!;
-    final lng = widget.incident.currentIncidentYAxis!;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.location_on, color: Color(0xFF2B6CB0), size: 24),
-              const SizedBox(width: 12),
-              const Text(
-                'الموقع',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1B4F8A),
-                ),
-              ),
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: () => widget.onZoomToLocation(lat, lng),
-                icon: const Icon(Icons.zoom_in, size: 18),
-                label: const Text('تكبير على الخريطة'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2B6CB0),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.my_location, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'خط العرض: ${lat.toStringAsFixed(6)}',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.location_searching, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'خط الطول: ${lng.toStringAsFixed(6)}',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            height: 150,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue[300]!),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: FlutterMap(
-                options: MapOptions(
-                  initialCenter: LatLng(lat, lng),
-                  initialZoom: 12,
-                  interactionOptions: const InteractionOptions(
-                    flags: InteractiveFlag.none,
-                  ),
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.example.crisis_management',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: LatLng(lat, lng),
-                        width: 40,
-                        height: 40,
-                        child: const Icon(
-                          Icons.location_on,
-                          size: 40,
-                          color: Colors.red,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimestampsSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.purple[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple[200]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.access_time, color: Color(0xFF2B6CB0), size: 24),
-              SizedBox(width: 12),
-              Text(
-                'المواعيد الزمنية',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1B4F8A),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildTimestampItem(
-            'تاريخ الإنشاء',
-            widget.incident.currentIncidentCreatedAt,
-          ),
-          if (widget.incident.currentIncidentSeverityUpdateAt != null)
-            _buildTimestampItem(
-              'آخر تحديث للخطورة',
-              widget.incident.currentIncidentSeverityUpdateAt,
-            ),
-          if (widget.incident.currentIncidentStatusUpdatedAt != null)
-            _buildTimestampItem(
-              'آخر تحديث للحالة',
-              widget.incident.currentIncidentStatusUpdatedAt,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimestampItem(String label, DateTime? dateTime) {
-    if (dateTime == null) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(Icons.circle, size: 8, color: Colors.grey[600]),
-          const SizedBox(width: 8),
-          Text(
-            '$label: ${_formatDateTime(dateTime)}',
-            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getSeverityColor(int severity) {
-    switch (severity) {
-      case 4:
-        return Colors.red;
-      case 3:
-        return Colors.orange;
-      case 2:
-        return const Color(0xFFFFC107);
-      case 1:
-      default:
-        return Colors.green;
-    }
-  }
-
-  Color _getStatusColor(int status) {
-    switch (status) {
-      case 1:
-        return Colors.orange;
-      case 2:
-        return Colors.blue;
-      case 3:
-        return Colors.purple;
-      case 4:
-        return Colors.grey;
-      case 5:
-        return Colors.teal;
-      case 6:
-        return Colors.green;
-      case 7:
-        return Colors.red;
-      default:
-        return Colors.black45;
-    }
-  }
-
-  String _getStatusArabic(int status) {
-    switch (status) {
-      case 1:
-        return 'تم التبليغ';
-      case 2:
-        return 'تم الارسال';
-      case 3:
-        return 'قيد التنفيذ';
-      case 4:
-        return 'قيد الانتظار';
-      case 5:
-        return 'قيد المراجعة';
-      case 6:
-        return 'تم حلها';
-      case 7:
-        return 'تم الرفض';
-      default:
-        return 'غير معروف';
-    }
-  }
-
-  String _getSeverityArabic(int severity) {
-    switch (severity) {
-      case 4:
-        return 'حرجة';
-      case 3:
-        return 'عالية';
-      case 2:
-        return 'متوسطة';
-      case 1:
-      default:
-        return 'منخفضة';
-    }
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
-        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-  }
-}

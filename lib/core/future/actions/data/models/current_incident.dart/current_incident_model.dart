@@ -59,9 +59,9 @@ class CurrentIncidentModel {
   final String? statusName;
   @JsonKey(name: 'severity_name')
   final String? severityName;
-  @JsonKey(name: 'status_updated_by_user_name')
+  @JsonKey(name: 'status_updated_by_user')
   final String? statusUpdatedByUserName;
-  @JsonKey(name: 'severity_updated_by_user_name')
+  @JsonKey(name: 'severity_updated_by_user')
   final String? severityUpdatedByUserName;
 
   CurrentIncidentModel({
@@ -93,6 +93,85 @@ class CurrentIncidentModel {
     this.severityUpdatedByUserName,
   });
 
+  CurrentIncidentModel copyWith({
+    int? currentIncidentId,
+    String? currentIncidentDescription,
+    int? currentIncidentTypeId,
+    int? branchId,
+    String? managerName,
+    int? managerId,
+    String? currentIncidentTypeName,
+    int? currentIncidentCreatedBy,
+    DateTime? currentIncidentCreatedAt,
+    int? currentIncidentSeverity,
+    int? currentIncidentSeverityUpdateBy,
+    DateTime? currentIncidentSeverityUpdateAt,
+    int? currentIncidentStatus,
+    int? currentIncidentStatusUpdatedBy,
+    DateTime? currentIncidentStatusUpdatedAt,
+    double? currentIncidentXAxis,
+    double? currentIncidentYAxis,
+    String? currentIncidentNotes,
+    String? branchName,
+    String? username,
+    String? address,
+    List<CurrentIncidentPhoto>? photos,
+    String? statusName,
+    String? severityName,
+    String? statusUpdatedByUserName,
+    String? severityUpdatedByUserName,
+    List<CurrentIncidentWithMissions>? missions,
+    List<CurrentIncidentWithMissions>? currentIncidentWithMissions,
+  }) {
+    final model = CurrentIncidentModel(
+      currentIncidentId: currentIncidentId ?? this.currentIncidentId,
+      currentIncidentDescription:
+          currentIncidentDescription ?? this.currentIncidentDescription,
+      currentIncidentTypeId:
+          currentIncidentTypeId ?? this.currentIncidentTypeId,
+      branchId: branchId ?? this.branchId,
+      managerName: managerName ?? this.managerName,
+      managerId: managerId ?? this.managerId,
+      currentIncidentTypeName:
+          currentIncidentTypeName ?? this.currentIncidentTypeName,
+      currentIncidentCreatedBy:
+          currentIncidentCreatedBy ?? this.currentIncidentCreatedBy,
+      currentIncidentCreatedAt:
+          currentIncidentCreatedAt ?? this.currentIncidentCreatedAt,
+      currentIncidentSeverity:
+          currentIncidentSeverity ?? this.currentIncidentSeverity,
+      currentIncidentSeverityUpdateBy:
+          currentIncidentSeverityUpdateBy ?? this.currentIncidentSeverityUpdateBy,
+      currentIncidentSeverityUpdateAt:
+          currentIncidentSeverityUpdateAt ?? this.currentIncidentSeverityUpdateAt,
+      currentIncidentStatus:
+          currentIncidentStatus ?? this.currentIncidentStatus,
+      currentIncidentStatusUpdatedBy:
+          currentIncidentStatusUpdatedBy ?? this.currentIncidentStatusUpdatedBy,
+      currentIncidentStatusUpdatedAt:
+          currentIncidentStatusUpdatedAt ?? this.currentIncidentStatusUpdatedAt,
+      currentIncidentXAxis:
+          currentIncidentXAxis ?? this.currentIncidentXAxis,
+      currentIncidentYAxis:
+          currentIncidentYAxis ?? this.currentIncidentYAxis,
+      currentIncidentNotes:
+          currentIncidentNotes ?? this.currentIncidentNotes,
+      branchName: branchName ?? this.branchName,
+      username: username ?? this.username,
+      address: address ?? this.address,
+      photos: photos ?? this.photos,
+      statusName: statusName ?? this.statusName,
+      severityName: severityName ?? this.severityName,
+      statusUpdatedByUserName:
+          statusUpdatedByUserName ?? this.statusUpdatedByUserName,
+      severityUpdatedByUserName:
+          severityUpdatedByUserName ?? this.severityUpdatedByUserName,
+    );
+    model.currentIncidentWithMissions =
+        currentIncidentWithMissions ?? missions ?? this.currentIncidentWithMissions;
+    return model;
+  }
+
   factory CurrentIncidentModel.fromJson(Map<String, dynamic> json) =>
       _$CurrentIncidentModelFromJson(json);
   Map<String, dynamic> toJson() => _$CurrentIncidentModelToJson(this);
@@ -118,6 +197,8 @@ class CurrentIncidentWithMissions extends Equatable {
   final String? missionName;
   @JsonKey(name: 'assigned_employees')
   final List<AssignedEmployee>? assignedEmployees;
+  @JsonKey(name: 'status_updated_by_user')
+  final String? statusUpdatedByUser;
 
   const CurrentIncidentWithMissions({
     this.idCurrentIncidentMission,
@@ -129,6 +210,7 @@ class CurrentIncidentWithMissions extends Equatable {
     this.currentIncidentMissionStatusUpdatedAt,
     this.missionName,
     this.assignedEmployees,
+    this.statusUpdatedByUser,
   });
 
   factory CurrentIncidentWithMissions.fromJson(Map<String, dynamic> json) =>
@@ -137,16 +219,17 @@ class CurrentIncidentWithMissions extends Equatable {
 
   @override
   List<Object?> get props => [
-        idCurrentIncidentMission,
-        currentIncidentId,
-        currentIncidentMissionId,
-        currentIncidentMissionOrder,
-        currentIncidentMissionStatus,
-        currentIncidentMissionStatusUpdatedBy,
-        currentIncidentMissionStatusUpdatedAt,
-        missionName,
-        assignedEmployees,
-      ];
+    idCurrentIncidentMission,
+    currentIncidentId,
+    currentIncidentMissionId,
+    currentIncidentMissionOrder,
+    currentIncidentMissionStatus,
+    currentIncidentMissionStatusUpdatedBy,
+    currentIncidentMissionStatusUpdatedAt,
+    missionName,
+    assignedEmployees,
+    statusUpdatedByUser,
+  ];
 }
 
 @JsonSerializable()
@@ -178,13 +261,13 @@ class AssignedEmployee extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        currentIncidentMissionId,
-        employeeId,
-        empName,
-        assignedBy,
-        assignedAt,
-      ];
+    id,
+    currentIncidentMissionId,
+    employeeId,
+    empName,
+    assignedBy,
+    assignedAt,
+  ];
 }
 
 @JsonSerializable()
@@ -229,15 +312,15 @@ class CurrentIncidentPhoto extends Equatable {
 
   @override
   List<Object?> get props => [
-        currentIncidentStatusId,
-        xAxis,
-        yAxis,
-        currentIncidentId,
-        currentIncidentPhotoUploadedAt,
-        currentIncidentPhotoUploadedBy,
-        description,
-        userName,
-        filePath,
-        id,
-      ];
+    currentIncidentStatusId,
+    xAxis,
+    yAxis,
+    currentIncidentId,
+    currentIncidentPhotoUploadedAt,
+    currentIncidentPhotoUploadedBy,
+    description,
+    userName,
+    filePath,
+    id,
+  ];
 }

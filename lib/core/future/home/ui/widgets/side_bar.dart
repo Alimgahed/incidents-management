@@ -177,21 +177,13 @@ class _SidebarHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'إدارة الأزمات',
+                  'شركة مياه الشرب\nوالصرف الصحي بالمنيا',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 17,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    height: 1.15,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'لوحة العمليات',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    height: 1.4,
                   ),
                 ),
               ],
@@ -235,17 +227,17 @@ Widget buildNavItem(
                 vertical: isDrawer ? 14 : 10,
               ),
               decoration: BoxDecoration(
-                color: selected ? Colors.white.withValues(alpha: 0.14) : Colors.transparent,
+                color: selected ? const Color(0xFF1D70F5) : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: selected
-                      ? Colors.white.withValues(alpha: 0.35)
+                      ? const Color(0xFF1D70F5)
                       : Colors.white.withValues(alpha: 0.08),
                 ),
                 boxShadow: selected
                     ? [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.18),
+                          color: const Color(0xFF1D70F5).withValues(alpha: 0.4),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),

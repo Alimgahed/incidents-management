@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,51 +38,6 @@ List<CurrentIncidentModel> _parseIncidentList(List<dynamic> data) {
     return bTime.compareTo(aTime);
   });
   return list;
-}
-
-// Provide a lightweight copyWith for CurrentIncidentModel in case the model
-// does not define one; this attempts to use toJson/fromJson if present,
-// and falls back to a best-effort mutation if necessary.
-extension _CurrentIncidentModelCopy on CurrentIncidentModel {
-  CurrentIncidentModel copyWith({
-    List<dynamic>? currentIncidentWithMissions,
-    int? currentIncidentStatus,
-    int? currentIncidentSeverity,
-  }) {
-    try {
-      final map = (this as dynamic).toJson() as Map<String, dynamic>;
-
-      if (currentIncidentWithMissions != null) {
-        map['missions'] = currentIncidentWithMissions
-            .map(
-              (m) =>
-                  (m as dynamic).toJson != null ? (m as dynamic).toJson() : m,
-            )
-            .toList();
-      }
-
-      if (currentIncidentStatus != null) {
-        map['current_incident_status'] = currentIncidentStatus;
-      }
-
-      if (currentIncidentSeverity != null) {
-        map['current_incident_severity'] = currentIncidentSeverity;
-      }
-
-      return CurrentIncidentModel.fromJson(map);
-    } catch (_) {
-      // fallback
-      try {
-        if (currentIncidentWithMissions != null) {
-          (this as dynamic).currentIncidentWithMissions =
-              currentIncidentWithMissions;
-        }
-        return this;
-      } catch (_) {
-        return this;
-      }
-    }
-  }
 }
 
 class IncidentMapCubit extends Cubit<IncidentMapState> {
@@ -165,9 +121,11 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
           }) // And in headers just in case
           .build();
 
-      // Manually inject the upgrade:false flag into the built options map,
-      // since OptionBuilder doesn't expose a method for it directly.
-      opts['upgrade'] = false;
+      // Only disable upgrade on native mobile clients due to IIS/ARR chunked transfer bug.
+      // On Web, browsers handle WebSocket upgrade natively.
+      if (!kIsWeb) {
+        opts['upgrade'] = false;
+      }
       opts['forceNew'] =
           true; // CRITICAL: Prevent reusing old authenticated connection
 
@@ -182,8 +140,9 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       });
 
       _socket?.on('connect_error', (_) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('Socket.IO connection error (details redacted)');
+        }
       });
 
       _socket?.on('error', (_) {
@@ -303,24 +262,117 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     }
   }
 
-  void _handleIncidentCreated(dynamic data) {
-    final newIncident = CurrentIncidentModel.fromJson(data);
+  /// Recursively normalizes maps and lists to pure Dart `Map<String, dynamic>`
+  /// preventing type-cast errors on Web (e.g. nested missions/photos).
+  Map<String, dynamic> _deepNormalizeMap(dynamic raw) {
+    if (raw is! Map) return <String, dynamic>{};
+    final map = <String, dynamic>{};
+    raw.forEach((k, v) {
+      final key = k.toString();
+      if (v is Map) {
+        map[key] = _deepNormalizeMap(v);
+      } else if (v is List) {
+        map[key] = v.map((item) {
+          if (item is Map) return _deepNormalizeMap(item);
+          return item;
+        }).toList();
+      } else {
+        map[key] = v;
+      }
+    });
+    return map;
+  }
 
-    final updated = List<CurrentIncidentModel>.of(incidentss)
-      ..insert(0, newIncident);
+  CurrentIncidentModel _parseIncidentPayload(dynamic data) {
+    if (data is CurrentIncidentModel) return data;
+    dynamic payload = data;
+    if (payload is String) {
+      try {
+        payload = jsonDecode(payload);
+      } catch (_) {}
+    }
+    if (payload is Map) {
+      if (payload.containsKey('incident') && payload['incident'] is Map) {
+        payload = payload['incident'];
+      } else if (payload.containsKey('data') &&
+          payload['data'] is Map &&
+          !payload.containsKey('current_incident_id')) {
+        payload = payload['data'];
+      }
+      return CurrentIncidentModel.fromJson(_deepNormalizeMap(payload));
+    }
+    return CurrentIncidentModel.fromJson(payload as dynamic);
+  }
+
+  void _handleIncidentCreated(dynamic data) {
+    try {
+      if (kDebugMode) debugPrint('Socket.IO incident_created received: $data');
+      final newIncident = _parseIncidentPayload(data);
+      addIncident(newIncident);
+      _playAlertFor5Seconds();
+    } catch (e, st) {
+      if (kDebugMode) debugPrint('Error handling incident_created: $e\n$st');
+      // If parsing fails, instantly refresh from server so incident is never lost
+      refresh();
+    }
+  }
+
+  /// Adds a new incident (or updates it if already present) directly to memory
+  /// and emits [IncidentMapLoaded] with maximum performance (0ms delay).
+  void addIncident(CurrentIncidentModel newIncident) {
+    final updated = List<CurrentIncidentModel>.of(incidentss);
+
+    final index = updated.indexWhere((i) {
+      if (newIncident.currentIncidentId != null && i.currentIncidentId != null) {
+        return i.currentIncidentId == newIncident.currentIncidentId;
+      }
+      return false;
+    });
+
+    if (index != -1) {
+      updated[index] = newIncident;
+    } else {
+      updated.insert(0, newIncident);
+    }
+
     updated.sort((a, b) {
       final aTime = a.currentIncidentCreatedAt;
       final bTime = b.currentIncidentCreatedAt;
-      if (aTime == null && bTime == null) return 0;
+      if (aTime == null && bTime == null) {
+        final aId = a.currentIncidentId ?? 0;
+        final bId = b.currentIncidentId ?? 0;
+        return bId.compareTo(aId);
+      }
       if (aTime == null) return 1;
       if (bTime == null) return -1;
       return bTime.compareTo(aTime);
     });
+
     incidentss = updated;
     _bumpPayloadTime();
     emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+  }
 
-    _playAlertFor5Seconds();
+  /// Immediately updates an incident's coordinates in memory and emits
+  /// [IncidentMapLoaded], ensuring the map and marker re-center instantly.
+  void updateIncidentLocation({
+    required int incidentId,
+    required double lat,
+    required double lng,
+  }) {
+    final index = incidentss.indexWhere((i) => i.currentIncidentId == incidentId);
+    if (index != -1) {
+      final old = incidentss[index];
+      final updatedIncident = old.copyWith(
+        currentIncidentXAxis: lat,
+        currentIncidentYAxis: lng,
+      );
+      final updated = List<CurrentIncidentModel>.of(incidentss);
+      updated[index] = updatedIncident;
+      incidentss = updated;
+      _bumpPayloadTime();
+      emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+    }
   }
 
   Future<void> _playAlertFor5Seconds() async {
@@ -342,20 +394,26 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   }
 
   void _handleIncidentUpdated(dynamic data) {
-    final updatedIncident = CurrentIncidentModel.fromJson(data);
+    try {
+      if (kDebugMode) debugPrint('Socket.IO incident_updated received: $data');
+      final updatedIncident = _parseIncidentPayload(data);
 
-    final index = incidentss.indexWhere(
-      (i) => i.currentIncidentId == updatedIncident.currentIncidentId,
-    );
+      final index = incidentss.indexWhere(
+        (i) => i.currentIncidentId == updatedIncident.currentIncidentId,
+      );
 
-    if (index != -1) {
-      // List.of pre-allocates to known capacity; direct index assignment
-      // avoids a second allocation from cascade notation.
-      final updated = List<CurrentIncidentModel>.of(incidentss);
-      updated[index] = updatedIncident;
-      incidentss = updated;
-      _bumpPayloadTime();
-      emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+      if (index != -1) {
+        final updated = List<CurrentIncidentModel>.of(incidentss);
+        updated[index] = updatedIncident;
+        incidentss = updated;
+        _bumpPayloadTime();
+        emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+      } else {
+        addIncident(updatedIncident);
+      }
+    } catch (e, st) {
+      if (kDebugMode) debugPrint('Error handling incident_updated: $e\n$st');
+      refresh();
     }
   }
 
@@ -566,10 +624,33 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   // ===========================================================================
   // MANUAL REFRESH
   // ===========================================================================
-  void refresh() {
-    if (_socket?.connected ?? false) {
+  Future<void> refresh() async {
+    // Only emit loading if we don't have incidents yet, preserving UI responsiveness
+    if (incidentss.isEmpty) {
       emit(IncidentMapLoading());
+    }
+
+    if (_socket?.connected == true) {
       _socket?.emit('get_incidents');
+    } else {
+      await initialize();
+      if (_socket?.connected == true) {
+        _socket?.emit('get_incidents');
+      } else {
+        // Wait for connect event to fire and emit get_incidents
+        _socket?.once('connect', (_) {
+          _socket?.emit('get_incidents');
+        });
+        _socket?.connect();
+      }
+    }
+
+    try {
+      await stream
+          .firstWhere((s) => s is IncidentMapLoaded || s is IncidentMapError)
+          .timeout(const Duration(seconds: 4));
+    } catch (_) {
+      // Timeout or stream closed, return gracefully
     }
   }
 

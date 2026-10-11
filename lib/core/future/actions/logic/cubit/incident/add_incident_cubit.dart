@@ -1,7 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/add_incident/add_incdient_repo.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
+import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
 
 class AddIncidentCubit extends Cubit<AddIncidentStates> {
@@ -20,6 +22,23 @@ class AddIncidentCubit extends Cubit<AddIncidentStates> {
     result.when(
       success: (data) {
         lastSubmissionQueued = data is Map && data['__offline'] == true;
+
+        int? serverId;
+        if (data is Map) {
+          final rawId = data['current_incident_id'] ?? data['id'];
+          serverId = rawId is int ? rawId : int.tryParse('$rawId');
+        }
+
+        final created = model.copyWith(
+          currentIncidentId: serverId ?? model.currentIncidentId,
+          currentIncidentCreatedAt: DateTime.now(),
+          currentIncidentStatus: model.currentIncidentStatus ?? 1,
+        );
+
+        if (getIt.isRegistered<IncidentMapCubit>()) {
+          getIt<IncidentMapCubit>().addIncident(created);
+        }
+
         emit(const AddIncidentStates.success());
       },
       error: (e) => emit(AddIncidentStates.error(e)),

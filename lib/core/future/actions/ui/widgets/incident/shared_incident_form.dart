@@ -3,10 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
+import 'package:incidents_managment/core/future/actions/logic/states/get_all_incident_type_states.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/add_incident_widget.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
 
 class SharedIncidentForm extends StatefulWidget {
   final TextEditingController descriptionController;
@@ -132,6 +134,20 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
     );
   }
 
+  static const Map<int, String> _branchNames = {
+    1: 'ديوان عام الشركة',
+    213: 'المنيا',
+    373: 'المنيا الجديدة',
+    173: 'سمالوط',
+    133: 'مطاي',
+    93: 'بني مزار',
+    53: 'مغاغة',
+    13: 'العدوة',
+    253: 'أبو قرقاص',
+    293: 'ملوي',
+    333: 'ديرمواس',
+  };
+
   void _submit(BuildContext context) {
     if (selectedTypeId == null ||
         selectedSeverity == null ||
@@ -150,20 +166,25 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
     }
 
     final location = context.read<MapCubit>().state.selectedLocation;
-    if (location == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى تحديد موقع البلاغ على الخريطة')),
+
+    String? typeName;
+    try {
+      context.read<AllIncidentTypeCubit>().state.maybeWhen(
+        loaded: (types) {
+          final match = types.where((t) => t.incidentTypeId == selectedTypeId);
+          if (match.isNotEmpty) typeName = match.first.incidentTypeName;
+        },
+        orElse: () {},
       );
-      return;
-    }
+    } catch (_) {}
 
     context.read<AddIncidentCubit>().submitIncident(
       model: CurrentIncidentModel(
         currentIncidentTypeId: selectedTypeId!,
         currentIncidentSeverity: selectedSeverity!,
         branchId: selectedBranchId!,
-        currentIncidentXAxis: location.latitude,
-        currentIncidentYAxis: location.longitude,
+        currentIncidentXAxis: location?.latitude,
+        currentIncidentYAxis: location?.longitude,
         currentIncidentDescription: widget.descriptionController.text.trim(),
         currentIncidentNotes: widget.notesController.text.trim().isEmpty
             ? null
@@ -171,6 +192,9 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
         address: widget.addressController.text.trim().isEmpty
             ? null
             : widget.addressController.text.trim(),
+        currentIncidentStatus: 1,
+        branchName: _branchNames[selectedBranchId],
+        currentIncidentTypeName: typeName,
       ),
     );
   }

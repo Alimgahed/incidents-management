@@ -3,13 +3,19 @@ import 'package:equatable/equatable.dart';
 
 part 'valve.g.dart';
 
+Object? _readInServiceYear(Map<dynamic, dynamic> json, String key) =>
+    json['in_service_year'] ?? json['In_Service_Year'];
+
+Object? _readNameAr(Map<dynamic, dynamic> json, String key) =>
+    json['name_ar'] ?? json['name'];
+
 @JsonSerializable()
 class ValveModel extends Equatable {
   final double? depth;
   final int? diameter;
   final String? direction;
   final int? id;
-  @JsonKey(name: 'in_service_year')
+  @JsonKey(name: 'in_service_year', readValue: _readInServiceYear)
   final int? inServiceYear;
   final double? lat;
   final double? long;
@@ -66,10 +72,12 @@ class ValveModel extends Equatable {
 class ValveType extends Equatable {
   final String? abbreviation;
   final int? id;
-  @JsonKey(name: 'name_ar')
+  @JsonKey(name: 'name_ar', readValue: _readNameAr)
   final String? nameAr;
   @JsonKey(name: 'name_en')
   final String? nameEn;
+
+  String? get displayName => nameAr ?? nameEn;
 
   const ValveType({
     this.abbreviation,

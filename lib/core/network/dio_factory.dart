@@ -49,10 +49,6 @@ class DioFactory {
           if (options.method.toUpperCase() == 'GET') {
             options.queryParameters['_t'] =
                 DateTime.now().millisecondsSinceEpoch;
-            options.headers['Cache-Control'] =
-                'no-cache, no-store, must-revalidate';
-            options.headers['Pragma'] = 'no-cache';
-            options.headers['Expires'] = '0';
           }
 
           return handler.next(options);

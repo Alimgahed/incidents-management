@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:incidents_managment/core/future/valve/data/model/all_valves_response.dart';
 import 'package:incidents_managment/core/future/valve/data/model/valve.dart';
 import 'package:incidents_managment/core/future/valve/data/repo/valve_repo.dart';
 import 'package:incidents_managment/core/future/valve/logic/cubit/alarm_service.dart';
@@ -17,6 +18,7 @@ class ValveProximityCubit extends Cubit<ProximityState> {
   final AlarmService _alarmService;
 
   StreamSubscription<Position>? _positionSubscription;
+  Timer? _boundsDebounce;
   List<ValveModel> _valves = [];
 
   ValveProximityCubit({
@@ -41,7 +43,10 @@ class ValveProximityCubit extends Cubit<ProximityState> {
     // 2. Load valve locations
     try {
       final result = await _valveRepository.allValves();
-      _valves = result.when(success: (valves) => valves, error: (error) => []);
+      _valves = result.when(
+        success: (response) => response.data,
+        error: (error) => [],
+      );
     } catch (e) {
       emit(ProximityError('فشل تحميل بيانات المحابس: $e'));
       return;
@@ -72,6 +77,28 @@ class ValveProximityCubit extends Cubit<ProximityState> {
         ProximitySafe(userLat: s.userLat, userLng: s.userLng, valves: s.valves),
       );
     }
+  }
+
+  void updateMapBounds(MapBounds bounds) {
+    _boundsDebounce?.cancel();
+    _boundsDebounce = Timer(const Duration(milliseconds: 350), () async {
+      try {
+        final result = await _valveRepository.allValves(bounds: bounds);
+        result.when(
+          success: (response) {
+            _valves = response.data;
+            if (state is ProximitySafe) {
+              final s = state as ProximitySafe;
+              emit(ProximitySafe(userLat: s.userLat, userLng: s.userLng, valves: _valves));
+            } else if (state is ProximityAlert) {
+              final s = state as ProximityAlert;
+              emit(ProximityAlert(userLat: s.userLat, userLng: s.userLng, nearestValve: s.nearestValve, distanceMeters: s.distanceMeters, valves: _valves));
+            }
+          },
+          error: (e) {},
+        );
+      } catch (_) {}
+    });
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────

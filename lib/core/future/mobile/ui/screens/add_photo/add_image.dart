@@ -11,11 +11,18 @@ import 'package:incidents_managment/core/future/mobile/ui/widgets/add_image_widg
 bool _isQueuedUploadMessage(String message) =>
     message.contains('سيتم رفع') || message.contains('وسيتم رفع');
 
-class FileUploadScreen extends StatelessWidget {
+class FileUploadScreen extends StatefulWidget {
   final int? incidentId;
   final int? userId;
 
   const FileUploadScreen({super.key, this.incidentId, this.userId});
+
+  @override
+  State<FileUploadScreen> createState() => _FileUploadScreenState();
+}
+
+class _FileUploadScreenState extends State<FileUploadScreen> {
+  bool _updateLocation = false;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +37,9 @@ class FileUploadScreen extends StatelessWidget {
                 icon: const Icon(Icons.refresh_rounded),
                 onPressed: () {
                   context.read<FileUploadCubit>().resetState();
+                  setState(() {
+                    _updateLocation = false;
+                  });
                 },
                 tooltip: 'إعادة تعيين',
               ),
@@ -168,18 +178,93 @@ class FileUploadScreen extends StatelessWidget {
             fileSize: fileSize,
             fileExtension: fileExtension ?? '',
           ),
+          const SizedBox(height: 16),
+          // Checkbox for updating incident location with photo location
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _updateLocation
+                    ? AppTheme.primaryColor
+                    : Colors.grey.shade300,
+                width: _updateLocation ? 1.5 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: CheckboxListTile(
+                value: _updateLocation,
+                onChanged: (val) {
+                  setState(() {
+                    _updateLocation = val ?? false;
+                  });
+                },
+                activeColor: AppTheme.primaryColor,
+                checkboxShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                secondary: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _updateLocation
+                        ? AppTheme.primaryColor.withValues(alpha: 0.1)
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.my_location_rounded,
+                    color: _updateLocation
+                        ? AppTheme.primaryColor
+                        : Colors.grey.shade600,
+                    size: 22,
+                  ),
+                ),
+                title: const Text(
+                  'تحديث موقع الأزمة بموقع الصورة',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                subtitle: const Text(
+                  'سيتم تعيين إحداثيات الأزمة وفقاً للموقع الجغرافي للصورة الحالية',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => context.read<FileUploadCubit>().resetState(),
+                  onPressed: () {
+                    context.read<FileUploadCubit>().resetState();
+                    setState(() {
+                      _updateLocation = false;
+                    });
+                  },
                   icon: const Icon(Icons.close_rounded),
                   label: const Text('إلغاء'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     backgroundColor: appColor,
-
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     side: const BorderSide(color: appColor),
                     shape: RoundedRectangleBorder(
@@ -193,16 +278,16 @@ class FileUploadScreen extends StatelessWidget {
                 flex: 2,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // Upload with incident parameters
+                    // Upload with incident parameters and updateLocation flag
                     context.read<FileUploadCubit>().uploadFile(
-                      incidentId ?? 0,
+                      widget.incidentId ?? 0,
                       filePath,
                       fileName,
+                      updateLocation: _updateLocation,
                     );
                   },
                   icon: const Icon(Icons.upload_rounded),
                   label: const Text('رفع'),
-
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
                     backgroundColor: appColor,

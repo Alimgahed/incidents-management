@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/mobile/data/repo/file_upload_repo.dart';
 import 'file_upload_state.dart';
 
@@ -194,8 +196,9 @@ class FileUploadCubit extends Cubit<FileUploadState> {
   Future<void> uploadFile(
     int incidentId,
     String filePath,
-    String fileName,
-  ) async {
+    String fileName, {
+    bool updateLocation = false,
+  }) async {
     try {
       emit(FileUploadState.uploading(progress: 0.0, fileName: fileName));
 
@@ -210,14 +213,23 @@ class FileUploadCubit extends Cubit<FileUploadState> {
         fileName: fileName,
         incidentId: incidentId,
         description: "",
-        xAxis: position.longitude,
-        yAxis: position.latitude,
+        xAxis: position.latitude,
+        yAxis: position.longitude,
+        updateLocation: updateLocation,
         onProgress: (progress) {
           emit(
             FileUploadState.uploading(progress: progress, fileName: fileName),
           );
         },
       );
+
+      if (updateLocation && getIt.isRegistered<IncidentMapCubit>()) {
+        getIt<IncidentMapCubit>().updateIncidentLocation(
+          incidentId: incidentId,
+          lat: position.latitude,
+          lng: position.longitude,
+        );
+      }
 
       emit(
         FileUploadState.uploadSuccess(

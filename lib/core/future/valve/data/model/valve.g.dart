@@ -11,7 +11,7 @@ ValveModel _$ValveModelFromJson(Map<String, dynamic> json) => ValveModel(
   diameter: (json['diameter'] as num?)?.toInt(),
   direction: json['direction'] as String?,
   id: (json['id'] as num?)?.toInt(),
-  inServiceYear: (json['in_service_year'] as num?)?.toInt(),
+  inServiceYear: (_readInServiceYear(json, 'in_service_year') as num?)?.toInt(),
   lat: (json['lat'] as num?)?.toDouble(),
   long: (json['long'] as num?)?.toDouble(),
   numOfTurns: (json['num_of_turns'] as num?)?.toInt(),
@@ -44,7 +44,7 @@ Map<String, dynamic> _$ValveModelToJson(ValveModel instance) =>
 ValveType _$ValveTypeFromJson(Map<String, dynamic> json) => ValveType(
   abbreviation: json['abbreviation'] as String?,
   id: (json['id'] as num?)?.toInt(),
-  nameAr: json['name_ar'] as String?,
+  nameAr: _readNameAr(json, 'name_ar') as String?,
   nameEn: json['name_en'] as String?,
 );
 

@@ -7,6 +7,7 @@ import 'package:incidents_managment/core/future/valve/ui/alarm.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:incidents_managment/core/future/valve/logic/cubit/valve_cubit.dart';
 import 'package:incidents_managment/core/future/valve/logic/state/valve_state.dart';
+import 'package:incidents_managment/core/future/valve/data/model/all_valves_response.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -70,6 +71,19 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                   initialZoom: 16,
                   maxZoom: 19,
                   minZoom: 5,
+                  onPositionChanged: (position, hasGesture) {
+                    if (hasGesture) {
+                      final bounds = _mapController.camera.visibleBounds;
+                      context.read<ValveProximityCubit>().updateMapBounds(
+                        MapBounds(
+                          latMin: bounds.south,
+                          latMax: bounds.north,
+                          longMin: bounds.west,
+                          longMax: bounds.east,
+                        ),
+                      );
+                    }
+                  },
                 ),
                 children: [
                   TileLayer(

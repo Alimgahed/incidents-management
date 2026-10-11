@@ -547,7 +547,7 @@ class CustomFloatingButton extends StatelessWidget {
   }
 }
 
-class AppMapSection extends StatelessWidget {
+class AppMapSection extends StatefulWidget {
   final double lat;
   final double lng;
   final String title;
@@ -564,6 +564,39 @@ class AppMapSection extends StatelessWidget {
   });
 
   @override
+  State<AppMapSection> createState() => _AppMapSectionState();
+}
+
+class _AppMapSectionState extends State<AppMapSection> {
+  late final MapController _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+  }
+
+  @override
+  void didUpdateWidget(covariant AppMapSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.lat != widget.lat || oldWidget.lng != widget.lng) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          try {
+            _mapController.move(LatLng(widget.lat, widget.lng), 15.0);
+          } catch (_) {}
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -573,20 +606,22 @@ class AppMapSection extends StatelessWidget {
           children: [
             const Icon(Icons.location_on_outlined),
             const SizedBox(width: 8),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(widget.title, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 12),
 
         // Map Preview Box
         SizedBox(
-          height: mapHeight,
+          height: widget.mapHeight,
           width: double.infinity,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: FlutterMap(
+              key: ValueKey('preview_${widget.lat}_${widget.lng}'),
+              mapController: _mapController,
               options: MapOptions(
-                initialCenter: LatLng(lat, lng),
+                initialCenter: LatLng(widget.lat, widget.lng),
                 initialZoom: 15.0,
                 interactionOptions: const InteractionOptions(
                   flags: InteractiveFlag.none, // Static preview
@@ -595,13 +630,12 @@ class AppMapSection extends StatelessWidget {
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-
                   userAgentPackageName: 'com.example.crisis_management',
                 ),
                 MarkerLayer(
                   markers: [
                     Marker(
-                      point: LatLng(lat, lng),
+                      point: LatLng(widget.lat, widget.lng),
                       width: 80,
                       height: 80,
                       child: const Icon(
@@ -624,11 +658,11 @@ class AppMapSection extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () =>
-                MapUtils.openMap(lat, lng), // Using the Global Util
+                MapUtils.openMap(widget.lat, widget.lng), // Using the Global Util
             icon: const Icon(Icons.map, size: 18),
             label: const Text('فتح في الخرائط'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: accentColor,
+              backgroundColor: widget.accentColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(

@@ -39,78 +39,18 @@ class DashboardKpiStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(compact ? 12 : 16),
-        border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.8)),
-        boxShadow: compact
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       padding: EdgeInsets.all(compact ? 10 : 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!compact) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: connected
-                        ? const Color(0xFFECFDF5)
-                        : const Color(0xFFFFFBEB),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: connected
-                          ? const Color(0xFFA7F3D0)
-                          : const Color(0xFFFDE68A),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _PulsingDot(
-                        color: connected
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFFF59E0B),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        connected
-                            ? 'متصل بالتدفق العملياتي المباشر'
-                            : 'غير متصل بالبث المباشر',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: connected
-                              ? const Color(0xFF065F46)
-                              : const Color(0xFF92400E),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  'البيانات فورية ومحدثة تلقائياً',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textTertiary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
           LayoutBuilder(
             builder: (context, c) {
               final narrow = c.maxWidth < 640;
@@ -120,31 +60,27 @@ class DashboardKpiStrip extends StatelessWidget {
                   value: '$total',
                   icon: Icons.emergency_outlined,
                   baseColor: const Color(0xFF1B4F8A),
-                  gradientColors: const [Color(0xFF1B4F8A), Color(0xFF1B4F8A)],
                   compact: compact,
                 ),
                 _KpiCard(
-                  label: 'بلاغات حرجة (شدة 4)',
+                  label: 'بلاغات درجة (شدة 4)',
                   value: '$critical',
                   icon: Icons.error_outline_rounded,
                   baseColor: const Color(0xFFEF4444),
-                  gradientColors: const [Color(0xFFDC2626), Color(0xFFF87171)],
                   compact: compact,
                 ),
                 _KpiCard(
                   label: 'حالات نشطة قيد المتابعة',
                   value: '$active',
                   icon: Icons.play_circle_outline,
-                  baseColor: const Color(0xFF2563EB),
-                  gradientColors: const [Color(0xFF2563EB), Color(0xFF60A5FA)],
+                  baseColor: const Color(0xFF3B82F6),
                   compact: compact,
                 ),
                 _KpiCard(
                   label: 'إجمالي المهام المجدولة',
                   value: '$missions',
-                  icon: Icons.checklist_rtl_rounded,
-                  baseColor: const Color(0xFF0D9488),
-                  gradientColors: const [Color(0xFF0D9488), Color(0xFF2DD4BF)],
+                  icon: Icons.assignment_outlined,
+                  baseColor: const Color(0xFF10B981),
                   compact: compact,
                 ),
               ];
@@ -184,7 +120,6 @@ class _KpiCard extends StatefulWidget {
   final String value;
   final IconData icon;
   final Color baseColor;
-  final List<Color> gradientColors;
   final bool compact;
 
   const _KpiCard({
@@ -192,7 +127,6 @@ class _KpiCard extends StatefulWidget {
     required this.value,
     required this.icon,
     required this.baseColor,
-    required this.gradientColors,
     this.compact = false,
   });
 
@@ -219,11 +153,7 @@ class _KpiCardState extends State<_KpiCard> {
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: widget.gradientColors,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: widget.baseColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(widget.icon, color: Colors.white, size: 16),
@@ -261,124 +191,93 @@ class _KpiCardState extends State<_KpiCard> {
       );
     }
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        transform: _isHovered
-            ? (Matrix4.identity()..translateByDouble(0, -4, 0, 1))
-            : Matrix4.identity(),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _isHovered
-                ? widget.baseColor.withValues(alpha: 0.4)
-                : const Color(0xFFEDF2F7),
-            width: 1.5,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: _isHovered
-                  ? widget.baseColor.withValues(alpha: 0.1)
-                  : Colors.black.withValues(alpha: 0.03),
-              blurRadius: _isHovered ? 16 : 8,
-              offset: Offset(0, _isHovered ? 6 : 3),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Positioned(
-              right: -24,
-              top: -24,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      widget.baseColor.withValues(alpha: 0.08),
-                      widget.baseColor.withValues(alpha: 0.01),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+            // Right thick border
+            Container(width: 4, color: widget.baseColor),
+
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-              ),
-            ),
-            Positioned.directional(
-              textDirection: Directionality.of(context),
-              start: 0,
-              top: 0,
-              bottom: 0,
-              width: 4.5,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: widget.baseColor,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(18, 16, 16, 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: widget.gradientColors,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                child: Row(
+                  children: [
+                    // Text details (aligned to right, but since it's RTL it comes first in Row unless reversed)
+                    // Oh wait, in RTL, start is right, end is left.
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment
+                            .start, // in RTL this means right aligned
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            widget.value,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF0F172A),
+                              height: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: widget.baseColor.withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
                     ),
-                    child: Icon(widget.icon, color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          widget.value,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: colors.onSurface,
-                                height: 1.1,
-                              ),
+
+                    // Simple static placeholder for sparkline (could be implemented as CustomPaint if needed)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: CustomPaint(
+                        size: const Size(40, 20),
+                        painter: _SparklinePainter(
+                          color: widget.baseColor.withValues(alpha: 0.5),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: colors.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+
+                    // Left colored icon square
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: widget.baseColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: Icon(widget.icon, color: Colors.white, size: 24),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -388,56 +287,42 @@ class _KpiCardState extends State<_KpiCard> {
   }
 }
 
-class _PulsingDot extends StatefulWidget {
+class _SparklinePainter extends CustomPainter {
   final Color color;
-  const _PulsingDot({required this.color});
+  _SparklinePainter({required this.color});
 
   @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
 
-class _PulsingDotState extends State<_PulsingDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: widget.color.withValues(
-              alpha: 0.3 + 0.7 * _controller.value,
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withValues(alpha: 0.4 * _controller.value),
-                blurRadius: 6,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-        );
-      },
+    final path = Path();
+    path.moveTo(0, size.height * 0.8);
+    path.quadraticBezierTo(
+      size.width * 0.2,
+      size.height * 0.9,
+      size.width * 0.4,
+      size.height * 0.5,
     );
+    path.quadraticBezierTo(
+      size.width * 0.6,
+      size.height * 0.1,
+      size.width * 0.8,
+      size.height * 0.4,
+    );
+    path.quadraticBezierTo(
+      size.width * 0.9,
+      size.height * 0.5,
+      size.width,
+      size.height * 0.2,
+    );
+
+    canvas.drawPath(path, paint);
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

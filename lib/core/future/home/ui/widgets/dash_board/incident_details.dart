@@ -96,32 +96,27 @@ class _IncidentDetailContent extends StatelessWidget {
     ];
 
     // Left Column widgets (Media, Map & Timeline)
-    final hasLocation =
-        incident.currentIncidentXAxis != null &&
-        incident.currentIncidentYAxis != null;
-
     final leftColumnWidgets = <Widget>[
       if (incident.address != null && incident.address!.isNotEmpty) ...[
         _AddressCard(address: incident.address!),
         SizedBox(height: spacing),
       ],
+
+      AppMapSection(
+        lat: incident.currentIncidentXAxis ?? 28.0871,
+        lng: incident.currentIncidentYAxis ?? 30.7618,
+        mapHeight: 320,
+      ),
+      SizedBox(height: spacing),
+
       _DescriptionCard(incident: incident),
       SizedBox(height: spacing),
-      if (incident.currentIncidentId != null) ...[
-        IncidentPhotosGrid(
-          incident: incident,
-          incidentId: incident.currentIncidentId!,
-        ),
-        SizedBox(height: spacing),
-      ],
-      if (hasLocation)
-        AppMapSection(
-          lat: incident.currentIncidentXAxis!,
-          lng: incident.currentIncidentYAxis!,
-          mapHeight: 320,
-        )
-      else
-        _NoLocationPlaceholder(),
+
+      IncidentPhotosGrid(
+        incident: incident,
+        incidentId: incident.currentIncidentId ?? 0,
+      ),
+      SizedBox(height: spacing),
     ];
 
     Widget mainLayout;
@@ -1022,31 +1017,6 @@ class _SelectionHint extends StatelessWidget {
 }
 
 // ==================== NO LOCATION PLACEHOLDER ====================
-class _NoLocationPlaceholder extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEDF2F7)),
-      ),
-      alignment: Alignment.center,
-      child: const Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.location_off_rounded, size: 40, color: Color(0xFFCBD5E1)),
-          SizedBox(height: 8),
-          Text(
-            'لا يوجد موقع محدد لهذه الأزمة',
-            style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ==================== DESCRIPTION CARD ====================
 class _DescriptionCard extends StatelessWidget {
@@ -1200,7 +1170,13 @@ class _MissionItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEDF2F7)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -1285,6 +1261,11 @@ class _MissionContent extends StatelessWidget {
                 ),
               ),
             ),
+            if (mission.statusUpdatedByUser != null)
+              Text(
+                'بواسطة: ${mission.statusUpdatedByUser}',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+              ),
             if (mission.assignedEmployees != null &&
                 mission.assignedEmployees!.isNotEmpty)
               ...mission.assignedEmployees!.map(
@@ -1565,12 +1546,11 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEDF2F7), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.01),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
           ),
         ],
       ),

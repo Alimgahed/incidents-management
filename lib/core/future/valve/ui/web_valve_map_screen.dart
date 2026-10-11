@@ -1,11 +1,15 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/future/valve/data/model/all_valves_response.dart';
 import 'package:incidents_managment/core/future/valve/data/model/valve.dart';
 import 'package:incidents_managment/core/future/valve/logic/cubit/web_valve_cubit.dart';
 import 'package:incidents_managment/core/future/valve/logic/state/web_valve_state.dart';
+import 'package:incidents_managment/core/future/valve/logic/cubit/valve_filter_cubit.dart';
+import 'package:incidents_managment/core/future/valve/ui/widgets/map/valve_filters_panel.dart';
+import 'package:incidents_managment/core/future/valve/ui/widgets/map/valve_list_panel.dart';
+import 'package:incidents_managment/core/future/valve/ui/widgets/map/map_valve_details_modal.dart';
 import 'package:latlong2/latlong.dart';
 
 class WebValveMapScreen extends StatefulWidget {
@@ -15,354 +19,392 @@ class WebValveMapScreen extends StatefulWidget {
   State<WebValveMapScreen> createState() => _WebValveMapScreenState();
 }
 
-class _WebValveMapScreenState extends State<WebValveMapScreen> with SingleTickerProviderStateMixin {
+class _WebValveMapScreenState extends State<WebValveMapScreen> {
   final MapController _mapController = MapController();
   static const LatLng _minyaCenter = LatLng(28.0871, 30.7501);
-  ValveModel? _selectedValve;
-
-  late AnimationController _animationController;
-  late Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(1.5, 0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
-  }
+  List<ValveModel> _cachedValves = [];
+  ValveFilterOptions _cachedFilters = const ValveFilterOptions();
+  ValvePagination _cachedPagination = const ValvePagination();
 
   @override
   void dispose() {
-    _animationController.dispose();
     _mapController.dispose();
     super.dispose();
   }
 
-  void _onValveTapped(ValveModel valve) {
-    setState(() {
-      _selectedValve = valve;
-    });
-    _animationController.forward();
-    if (valve.lat != null && valve.long != null) {
-      _mapController.move(LatLng(valve.lat!, valve.long!), 17.0);
-    }
+  MapBounds _boundsFromCamera() {
+    final bounds = _mapController.camera.visibleBounds;
+    return MapBounds(
+      latMin: bounds.south,
+      latMax: bounds.north,
+      longMin: bounds.west,
+      longMax: bounds.east,
+    );
   }
 
-  void _closePanel() {
-    _animationController.reverse().then((_) {
-      setState(() {
-        _selectedValve = null;
-      });
-    });
+  void _syncMapBounds(BuildContext context) {
+    context.read<WebValveMapCubit>().updateMapBounds(_boundsFromCamera());
+  }
+
+  void _applyServerFilters(BuildContext context) {
+    context.read<WebValveMapCubit>().applyFilters(
+          context.read<ValveFilterCubit>().state,
+        );
+  }
+
+  void _showValveDetails(ValveModel valve) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (_) => MapValveDetailsModal(
+        valve: valve,
+        onClose: () => Navigator.of(context).pop(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => getIt<WebValveMapCubit>()..fetchValves(),
-      child: Scaffold(
-        body: Stack(
-          children: [
-            // ── Flutter Map
-            BlocBuilder<WebValveMapCubit, WebValveMapState>(
-              builder: (context, state) {
-                List<ValveModel> valves = [];
-                if (state is WebValveMapLoaded) {
-                  valves = state.valves;
-                }
-                
-                return FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: _minyaCenter,
-                    initialZoom: 13,
-                    maxZoom: 19,
-                    minZoom: 5,
-                    onTap: (_, _) => _closePanel(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<WebValveMapCubit>(
+          create: (_) => getIt<WebValveMapCubit>(),
+        ),
+        BlocProvider<ValveFilterCubit>(
+          create: (_) => ValveFilterCubit(),
+        ),
+      ],
+      child: BlocBuilder<WebValveMapCubit, WebValveMapState>(
+        builder: (context, state) {
+          final currentValves = state is WebValveMapLoaded
+              ? state.valves
+              : _cachedValves;
+          final filterOptions = state is WebValveMapLoaded
+              ? state.filters
+              : _cachedFilters;
+          final pagination = state is WebValveMapLoaded
+              ? state.pagination
+              : _cachedPagination;
+
+          if (state is WebValveMapLoaded) {
+            _cachedValves = state.valves;
+            _cachedFilters = state.filters;
+            _cachedPagination = state.pagination;
+          }
+
+          if (state is WebValveMapError && _cachedValves.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.white),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(state.message)),
+                    ],
                   ),
-                  children: [
-                    TileLayer(
-                      urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                      subdomains: const ['a', 'b', 'c'],
-                      userAgentPackageName: 'incidents_managment',
+                  backgroundColor: Colors.red,
+                  action: SnackBarAction(
+                    label: 'إعادة المحاولة',
+                    textColor: Colors.white,
+                    onPressed: () => _syncMapBounds(context),
+                  ),
+                ),
+              );
+            });
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _buildMapContent(
+              state,
+              currentValves,
+              filterOptions,
+              pagination,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMapContent(
+    WebValveMapState state,
+    List<ValveModel> valves,
+    ValveFilterOptions filterOptions,
+    ValvePagination pagination,
+  ) {
+    return BlocConsumer<ValveFilterCubit, ValveFilterState>(
+      listenWhen: (previous, current) =>
+          previous.status != current.status ||
+          previous.valveTypeId != current.valveTypeId ||
+          previous.diameter != current.diameter ||
+          previous.pipeDiameter != current.pipeDiameter ||
+          previous.direction != current.direction ||
+          previous.inServiceYear != current.inServiceYear,
+      listener: (context, filterState) {
+        context.read<WebValveMapCubit>().applyFilters(filterState);
+      },
+      builder: (context, filterState) {
+        final filteredValves =
+            context.read<ValveFilterCubit>().filterValves(valves);
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ValveFiltersPanel(
+              filterOptions: filterOptions,
+              filteredCount: filteredValves.length,
+              totalCount: pagination.total,
+              onApply: () => _applyServerFilters(context),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: _buildMap(context, filteredValves, state),
+              ),
+            ),
+            const SizedBox(width: 16),
+            ValveListPanel(
+              filteredValves: filteredValves,
+              totalCount: pagination.total,
+              onValveTap: (valve) {
+                final lat = valve.lat;
+                final lng = valve.long;
+                if (lat != null && lng != null) {
+                  _mapController.move(LatLng(lat, lng), 17);
+                }
+                _showValveDetails(valve);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMap(
+    BuildContext context,
+    List<ValveModel> filteredValves,
+    WebValveMapState state,
+  ) {
+    final isRefreshing = state is WebValveMapLoaded && state.isRefreshing;
+    final bounds = state is WebValveMapLoaded ? state.bounds : null;
+
+    return Stack(
+      children: [
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: _minyaCenter,
+            initialZoom: 13,
+            maxZoom: 19,
+            minZoom: 5,
+            onMapReady: () => _syncMapBounds(context),
+            onPositionChanged: (camera, hasGesture) {
+              if (!hasGesture) return;
+              context.read<WebValveMapCubit>().updateMapBounds(
+                    MapBounds(
+                      latMin: camera.visibleBounds.south,
+                      latMax: camera.visibleBounds.north,
+                      longMin: camera.visibleBounds.west,
+                      longMax: camera.visibleBounds.east,
                     ),
-                    MarkerLayer(
-                      markers: valves
-                          .where((v) => v.lat != null && v.long != null)
-                          .map((valve) => Marker(
-                                point: LatLng(valve.lat!, valve.long!),
-                                width: 45,
-                                height: 45,
-                                child: GestureDetector(
-                                  onTap: () => _onValveTapped(valve),
-                                  child: AnimatedScale(
-                                    scale: _selectedValve?.id == valve.id ? 1.2 : 1.0,
-                                    duration: const Duration(milliseconds: 200),
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        Container(
-                                          width: 38,
-                                          height: 38,
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.withValues(alpha: 0.2),
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            color: _selectedValve?.id == valve.id ? Colors.blue.shade800 : Colors.blue.shade600,
-                                            shape: BoxShape.circle,
-                                            boxShadow: const [
-                                              BoxShadow(
-                                                color: Colors.black26,
-                                                blurRadius: 4,
-                                                offset: Offset(0, 2),
-                                              ),
-                                            ],
-                                            border: Border.all(color: Colors.white, width: 2),
-                                          ),
-                                          child: const Icon(
-                                            Icons.water_drop,
-                                            color: Colors.white,
-                                            size: 16,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                  );
+            },
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+              subdomains: const ['a', 'b', 'c'],
+              userAgentPackageName: 'incidents_managment',
+            ),
+            MarkerLayer(
+              markers: filteredValves
+                  .where((v) => v.lat != null && v.long != null)
+                  .map((valve) => Marker(
+                        point: LatLng(valve.lat!, valve.long!),
+                        width: 45,
+                        height: 45,
+                        child: GestureDetector(
+                          onTap: () => _showValveDetails(valve),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.2),
+                                  shape: BoxShape.circle,
                                 ),
-                              ))
-                          .toList(),
+                              ),
+                              Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade600,
+                                  shape: BoxShape.circle,
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: const Icon(
+                                  Icons.water_drop,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ],
+        ),
+        if (bounds != null)
+          Positioned(
+            top: 16,
+            left: 16,
+            right: 16,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
                     ),
                   ],
-                );
-              },
+                ),
+                child: Text(
+                  'lat ${bounds.latMin.toStringAsFixed(4)} → ${bounds.latMax.toStringAsFixed(4)}  |  '
+                  'lng ${bounds.longMin.toStringAsFixed(4)} → ${bounds.longMax.toStringAsFixed(4)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF1B4F8A),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ),
-
-            // ── Loading & Error States Overlay
-            BlocBuilder<WebValveMapCubit, WebValveMapState>(
-              builder: (context, state) {
-                if (state is WebValveMapLoading) {
-                  return Container(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+          ),
+        if (isRefreshing)
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: LinearProgressIndicator(minHeight: 3),
+          ),
+        Positioned(
+          left: 16,
+          bottom: 16,
+          child: Column(
+            children: [
+              _buildMapControl(
+                icon: Icons.add,
+                onTap: () {
+                  _mapController.move(
+                    _mapController.camera.center,
+                    _mapController.camera.zoom + 1,
                   );
-                } else if (state is WebValveMapError) {
-                  return Positioned(
-                    bottom: 24,
-                    left: 24,
-                    right: 24,
-                    child: Material(
-                      elevation: 8,
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.red.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.red.shade700),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                state.message,
-                                style: TextStyle(color: Colors.red.shade900, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => context.read<WebValveMapCubit>().fetchValves(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red.shade700,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('إعادة المحاولة'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) _syncMapBounds(context);
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              _buildMapControl(
+                icon: Icons.remove,
+                onTap: () {
+                  _mapController.move(
+                    _mapController.camera.center,
+                    _mapController.camera.zoom - 1,
                   );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-
-            // ── Map Controls
-            Positioned(
-              left: 24,
-              bottom: 24,
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) _syncMapBounds(context);
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              _buildMapControl(
+                icon: Icons.my_location,
+                onTap: () {
+                  _mapController.move(_minyaCenter, 13);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) _syncMapBounds(context);
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+        if ((state is WebValveMapLoading || state is WebValveMapInitial) &&
+            _cachedValves.isEmpty)
+          Container(
+            color: Colors.white.withValues(alpha: 0.8),
+            child: const Center(
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildMapControl(
-                    icon: Icons.add,
-                    onTap: () => _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildMapControl(
-                    icon: Icons.remove,
-                    onTap: () => _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildMapControl(
-                    icon: Icons.my_location,
-                    onTap: () => _mapController.move(_minyaCenter, 13),
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'جاري تحميل المحابس...',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
               ),
             ),
-
-            // ── Valve Details Awesome Panel (Glassmorphism)
-            if (_selectedValve != null)
-              Positioned(
-                top: 24,
-                right: 24,
-                bottom: 24,
-                width: 380,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 30,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Header
-                            Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Colors.blue.shade800, Colors.blue.shade600],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Icon(Icons.water_drop, color: Colors.white, size: 28),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _selectedValve!.valveType?.nameAr ?? 'محبس',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        if (_selectedValve!.id != null)
-                                          Text(
-                                            'كود: ${_selectedValve!.id}',
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.8),
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.white),
-                                    onPressed: _closePanel,
-                                    tooltip: 'إغلاق',
-                                  ),
-                                ],
-                              ),
-                            ),
-                            
-                            // Content
-                            Expanded(
-                              child: SingleChildScrollView(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (_selectedValve!.status != null) ...[
-                                      _buildStatusBadge(_selectedValve!.status!),
-                                      const SizedBox(height: 24),
-                                    ],
-                                    _buildSectionTitle('المعلومات الهندسية'),
-                                    const SizedBox(height: 12),
-                                    if (_selectedValve!.diameter != null)
-                                      _buildInfoRow(Icons.straighten, 'القطر', '${_selectedValve!.diameter} مم'),
-                                    if (_selectedValve!.pipeDiameter != null)
-                                      _buildInfoRow(Icons.plumbing, 'قطر الماسورة', '${_selectedValve!.pipeDiameter} مم'),
-                                    if (_selectedValve!.depth != null)
-                                      _buildInfoRow(Icons.layers, 'العمق', '${_selectedValve!.depth} م'),
-                                    if (_selectedValve!.numOfTurns != null)
-                                      _buildInfoRow(Icons.rotate_right, 'عدد اللفات', '${_selectedValve!.numOfTurns}'),
-                                    
-                                    const SizedBox(height: 24),
-                                    _buildSectionTitle('معلومات الموقع و التركيب'),
-                                    const SizedBox(height: 12),
-                                    if (_selectedValve!.position != null)
-                                      _buildInfoRow(Icons.settings_remote, 'الوضع الحالي', _selectedValve!.position!),
-                                    if (_selectedValve!.direction != null)
-                                      _buildInfoRow(Icons.explore, 'الاتجاه', _selectedValve!.direction!),
-                                    if (_selectedValve!.inServiceYear != null)
-                                      _buildInfoRow(Icons.calendar_today, 'سنة التركيب', '${_selectedValve!.inServiceYear}'),
-                                    if (_selectedValve!.lat != null && _selectedValve!.long != null)
-                                      _buildInfoRow(Icons.location_on, 'الإحداثيات', '${_selectedValve!.lat!.toStringAsFixed(5)}, ${_selectedValve!.long!.toStringAsFixed(5)}'),
-                                    
-                                    if (_selectedValve!.valveType?.abbreviation != null) ...[
-                                      const SizedBox(height: 24),
-                                      _buildSectionTitle('معلومات إضافية'),
-                                      const SizedBox(height: 12),
-                                      _buildInfoRow(Icons.badge, 'الاختصار', _selectedValve!.valveType!.abbreviation!),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+          ),
+        if (state is WebValveMapError && _cachedValves.isEmpty)
+          Container(
+            color: Colors.white.withValues(alpha: 0.9),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      state.message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16, color: Colors.red),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _syncMapBounds(context),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('إعادة المحاولة'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2B6CB0),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-          ],
-        ),
-      ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -380,82 +422,6 @@ class _WebValveMapScreenState extends State<WebValveMapScreen> with SingleTicker
           alignment: Alignment.center,
           child: Icon(icon, color: Colors.blue.shade800),
         ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(String status) {
-    final isGood = status == 'Good' || status == 'جيد';
-    final color = isGood ? Colors.green : Colors.orange;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(isGood ? Icons.check_circle : Icons.warning_amber_rounded, color: color, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            status,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
-        color: Colors.grey.shade800,
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 18, color: Colors.blue.shade700),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              color: Colors.grey.shade900,
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
       ),
     );
   }

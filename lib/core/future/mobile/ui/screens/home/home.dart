@@ -68,6 +68,13 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'تحديث البيانات',
+            onPressed: () {
+              context.read<IncidentMapCubit>().refresh();
+            },
+          ),
           BlocBuilder<DashboardCubit, DashboardState>(
             builder: (context, state) {
               final cubit = context.read<DashboardCubit>();
@@ -120,51 +127,72 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                         ),
                       ),
 
-                      /// List
+                      /// List with Pull-to-Refresh
                       Expanded(
-                        child: filteredIncidents.isEmpty
-                            ? _EmptyStateWidget()
-                            : ListView.builder(
-                                addAutomaticKeepAlives: false,
-                                addRepaintBoundaries: true,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                itemCount: filteredIncidents.length,
-                                itemBuilder: (context, index) {
-                                  final incident = filteredIncidents[index];
-
-                                  return RepaintBoundary(
-                                    child: _MobileIncidentCard(
-                                      incident: incident,
-                                      onTap: () {
-                                        incidentID =
-                                            incident.currentIncidentId ?? 0;
-
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => MultiBlocProvider(
-                                              providers: [
-                                                BlocProvider.value(
-                                                  value: dashboardCubit,
-                                                ),
-                                                BlocProvider.value(
-                                                  value: context
-                                                      .read<IncidentMapCubit>(),
-                                                ),
-                                              ],
-                                              child:
-                                                  const MobileIncidentDetailsScreen(),
-                                            ),
-                                          ),
-                                        );
-                                      },
+                        child: RefreshIndicator(
+                          color: appColor,
+                          backgroundColor: Colors.white,
+                          onRefresh: () async {
+                            await context.read<IncidentMapCubit>().refresh();
+                          },
+                          child: filteredIncidents.isEmpty
+                              ? LayoutBuilder(
+                                  builder: (context, constraints) =>
+                                      SingleChildScrollView(
+                                    physics:
+                                        const AlwaysScrollableScrollPhysics(),
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minHeight: constraints.maxHeight,
+                                      ),
+                                      child: _EmptyStateWidget(),
                                     ),
-                                  );
-                                },
-                              ),
+                                  ),
+                                )
+                              : ListView.builder(
+                                  physics:
+                                      const AlwaysScrollableScrollPhysics(),
+                                  addAutomaticKeepAlives: false,
+                                  addRepaintBoundaries: true,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  itemCount: filteredIncidents.length,
+                                  itemBuilder: (context, index) {
+                                    final incident = filteredIncidents[index];
+
+                                    return RepaintBoundary(
+                                      child: _MobileIncidentCard(
+                                        incident: incident,
+                                        onTap: () {
+                                          incidentID =
+                                              incident.currentIncidentId ?? 0;
+
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => MultiBlocProvider(
+                                                providers: [
+                                                  BlocProvider.value(
+                                                    value: dashboardCubit,
+                                                  ),
+                                                  BlocProvider.value(
+                                                    value: context
+                                                        .read<IncidentMapCubit>(),
+                                                  ),
+                                                ],
+                                                child:
+                                                    const MobileIncidentDetailsScreen(),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
                       ),
                     ],
                   ),
@@ -176,8 +204,11 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
       ),
 
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          context.pushNamed(Routes.addIncidentMobile);
+        onPressed: () async {
+          await context.pushNamed(Routes.addIncidentMobile);
+          if (context.mounted) {
+            context.read<IncidentMapCubit>().refresh();
+          }
         },
         backgroundColor: appColor,
         icon: const Icon(Icons.add, color: Colors.white),
@@ -2029,7 +2060,8 @@ class _MobileTimelineSection extends StatelessWidget {
               icon: Icons.update,
               title: 'آخر تحديث للحالة',
               time: incident.currentIncidentStatusUpdatedAt!,
-              userId: incident.currentIncidentStatusUpdatedBy,
+              userId: incident.currentIncidentStatusUpdatedBy, 
+              username: incident.statusUpdatedByUserName,
             ),
           if (incident.currentIncidentSeverityUpdateAt != null)
             _MobileTimelineItem(
@@ -2037,6 +2069,7 @@ class _MobileTimelineSection extends StatelessWidget {
               title: 'آخر تحديث للخطورة',
               time: incident.currentIncidentSeverityUpdateAt!,
               userId: incident.currentIncidentSeverityUpdateBy,
+              username: incident.severityUpdatedByUserName,
               isLast: true,
             ),
         ],
@@ -2048,6 +2081,8 @@ class _MobileTimelineSection extends StatelessWidget {
 class _MobileTimelineItem extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String? username;
+
   final DateTime time;
   final int? userId;
   final bool isFirst;
@@ -2057,6 +2092,7 @@ class _MobileTimelineItem extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.time,
+    this.username,
     this.userId,
     this.isFirst = false,
     this.isLast = false,
@@ -2112,7 +2148,7 @@ class _MobileTimelineItem extends StatelessWidget {
                   ),
                   if (userId != null)
                     Text(
-                      'بواسطة: #$userId',
+                      'بواسطة: $username?? #$userId',
                       style: TextStyle(fontSize: 11, color: disabledTextColor),
                     ),
                 ],

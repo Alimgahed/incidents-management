@@ -6,7 +6,7 @@ import 'package:incidents_managment/core/future/actions/ui/screens/missions/all_
 import 'package:incidents_managment/core/future/actions/ui/screens/missions/relation_incident_mission.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_states.dart';
-import 'package:incidents_managment/core/future/home/ui/screens/active_teams_screen.dart';
+import 'package:incidents_managment/core/future/home/ui/screens/user_management_screen.dart';
 import 'package:incidents_managment/core/future/home/ui/screens/analytics_overview_screen.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dash_board.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dashboard_command_palette.dart';
@@ -15,6 +15,8 @@ import 'package:incidents_managment/core/future/home/ui/widgets/map_widget.dart'
 import 'package:incidents_managment/core/future/home/ui/widgets/side_bar.dart';
 import 'package:incidents_managment/core/future/valve/ui/web_valve_map_screen.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
+import 'package:incidents_managment/core/security/session_manager.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 
 class CrisisDashboard extends StatefulWidget {
   const CrisisDashboard({super.key});
@@ -119,21 +121,21 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                       }
                     });
 
-                    if (index >= 0 &&
-                        index < _tabs.length &&
-                        _tabs[index] == null) {
-                      _tabs[index] = switch (index) {
-                        0 => const DashboardView(),
-                        1 => const IncidentsMapScreen(),
-                        2 => const ActiveTeamsScreen(),
-                        3 => const AnalyticsOverviewScreen(),
-                        4 => const AddIncidentScreen(),
-                        5 => const AllIncidentType(),
-                        6 => const AllMissions(),
-                        7 => const Addincidentmission(),
-                        8 => const WebValveMapScreen(),
-                        _ => const SizedBox.shrink(),
-                      };
+                    if (index >= 0 && index < _tabs.length) {
+                      if (_tabs[index] == null || index == 5 || index == 6) {
+                        _tabs[index] = switch (index) {
+                          0 => const DashboardView(),
+                          1 => const IncidentsMapScreen(),
+                          2 => const UserManagementScreen(),
+                          3 => const AnalyticsOverviewScreen(),
+                          4 => const AddIncidentScreen(),
+                          5 => AllIncidentType(key: UniqueKey()),
+                          6 => AllMissions(key: UniqueKey()),
+                          7 => const Addincidentmission(),
+                          8 => const WebValveMapScreen(),
+                          _ => const SizedBox.shrink(),
+                        };
+                      }
                     }
 
                     final children = List<Widget>.generate(_tabs.length, (i) {
@@ -207,57 +209,145 @@ class _DesktopSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        IconButton(
-          tooltip: 'القائمة — لوحة التحكم، الفرق، التحليلات…',
-          onPressed: () => Scaffold.of(context).openDrawer(),
-          icon: Icon(Icons.menu_rounded, color: AppTheme.textSecondary),
-        ),
-        const SizedBox(width: 4),
-        Container(
-          width: 4,
-          height: 28,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor,
-            borderRadius: BorderRadius.circular(4),
+    final user = getIt<SessionManager>().getCurrentUser();
+    final userName = user?.empName ?? user?.username ?? 'مستخدم';
+    final userRole = user?.authorityName ?? 'غير محدد';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Hamburger Menu (First in RTL = Right)
+          IconButton(
+            tooltip: 'القائمة',
+            onPressed: () => Scaffold.of(context).openDrawer(),
+            icon: const Icon(Icons.menu_rounded, color: Color(0xFF1B4F8A), size: 28),
+          ),
+          
+          const SizedBox(width: 16),
+          
+          // Title
+          Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
-              letterSpacing: -0.3,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF0F172A),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
-        ),
-        const SizedBox(width: 12),
-        IconButton(
-          tooltip: 'بحث وتنقل سريع (Ctrl+K)',
-          onPressed: () => showDashboardCommandPalette(context),
-          icon: Icon(Icons.search_rounded, color: AppTheme.textSecondary),
-        ),
-        Flexible(
-          flex: 2,
-          child: SizedBox(
-            height: 44,
+          
+          const SizedBox(width: 24),
+          
+          // Search Bar
+          Expanded(
             child: Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DashboardLiveStatusStrip(),
+              alignment: Alignment.center,
+              child: Container(
+                height: 44,
+                constraints: const BoxConstraints(maxWidth: 400),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: TextField(
+                  readOnly: true,
+                  onTap: () => showDashboardCommandPalette(context),
+                  decoration: const InputDecoration(
+                    hintText: 'بحث في الأزمات...',
+                    hintStyle: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 13,
+                    ),
+                    prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF64748B)),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ],
+          
+          const SizedBox(width: 24),
+          
+          // Status Badges
+          DashboardLiveStatusStrip(),
+          
+          const SizedBox(width: 16),
+          
+          // Notification Bell
+          Stack(
+            alignment: Alignment.topRight,
+            children: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1B4F8A)),
+              ),
+              Positioned(
+                top: 10,
+                right: 12,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(width: 20),
+          
+          // Profile (Last in RTL = Left)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  Text(
+                    userRole,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 10),
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: const Color(0xFF1B4F8A),
+                child: const Icon(Icons.person, color: Colors.white, size: 20),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

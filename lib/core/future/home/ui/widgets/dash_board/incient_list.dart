@@ -61,7 +61,7 @@ class _IncidentCardState extends State<IncidentCard> {
         ? appColor
         : (_isHovered
               ? appColor.withAlpha((0.35 * 255).toInt())
-              : const Color(0xFFE2E8F0));
+              : Colors.transparent);
 
     final cardBgColor = widget.isSelected
         ? appColor.withAlpha((0.04 * 255).toInt())
@@ -488,9 +488,7 @@ class IncidentsList extends StatelessWidget {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(useWebGrid ? 12 : 16),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
+         
           ),
           child: Padding(
             padding: EdgeInsets.fromLTRB(
@@ -513,7 +511,6 @@ class IncidentsList extends StatelessWidget {
                   child: incidents.isEmpty
                       ? _buildEmptyState()
                       : ListView.builder(
-                          scrollCacheExtent: ScrollCacheExtent.pixels(500),
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           itemCount: incidents.length,
                           itemBuilder: (context, index) {

@@ -29,6 +29,7 @@ class FileUploadRepository {
     required String description,
     required double xAxis, // longitude
     required double yAxis, // latitude
+    bool updateLocation = false,
   }) async {
     final dio = getIt<Dio>();
     final attachmentRepo = getIt<AttachmentCacheRepository>();
@@ -53,6 +54,7 @@ class FileUploadRepository {
       xAxis: xAxis,
       yAxis: yAxis,
       createdAtMs: DateTime.now().millisecondsSinceEpoch,
+      updateLocation: updateLocation,
     );
     await attachmentRepo.add(cached);
 
@@ -78,17 +80,19 @@ class FileUploadRepository {
 
     // 3. Online → upload now, mark cached attachment uploaded on success.
     try {
-      final formData = FormData.fromMap({
+      final formMap = <String, dynamic>{
         'description': description,
         'x_axis': xAxis.toString(),
         'y_axis': yAxis.toString(),
+        if (updateLocation) 'update_location': 'true',
         'photo': kIsWeb
             ? MultipartFile.fromBytes(
                 await XFile(filePath).readAsBytes(),
                 filename: fileName,
               )
             : await MultipartFile.fromFile(filePath, filename: fileName),
-      });
+      };
+      final formData = FormData.fromMap(formMap);
 
       final response = await dio.post(
         '/upload-incident-photo/$incidentId',
@@ -185,8 +189,9 @@ class FileUploadRepository {
     required double xAxis,
     required double yAxis,
   }) async {
-    if (filePaths.isEmpty)
+    if (filePaths.isEmpty) {
       throw Exception('قائمة الملفات المحددة فارغة أو غير صالحة.');
+    }
     final results = <Map<String, dynamic>>[];
     for (var i = 0; i < filePaths.length; i++) {
       final path = filePaths[i];

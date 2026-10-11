@@ -9,7 +9,7 @@ import 'package:incidents_managment/core/future/auth/data/model/login_response_m
 import 'package:incidents_managment/core/future/auth/data/model/registration_model.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/model/all_active_user_model.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/model/mission_assgien_model.dart';
-import 'package:incidents_managment/core/future/valve/data/model/valve.dart';
+import 'package:incidents_managment/core/future/valve/data/model/all_valves_response.dart';
 import 'package:incidents_managment/core/network/api_constants.dart';
 import 'package:retrofit/retrofit.dart';
 part 'api_services.g.dart';
@@ -66,5 +66,18 @@ abstract class ApiService {
   @POST(ApiConstants.logout)
   Future<dynamic> logout(@Body() Map<String, dynamic> data);
   @GET(ApiConstants.allValves)
-  Future<List<ValveModel>> allValves();
+  Future<AllValvesResponse> allValves({
+    @Query('page') int? page,
+    @Query('page_size') int? pageSize,
+    @Query('lat_min') double? latMin,
+    @Query('lat_max') double? latMax,
+    @Query('long_min') double? longMin,
+    @Query('long_max') double? longMax,
+    @Query('valve_type_id') int? valveTypeId,
+    @Query('status') String? status,
+    @Query('diameter') int? diameter,
+    @Query('pipe_diameter') int? pipeDiameter,
+    @Query('direction') String? direction,
+    @Query('in_service_year') int? inServiceYear,
+  });
 }

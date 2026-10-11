@@ -313,10 +313,11 @@ class SyncManager {
 
     try {
       final dio = _dioBuilder();
-      final formData = FormData.fromMap({
+      final formMap = <String, dynamic>{
         'description': att.description,
         'x_axis': att.xAxis.toString(),
         'y_axis': att.yAxis.toString(),
+        if (att.updateLocation) 'update_location': 'true',
         'photo': kIsWeb
             ? MultipartFile.fromBytes(
                 await XFile(att.localFilePath).readAsBytes(),
@@ -326,7 +327,8 @@ class SyncManager {
                 att.localFilePath,
                 filename: att.fileName,
               ),
-      });
+      };
+      final formData = FormData.fromMap(formMap);
 
       final response = await dio.post(
         '/upload-incident-photo/$incidentId',
