@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/offline/data/models/cached_attachment.dart';
 import 'package:incidents_managment/core/offline/data/repositories/attachment_cache_repository.dart';
@@ -35,19 +37,39 @@ class FileUploadRepository {
     final attachmentRepo = getIt<AttachmentCacheRepository>();
     final monitor = getIt<NetworkMonitorService>();
 
+    // 1. Copy file to durable storage so it survives OS cache purges.
+    //    On web this is skipped — picker paths are session-scoped.
+    String durablePath = filePath;
     if (!kIsWeb) {
       final file = File(filePath);
       if (!await file.exists()) {
         throw Exception('ملف الصورة غير موجود على الجهاز.');
       }
+      try {
+        final appDir = await getApplicationDocumentsDirectory();
+        final attachDir = Directory('${appDir.path}/offline_attachments');
+        if (!await attachDir.exists()) {
+          await attachDir.create(recursive: true);
+        }
+        final ext = fileName.contains('.')
+            ? '.${fileName.split('.').last}'
+            : '';
+        final durableFile = File('${attachDir.path}/${const Uuid().v4()}$ext');
+        await file.copy(durableFile.path);
+        durablePath = durableFile.path;
+      } catch (e) {
+        // If copy fails, fall back to original path — still better than
+        // blocking the user. SyncManager will detect a missing file later.
+        if (kDebugMode) debugPrint('⚠️ Durable copy failed: $e');
+      }
     }
 
-    // 1. Always register the attachment locally first — the UI shows it
-    //    immediately and the SyncManager picks it up later if needed.
+    // 2. Register the attachment locally — the UI shows it immediately
+    //    and the SyncManager picks it up later if needed.
     final cached = CachedAttachment(
       localId: TempIdGenerator.nextString(),
       incidentIdOrTempId: incidentId,
-      localFilePath: filePath,
+      localFilePath: durablePath,
       fileName: fileName,
       mimeType: _guessMime(fileName),
       description: description,
@@ -58,7 +80,7 @@ class FileUploadRepository {
     );
     await attachmentRepo.add(cached);
 
-    // 2. Offline or referencing a not-yet-synced incident → defer upload.
+    // 3. Offline or referencing a not-yet-synced incident → defer upload.
     if (monitor.isOffline || incidentId < 0) {
       // CachedAttachment currently persists a path, not the selected bytes.
       // Browser picker paths are session scoped and cannot be replayed after
@@ -78,7 +100,7 @@ class FileUploadRepository {
       };
     }
 
-    // 3. Online → upload now, mark cached attachment uploaded on success.
+    // 4. Online → upload now, mark cached attachment uploaded on success.
     try {
       final formMap = <String, dynamic>{
         'description': description,
@@ -90,7 +112,7 @@ class FileUploadRepository {
                 await XFile(filePath).readAsBytes(),
                 filename: fileName,
               )
-            : await MultipartFile.fromFile(filePath, filename: fileName),
+            : await MultipartFile.fromFile(durablePath, filename: fileName),
       };
       final formData = FormData.fromMap(formMap);
 

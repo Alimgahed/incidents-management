@@ -257,6 +257,12 @@ class _MobileDrawerState extends State<MobileDrawer> {
 
     if (confirmed == true) {
       await getIt<SessionManager>().logout();
+      if (context.mounted) {
+        context.pushNamedAndRemoveUntil(
+          Routes.login,
+          predicate: (route) => false,
+        );
+      }
     }
   }
 }

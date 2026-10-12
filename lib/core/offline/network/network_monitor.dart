@@ -5,6 +5,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+/// A [Completer]-based single-flight wrapper so multiple callers share the
+/// same in-progress probe instead of skipping it entirely.
+
 /// Centralised connectivity state for the whole app.
 ///
 /// Wraps `connectivity_plus` AND a real HTTP reachability probe — the OS-level
@@ -60,7 +63,15 @@ class NetworkMonitorService {
   Timer? _probeTimer;
   bool _isOnline = true;
   bool _initialized = false;
-  bool _probeInFlight = false;
+
+  /// Completer for the currently in-flight probe. All concurrent callers
+  /// await the same Future so we never fire overlapping HTTP requests.
+  Completer<bool>? _probeCompleter;
+
+  /// Monotonic counter incremented before each probe. After the probe
+  /// completes, we only update state if the generation still matches —
+  /// this prevents a slow, stale probe from overwriting a newer result.
+  int _probeGeneration = 0;
 
   bool get isOnline => _isOnline;
   bool get isOffline => !_isOnline;
@@ -180,10 +191,22 @@ class NetworkMonitorService {
   /// Real HTTP probe. Tries HEAD then falls back to GET on the base URL.
   /// Returns true if the server answered (any status code other than a
   /// transport error counts as "we have internet").
+  ///
+  /// Uses a [Completer]-based single-flight pattern: if a probe is already
+  /// in progress, concurrent callers get the same [Future] instead of
+  /// silently skipping. A generation counter prevents a slow probe from
+  /// overwriting the result of a faster, more recent one.
   Future<bool> _runProbe({required bool triggerReconnect}) async {
     if (baseUrl == null) return _isOnline;
-    if (_probeInFlight) return _isOnline;
-    _probeInFlight = true;
+
+    // If a probe is already in flight, coalesce into its result.
+    final existing = _probeCompleter;
+    if (existing != null && !existing.isCompleted) return existing.future;
+
+    final completer = Completer<bool>();
+    _probeCompleter = completer;
+    final gen = ++_probeGeneration;
+
     try {
       final dio = _probeClient ??
           Dio(BaseOptions(
@@ -194,39 +217,50 @@ class NetworkMonitorService {
           ));
       final url = baseUrl!;
       final cacheBuster = {'_probe_t': DateTime.now().millisecondsSinceEpoch};
+      bool reached = false;
       try {
         await dio.head(url,
             queryParameters: cacheBuster,
             options: Options(receiveTimeout: probeTimeout));
-        _updateState(true, triggerReconnect: triggerReconnect);
-        return true;
+        reached = true;
       } catch (_) {
         // HEAD might not be supported — fall back to GET /
         try {
           await dio.get(url,
               queryParameters: cacheBuster,
               options: Options(receiveTimeout: probeTimeout));
-          _updateState(true, triggerReconnect: triggerReconnect);
-          return true;
+          reached = true;
         } on DioException catch (e) {
           // A response with any status code (4xx/5xx) means we reached the
           // server — that's still "online".
           if (e.response != null) {
-            _updateState(true, triggerReconnect: triggerReconnect);
-            return true;
+            reached = true;
           }
-          _updateState(false);
-          return false;
         } on SocketException {
-          _updateState(false);
-          return false;
+          // no internet
         } catch (_) {
-          _updateState(false);
-          return false;
+          // treat as offline
         }
       }
+
+      // Only update state if no newer probe has been started while we were
+      // awaiting the HTTP call (prevents stale overwrites).
+      if (gen == _probeGeneration) {
+        _updateState(reached, triggerReconnect: reached && triggerReconnect);
+      }
+      completer.complete(reached);
+      return reached;
+    } catch (e) {
+      if (gen == _probeGeneration) {
+        _updateState(false);
+      }
+      completer.complete(false);
+      return false;
     } finally {
-      _probeInFlight = false;
+      // Clear the completer only if no newer probe has replaced it.
+      if (_probeCompleter == completer) {
+        _probeCompleter = null;
+      }
     }
   }
 

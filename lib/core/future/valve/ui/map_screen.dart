@@ -39,19 +39,42 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('خريطة شبكة المياه - المنيا'),
-        backgroundColor: const Color(0xFF1565C0),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.my_location),
-            tooltip: 'موقعي الحالي',
-            onPressed: _centerOnUser,
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'خريطة المحابس والشبكات',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
           ),
-        ],
-      ),
+          centerTitle: true,
+          backgroundColor: const Color(0xFF0F3B6C),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+            tooltip: 'رجوع',
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          actions: [
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.my_location_rounded, color: Colors.white),
+                tooltip: 'موقعي الحالي',
+                onPressed: _centerOnUser,
+              ),
+            ),
+          ],
+        ),
       body: BlocConsumer<ValveProximityCubit, ProximityState>(
         listener: (context, state) {
           if (state is ProximitySafe) {
@@ -181,8 +204,9 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   List<Marker> _buildValveMarkers(BuildContext context, ProximityState state) {
     double? userLat;

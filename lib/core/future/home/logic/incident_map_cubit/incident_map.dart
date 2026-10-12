@@ -11,6 +11,8 @@ import 'package:incidents_managment/core/future/actions/data/models/current_inci
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_picker_bridge.dart';
+import 'package:incidents_managment/core/offline/data/models/cached_incident.dart';
+import 'package:incidents_managment/core/offline/data/repositories/incident_cache_repository.dart';
 
 // ---------------------------------------------------------------------------
 // Top-level isolate helpers (must live outside the class for compute())
@@ -70,7 +72,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   }
 
   // ===========================================================================
-  // SOCKET INITIALIZATION
+  // SOCKET INITIALIZATION & CACHE PRELOADING
   // ===========================================================================
   Future<void> initialize() {
     if (_socket?.connected == true) return Future<void>.value();
@@ -81,8 +83,50 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     return future.whenComplete(() => _initializeFuture = null);
   }
 
+  Future<void> _loadFromCache() async {
+    try {
+      if (!getIt.isRegistered<IncidentCacheRepository>()) return;
+      final cacheRepo = getIt<IncidentCacheRepository>();
+      final cachedList = cacheRepo.list(limit: 500);
+      if (cachedList.isEmpty) return;
+
+      final loaded = <CurrentIncidentModel>[];
+      for (final item in cachedList) {
+        try {
+          loaded.add(CurrentIncidentModel.fromJson(item.toMap()));
+        } catch (_) {}
+      }
+      if (loaded.isNotEmpty && incidentss.isEmpty && !isClosed) {
+        incidentss = loaded;
+        _bumpPayloadTime();
+        getIt<IncidentPickerBridge>().resolvePending(incidentss);
+        emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('IncidentMap: cache load failed: $e');
+    }
+  }
+
+  void _saveSnapshotToCache(List<CurrentIncidentModel> list) {
+    try {
+      if (!getIt.isRegistered<IncidentCacheRepository>()) return;
+      final cacheRepo = getIt<IncidentCacheRepository>();
+      final cachedItems = list
+          .where((i) => i.currentIncidentId != null)
+          .map((i) => CachedIncident.fromMap(
+                i.toJson(),
+                idOrTempId: i.currentIncidentId!,
+              ))
+          .toList();
+      unawaited(cacheRepo.upsertAll(cachedItems));
+    } catch (_) {}
+  }
+
   Future<void> _initialize() async {
     try {
+      // 0. Pre-load cached incidents from Hive immediately so the UI is responsive offline
+      await _loadFromCache();
+
       // 1. Get token from storage securely
       final token = await getIt<SecureStorageService>().getUserToken();
       if (isClosed) return;
@@ -256,6 +300,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       getIt<IncidentPickerBridge>().resolvePending(incidentss);
 
       _bumpPayloadTime();
+      _saveSnapshotToCache(incidentss);
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     } catch (e) {
       emit(IncidentMapError(message: 'خطأ في تحميل البيانات'));
@@ -350,6 +395,15 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
     incidentss = updated;
     _bumpPayloadTime();
+    if (newIncident.currentIncidentId != null &&
+        getIt.isRegistered<IncidentCacheRepository>()) {
+      unawaited(getIt<IncidentCacheRepository>().upsert(
+        CachedIncident.fromMap(
+          newIncident.toJson(),
+          idOrTempId: newIncident.currentIncidentId!,
+        ),
+      ));
+    }
     emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
   }
 
@@ -371,6 +425,14 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       updated[index] = updatedIncident;
       incidentss = updated;
       _bumpPayloadTime();
+      if (getIt.isRegistered<IncidentCacheRepository>()) {
+        unawaited(getIt<IncidentCacheRepository>().upsert(
+          CachedIncident.fromMap(
+            updatedIncident.toJson(),
+            idOrTempId: incidentId,
+          ),
+        ));
+      }
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
     }
   }
@@ -407,6 +469,15 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
         updated[index] = updatedIncident;
         incidentss = updated;
         _bumpPayloadTime();
+        if (updatedIncident.currentIncidentId != null &&
+            getIt.isRegistered<IncidentCacheRepository>()) {
+          unawaited(getIt<IncidentCacheRepository>().upsert(
+            CachedIncident.fromMap(
+              updatedIncident.toJson(),
+              idOrTempId: updatedIncident.currentIncidentId!,
+            ),
+          ));
+        }
         emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
       } else {
         addIncident(updatedIncident);
@@ -426,6 +497,10 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
         .toList(growable: false);
 
     _bumpPayloadTime();
+    final delId = id is int ? id : int.tryParse('$id');
+    if (delId != null && getIt.isRegistered<IncidentCacheRepository>()) {
+      unawaited(getIt<IncidentCacheRepository>().remove(delId));
+    }
     emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
   }
 

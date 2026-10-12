@@ -34,6 +34,7 @@ import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/miss
 import 'package:incidents_managment/core/future/mission_assigen/ui/screens/mission_assign.dart';
 import 'package:incidents_managment/core/future/mobile/ui/screens/add_photo/add_image.dart';
 import 'package:incidents_managment/core/future/mobile/ui/screens/home/home.dart';
+import 'package:incidents_managment/core/future/mobile/ui/screens/more_services/more_services_screen.dart';
 import 'package:incidents_managment/core/future/valve/logic/cubit/valve_cubit.dart';
 import 'package:incidents_managment/core/future/valve/ui/map_screen.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
@@ -237,6 +238,10 @@ class AppRouter {
             create: (context) => getIt<ValveProximityCubit>(),
             child: const MapScreen(),
           ),
+        );
+      case Routes.mobileMoreServices:
+        return MaterialPageRoute(
+          builder: (_) => const MobileMoreServicesScreen(),
         );
 
       default:

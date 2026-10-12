@@ -29,132 +29,201 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
     return BlocProvider(
       create: (_) => FileUploadCubit(repository: FileUploadRepository()),
       child: Builder(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: const Text('رفع صور الأزمة'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                onPressed: () {
-                  context.read<FileUploadCubit>().resetState();
-                  setState(() {
-                    _updateLocation = false;
-                  });
-                },
-                tooltip: 'إعادة تعيين',
-              ),
-            ],
-          ),
-          body: BlocConsumer<FileUploadCubit, FileUploadState>(
-            listener: (context, state) {
-              state.maybeWhen(
-                uploadSuccess: (message, fileName) {
-                  final queued = _isQueuedUploadMessage(message);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          Icon(
-                            queued ? Icons.schedule_send : Icons.check_circle,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(child: Text(message)),
-                        ],
+        builder: (context) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            backgroundColor: const Color(0xFFF4F7FB),
+            body: BlocConsumer<FileUploadCubit, FileUploadState>(
+              listener: (context, state) {
+                state.maybeWhen(
+                  uploadSuccess: (message, fileName) {
+                    final queued = _isQueuedUploadMessage(message);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(
+                              queued ? Icons.schedule_send : Icons.check_circle,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(message)),
+                          ],
+                        ),
+                        backgroundColor: queued
+                            ? AppTheme.queuedColor
+                            : AppTheme.successColor,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        margin: const EdgeInsets.all(16),
                       ),
-                      backgroundColor: queued
-                          ? AppTheme.queuedColor
-                          : AppTheme.successColor,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    );
+                  },
+                  uploadError: (error) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.error, color: Colors.white),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(error)),
+                          ],
+                        ),
+                        backgroundColor: AppTheme.errorColor,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        margin: const EdgeInsets.all(16),
                       ),
-                      margin: const EdgeInsets.all(16),
-                    ),
-                  );
-                },
-                uploadError: (error) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          const Icon(Icons.error, color: Colors.white),
-                          const SizedBox(width: 12),
-                          Expanded(child: Text(error)),
-                        ],
+                    );
+                  },
+                  orElse: () {},
+                );
+              },
+              builder: (context, state) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHeaderBanner(context),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                        child: _buildMainContent(context, state),
                       ),
-                      backgroundColor: AppTheme.errorColor,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      margin: const EdgeInsets.all(16),
-                    ),
-                  );
-                },
-                orElse: () {},
-              );
-            },
-            builder: (context, state) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeaderSection(context),
-                    const SizedBox(height: 32),
-                    _buildMainContent(context, state),
-                  ],
-                ),
-              );
-            },
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeaderSection(BuildContext context) {
+  Widget _buildHeaderBanner(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppTheme.primaryColor, AppTheme.primaryLight],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+      decoration: const BoxDecoration(
+        color: Color(0xFF0F3B6C),
+        image: DecorationImage(
+          image: AssetImage('assets/images/header_banner.jpg'),
+          fit: BoxFit.cover,
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withAlpha(77),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(51),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.cloud_upload_rounded,
-              size: 48,
-              color: Colors.white,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFF0A2240).withValues(alpha: 0.94),
+              const Color(0xFF0F3866).withValues(alpha: 0.88),
+              const Color(0xFF164780).withValues(alpha: 0.97),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Brand Logo (Right in RTL)
+                    Container(
+                      width: 50,
+                      height: 50,
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                          Icons.water_drop_rounded,
+                          color: appColor,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+
+                    // Actions Row: Reset and Back Button
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                          tooltip: 'إعادة تعيين',
+                          onPressed: () {
+                            context.read<FileUploadCubit>().resetState();
+                            setState(() {
+                              _updateLocation = false;
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).maybePop(),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.16),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'رفع وتوثيق صور الأزمة',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'توثيق ميداني للبلاغ بالصور المباشرة والإحداثيات',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withValues(alpha: 0.88),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'رفع صور الأزمة',
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-              color: Colors.white,
-              fontSize: 24,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

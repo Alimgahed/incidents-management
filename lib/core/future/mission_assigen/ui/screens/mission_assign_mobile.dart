@@ -307,7 +307,7 @@ class _PremiumAppBar extends StatelessWidget {
         children: [
           // Back button
           _GlassIconButton(
-            icon: Icons.arrow_back_ios_rounded,
+            icon: Icons.arrow_forward_ios_rounded,
             onTap: () => Navigator.of(context).pop(),
           ),
           const SizedBox(width: 14),

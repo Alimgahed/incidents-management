@@ -191,7 +191,8 @@ class FileUploadCubit extends Cubit<FileUploadState> {
 
   /// ==========================
   /// Upload File With Location
-  /// FIX: Guards against null position from failed permission
+  /// GPS is best-effort: tries current position, falls back to last known,
+  /// then falls back to (0, 0). Image save is never blocked by GPS.
   /// ==========================
   Future<void> uploadFile(
     int incidentId,
@@ -202,19 +203,34 @@ class FileUploadCubit extends Cubit<FileUploadState> {
     try {
       emit(FileUploadState.uploading(progress: 0.0, fileName: fileName));
 
-      // Get current location (with permission handling)
-      final position = await _getCurrentLocation();
-
-      // If position is null, permission failed and error state already emitted
-      if (position == null) return;
+      // Best-effort GPS — never blocks image save.
+      double lat = 0.0;
+      double lng = 0.0;
+      try {
+        final position = await _getCurrentLocation();
+        if (position != null) {
+          lat = position.latitude;
+          lng = position.longitude;
+        } else {
+          // Permission failed — try last known as silent fallback.
+          final last = await Geolocator.getLastKnownPosition();
+          if (last != null) {
+            lat = last.latitude;
+            lng = last.longitude;
+          }
+        }
+      } catch (_) {
+        // GPS entirely unavailable — proceed with (0, 0).
+        // Server accepts zero coordinates; the user can update location later.
+      }
 
       final result = await repository.uploadFile(
         filePath: filePath,
         fileName: fileName,
         incidentId: incidentId,
         description: "",
-        xAxis: position.latitude,
-        yAxis: position.longitude,
+        xAxis: lat,
+        yAxis: lng,
         updateLocation: updateLocation,
         onProgress: (progress) {
           emit(
@@ -223,11 +239,11 @@ class FileUploadCubit extends Cubit<FileUploadState> {
         },
       );
 
-      if (updateLocation && getIt.isRegistered<IncidentMapCubit>()) {
+      if (updateLocation && lat != 0.0 && lng != 0.0 && getIt.isRegistered<IncidentMapCubit>()) {
         getIt<IncidentMapCubit>().updateIncidentLocation(
           incidentId: incidentId,
-          lat: position.latitude,
-          lng: position.longitude,
+          lat: lat,
+          lng: lng,
         );
       }
 
