@@ -5,6 +5,8 @@ import 'package:incidents_managment/core/future/actions/data/models/missions/all
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_missions_state.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/missions/missions_card.dart';
+import 'package:flutter/services.dart';
+import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
@@ -37,23 +39,26 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF4F7FB),
-        body: BlocBuilder<AllMissionsCubit, GetAllMissionState>(
-          builder: (context, state) {
-            return state.when(
-              initial: () => const Center(child: Loadding()),
-              loading: () => const Center(child: Loadding()),
-              error: (message) => const Center(child: Error()),
-              loaded: (missions) => _buildContent(context, missions),
-            );
-          },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: MobileSystemBars.standard,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF4F7FB),
+          body: BlocBuilder<AllMissionsCubit, GetAllMissionState>(
+            builder: (context, state) {
+              return state.when(
+                initial: () => const Center(child: Loadding()),
+                loading: () => const Center(child: Loadding()),
+                error: (message) => const Center(child: Error()),
+                loaded: (missions) => _buildContent(context, missions),
+              );
+            },
+          ),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.miniStartFloat,
+          floatingActionButton: _buildFloatingAddButton(context),
         ),
-        floatingActionButtonLocation:
-            FloatingActionButtonLocation.miniStartFloat,
-        floatingActionButton: _buildFloatingAddButton(context),
       ),
     );
   }
@@ -168,20 +173,22 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                          Icons.water_drop_rounded,
-                          color: appColor,
-                          size: 28,
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                            Icons.water_drop_rounded,
+                            color: appColor,
+                            size: 28,
+                          ),
                         ),
                       ),
                     ),

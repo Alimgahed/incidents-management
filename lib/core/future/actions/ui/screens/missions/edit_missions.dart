@@ -7,6 +7,8 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/classes_cubi
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/edit_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_missions_states.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/all_incident_classes.dart';
+import 'package:flutter/services.dart';
+import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
@@ -25,10 +27,12 @@ class EditMissions extends StatelessWidget {
       editCubit.missionName.text = mission!.missionName;
     }
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF4F7FB),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: MobileSystemBars.standard,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF4F7FB),
         body: BlocListener<EditMissionsCubit, AddMissionsState>(
           listener: (context, state) {
             state.whenOrNull(
@@ -197,8 +201,9 @@ class EditMissions extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHeaderBanner(BuildContext context) {
     return Container(

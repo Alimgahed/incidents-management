@@ -13,6 +13,7 @@ import 'package:incidents_managment/core/security/secure_storage_service.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_picker_bridge.dart';
 import 'package:incidents_managment/core/offline/data/models/cached_incident.dart';
 import 'package:incidents_managment/core/offline/data/repositories/incident_cache_repository.dart';
+import 'package:incidents_managment/core/offline/network/network_monitor.dart';
 
 // ---------------------------------------------------------------------------
 // Top-level isolate helpers (must live outside the class for compute())
@@ -53,8 +54,8 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   Timer? _alertTimer;
 
   int _reconnectAttempts = 0;
-  static const int _maxReconnectAttempts = 5;
-  static const Duration _reconnectDelay = Duration(seconds: 3);
+  Timer? _heartbeatTimer;
+  StreamSubscription<bool>? _networkSub;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isAlertPlaying = false;
@@ -65,7 +66,21 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   // 🔊 SAME SOUND USED IN DASHBOARD CONTROLLER
   static const String alertSoundUrl =
       'https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg';
-  IncidentMapCubit() : super(IncidentMapInitial());
+  IncidentMapCubit() : super(IncidentMapInitial()) {
+    _listenToNetworkChanges();
+  }
+
+  void _listenToNetworkChanges() {
+    try {
+      if (getIt.isRegistered<NetworkMonitorService>()) {
+        final monitor = getIt<NetworkMonitorService>();
+        monitor.addReconnectListener(() {
+          if (kDebugMode) debugPrint('IncidentMap: Network restored, re-verifying socket connection');
+          reconnectIfDisconnected();
+        });
+      }
+    } catch (_) {}
+  }
 
   void _bumpPayloadTime() {
     _lastIncidentPayloadAt = DateTime.now();
@@ -81,6 +96,21 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     final future = _initialize();
     _initializeFuture = future;
     return future.whenComplete(() => _initializeFuture = null);
+  }
+
+  /// Public method to safely reconnect whenever the app returns from background
+  /// or when the network recovers.
+  void reconnectIfDisconnected() {
+    if (isClosed) return;
+    if (_socket == null || _socket?.connected != true) {
+      _reconnectAttempts = 0;
+      _reconnectTimer?.cancel();
+      if (_socket == null) {
+        initialize();
+      } else {
+        _socket?.connect();
+      }
+    }
   }
 
   Future<void> _loadFromCache() async {
@@ -155,8 +185,10 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       final opts = io.OptionBuilder()
           .setTransports(kIsWeb ? ['polling', 'websocket'] : ['polling'])
           .setPath(socketPath)
-          .setReconnectionAttempts(_maxReconnectAttempts)
-          .setReconnectionDelay(3000)
+          .enableReconnection() // Let socket.io client continuously auto-reconnect
+          .setReconnectionAttempts(999999) // Infinite reconnection attempts
+          .setReconnectionDelay(2000)
+          .setReconnectionDelayMax(10000)
           .disableAutoConnect() // Don't connect until listeners are ready
           .disableMultiplex() // Force new connection, bypasses dead cache
           .setAuth({'token': token}) // Pass token in auth object
@@ -196,11 +228,26 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       // 3. Attach listeners BEFORE connecting to avoid race condition
       _setupSocketListeners();
 
-      // 4. Now connect manually
+      // 4. Start heartbeat timer to detect and resurrect silent dead connections
+      _startHeartbeatTimer();
+
+      // 5. Now connect manually
       _socket?.connect();
     } catch (e) {
       emit(IncidentMapError(message: 'فشل في إنشاء اتصال Socket.IO'));
     }
+  }
+
+  void _startHeartbeatTimer() {
+    _heartbeatTimer?.cancel();
+    // Every 25 seconds, verify if socket is connected. If not, trigger reconnect
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+      if (isClosed) return;
+      if (_socket != null && _socket?.connected != true) {
+        if (kDebugMode) debugPrint('IncidentMap: Heartbeat detected disconnected socket, attempting reconnect');
+        _socket?.connect();
+      }
+    });
   }
 
   void _setupSocketListeners() {
@@ -213,12 +260,11 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     _socket?.onDisconnect((_) => _attemptReconnect());
 
     _socket?.onConnectError((_) {
-      emit(IncidentMapError(message: 'فشل الاتصال بالخادم'));
       _attemptReconnect();
     });
 
     _socket?.onError((_) {
-      emit(IncidentMapError(message: 'خطأ في الاتصال بالخادم'));
+      if (kDebugMode) debugPrint('IncidentMap: Socket error received');
     });
 
     _socket?.on('incident_snapshot', _handleIncidentSnapshot);
@@ -234,15 +280,15 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   // RECONNECTION LOGIC
   // ===========================================================================
   void _attemptReconnect() {
-    if (_reconnectAttempts >= _maxReconnectAttempts) {
-      emit(IncidentMapError(message: 'فشل الاتصال بالخادم بعد عدة محاولات'));
-      return;
-    }
-
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(_reconnectDelay, () {
-      _reconnectAttempts++;
-      _socket?.connect();
+    // Exponential backoff: 2s, 4s, 6s... capped at 15s max
+    _reconnectAttempts++;
+    final delaySeconds = (_reconnectAttempts * 2).clamp(2, 15);
+    _reconnectTimer = Timer(Duration(seconds: delaySeconds), () {
+      if (isClosed) return;
+      if (_socket?.connected != true) {
+        _socket?.connect();
+      }
     });
   }
 
@@ -293,10 +339,18 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
         return;
       }
 
+      if (kDebugMode) {
+        debugPrint('IncidentMap: Received raw snapshot with ${data.length} items from server');
+      }
+
       // Defensively copy to a plain List<dynamic> so it can be sent across
       // isolate boundaries safely (socket.io may return a non-growable view).
       incidentss = await compute(_parseIncidentList, List<dynamic>.from(data));
       if (isClosed) return;
+
+      if (kDebugMode) {
+        debugPrint('IncidentMap: Successfully parsed ${incidentss.length} incidents from snapshot');
+      }
       getIt<IncidentPickerBridge>().resolvePending(incidentss);
 
       _bumpPayloadTime();
@@ -585,9 +639,13 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
         }
       }
 
+      final updatedByUserName = data['status_updated_by_user'] as String? ??
+          data['updated_by_user'] as String? ??
+          data['username'] as String?;
+
       if (missionIndex != -1) {
         final mission = missions[missionIndex];
-        // Preserve ALL existing fields and only override status + updated_at.
+        // Preserve ALL existing fields and update status + updated_at + statusUpdatedByUser.
         final updatedMission = CurrentIncidentWithMissions(
           idCurrentIncidentMission: mission.idCurrentIncidentMission,
           currentIncidentId: mission.currentIncidentId,
@@ -598,6 +656,8 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
               mission.currentIncidentMissionStatusUpdatedBy,
           currentIncidentMissionStatusUpdatedAt: DateTime.now(),
           missionName: mission.missionName,
+          assignedEmployees: mission.assignedEmployees,
+          statusUpdatedByUser: updatedByUserName ?? mission.statusUpdatedByUser,
         );
 
         missions[missionIndex] = updatedMission;
@@ -655,6 +715,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     required int incidentId,
     required int missionId,
     required int newStatus,
+    String? updatedByUserName,
   }) {
     // Calls the same logic the socket uses, so the UI updates immediately
     // even if we are offline and haven't received a socket broadcast.
@@ -662,6 +723,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       'current_incident_id': incidentId,
       'id': missionId,
       'current_incident_mission_status': newStatus,
+      ...? (updatedByUserName != null ? {'status_updated_by_user': updatedByUserName} : null),
     });
   }
 
@@ -751,8 +813,10 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   // CLEANUP & LIFECYCLE DISCONNECT
   // ===========================================================================
   void disconnectSocket() {
+    _heartbeatTimer?.cancel();
     _reconnectTimer?.cancel();
     _alertTimer?.cancel();
+    _networkSub?.cancel();
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;

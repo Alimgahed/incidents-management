@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/constant/enms.dart';
@@ -52,7 +51,6 @@ class _IncidentCardState extends State<IncidentCard> {
     final severity = widget.incident.currentIncidentSeverity ?? 1;
     final status = widget.incident.currentIncidentStatus ?? 1;
     final theme = Theme.of(context);
-    final id = widget.incident.currentIncidentId;
 
     final statusColor = getStatusColor(status);
     final severityColor = getSeverityColor(severity);
@@ -133,82 +131,100 @@ class _IncidentCardState extends State<IncidentCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Row(
-                            children: [
-                              if (id != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F5F9),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    '#$id',
-                                    style: TextStyles.size11(
-                                      fontWeight: FontWeight.w700,
-                                      color: AppTheme.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              if (id != null) const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyles.size13(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              _StatusBadge(
-                                status: status,
-                                statusColor: statusColor,
-                                compact: true,
-                              ),
-                            ],
+                          // الصف الأول: عنوان الأزمة فقط
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyles.size13(
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary,
+                            ),
                           ),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: 7),
+                          // الصف الثاني: الفرع + التاريخ والوقت + خطورة الأزمة + حالة الأزمة (أعمدة متساوية)
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.apartment_rounded,
-                                size: 13,
-                                color: AppTheme.textTertiary,
-                              ),
-                              const SizedBox(width: 4),
+                              // 1. الفرع
                               Expanded(
-                                child: Text(
-                                  widget.incident.branchName ?? '—',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyles.size11(
-                                    color: AppTheme.textSecondary,
-                                    fontWeight: FontWeight.w600,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.apartment_rounded,
+                                      size: 13,
+                                      color: AppTheme.textTertiary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        widget.incident.branchName ?? '—',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyles.size11(
+                                          color: AppTheme.textSecondary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // 2. التاريخ والوقت
+                              Expanded(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.access_time_rounded,
+                                      size: 11,
+                                      color: AppTheme.textTertiary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        widget.incident.currentIncidentCreatedAt != null
+                                            ? widget.incident.currentIncidentCreatedAt!
+                                                .formatDateTimeArabic()
+                                            : '—',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyles.size10(
+                                          color: AppTheme.textTertiary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // 3. خطورة الأزمة
+                              Expanded(
+                                child: Center(
+                                  child: _SeverityBadge(
+                                    severity: severity,
+                                    severityColor: severityColor,
+                                    compact: true,
                                   ),
                                 ),
                               ),
-                              _SeverityBadge(
-                                severity: severity,
-                                severityColor: severityColor,
-                                compact: true,
-                              ),
-                              if (widget.incident.currentIncidentCreatedAt !=
-                                  null) ...[
-                                const SizedBox(width: 6),
-                                Text(
-                                  widget.incident.currentIncidentCreatedAt!
-                                      .timeAgoArabic(),
-                                  style: TextStyles.size11(
-                                    color: AppTheme.textTertiary,
+                              const SizedBox(width: 8),
+
+                              // 4. حالة الأزمة
+                              Expanded(
+                                child: Center(
+                                  child: _StatusBadge(
+                                    status: status,
+                                    statusColor: statusColor,
+                                    compact: true,
                                   ),
                                 ),
-                              ],
+                              ),
                             ],
                           ),
                         ],
@@ -280,93 +296,101 @@ class _IncidentCardState extends State<IncidentCard> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Row 1: ID + Title + Status
-                  Row(
-                    children: [
-                      if (id != null) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '#$id',
-                            style: TextStyles.size10(
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      Expanded(
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyles.size12(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _StatusBadge(
-                        status: status,
-                        statusColor: statusColor,
-                        compact: true,
-                      ),
-                    ],
+                  // Row 1: Title
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyles.size12(
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
 
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 8),
 
-                  // Row 2: Branch + Severity
+                  // Row 2: Branch + Date and Time + Severity + Status (بمسافات متساوية)
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.apartment_rounded,
-                        size: 13,
-                        color: AppTheme.textTertiary,
-                      ),
-                      const SizedBox(width: 4),
+                      // 1. الفرع
                       Expanded(
-                        child: Text(
-                          widget.incident.branchName ?? '—',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyles.size10(
-                            color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w600,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.apartment_rounded,
+                              size: 13,
+                              color: AppTheme.textTertiary,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                widget.incident.branchName ?? '—',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyles.size10(
+                                  color: AppTheme.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // 2. التاريخ والوقت
+                      Expanded(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 11,
+                              color: AppTheme.textTertiary,
+                            ),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                widget.incident.currentIncidentCreatedAt != null
+                                    ? widget.incident.currentIncidentCreatedAt!
+                                        .formatDateTimeArabic()
+                                    : '—',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyles.size10(
+                                  color: AppTheme.textTertiary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // 3. خطورة الأزمة
+                      Expanded(
+                        child: Center(
+                          child: _SeverityBadge(
+                            severity: severity,
+                            severityColor: severityColor,
+                            compact: true,
                           ),
                         ),
                       ),
-                      if (widget.incident.currentIncidentCreatedAt != null) ...[
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.access_time_rounded,
-                          size: 12,
-                          color: AppTheme.textTertiary,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          widget.incident.currentIncidentCreatedAt!
-                              .timeAgoArabic(),
-                          style: TextStyles.size10(
-                            color: AppTheme.textTertiary,
-                            fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+
+                      // 4. حالة الأزمة
+                      Expanded(
+                        child: Center(
+                          child: _StatusBadge(
+                            status: status,
+                            statusColor: statusColor,
+                            compact: true,
                           ),
                         ),
-                      ],
-                      const SizedBox(width: 8),
-                      _SeverityBadge(
-                        severity: severity,
-                        severityColor: severityColor,
-                        compact: true,
                       ),
                     ],
                   ),

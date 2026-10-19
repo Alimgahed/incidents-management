@@ -10,7 +10,8 @@ class _FakeConnectivity implements Connectivity {
   List<ConnectivityResult> current = [ConnectivityResult.wifi];
 
   @override
-  Stream<List<ConnectivityResult>> get onConnectivityChanged => _controller.stream;
+  Stream<List<ConnectivityResult>> get onConnectivityChanged =>
+      _controller.stream;
 
   @override
   Future<List<ConnectivityResult>> checkConnectivity() async => current;
@@ -26,9 +27,9 @@ class _FakeConnectivity implements Connectivity {
 class _CountingProbeAdapter implements HttpClientAdapter {
   int callCount = 0;
   final Duration delay;
-  final int statusCode;
+  final int statusCode = 200;
 
-  _CountingProbeAdapter({this.delay = const Duration(milliseconds: 50), this.statusCode = 200});
+  _CountingProbeAdapter({this.delay = const Duration(milliseconds: 50)});
 
   @override
   Future<ResponseBody> fetch(
@@ -59,7 +60,9 @@ void main() {
   });
 
   test('concurrent refresh calls coalesce into a single HTTP probe', () async {
-    final adapter = _CountingProbeAdapter(delay: const Duration(milliseconds: 60));
+    final adapter = _CountingProbeAdapter(
+      delay: const Duration(milliseconds: 60),
+    );
     final dio = Dio()..httpClientAdapter = adapter;
 
     final monitor = NetworkMonitorService(
@@ -73,11 +76,7 @@ void main() {
     await monitor.initialize();
 
     // Trigger multiple concurrent refreshes while one is already in flight
-    final futures = [
-      monitor.refresh(),
-      monitor.refresh(),
-      monitor.refresh(),
-    ];
+    final futures = [monitor.refresh(), monitor.refresh(), monitor.refresh()];
 
     final results = await Future.wait(futures);
     expect(results, [true, true, true]);

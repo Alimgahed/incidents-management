@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_type_states.dart';
+import 'package:flutter/services.dart';
+import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/shared_incident_type_form.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 
@@ -16,9 +18,11 @@ class AddIncidentTypeMobile extends StatefulWidget {
 class _AddIncidentTypeMobileState extends State<AddIncidentTypeMobile> {
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: MobileSystemBars.standard,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
         backgroundColor: const Color(0xFFF4F7FB),
         body: BlocListener<AddIncidentTypeCubit, AddIncidentTypeState>(
           listener: (context, state) {
@@ -143,8 +147,9 @@ class _AddIncidentTypeMobileState extends State<AddIncidentTypeMobile> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHeaderBanner(BuildContext context) {
     return Container(
@@ -192,14 +197,16 @@ class _AddIncidentTypeMobileState extends State<AddIncidentTypeMobile> {
                           ),
                         ],
                       ),
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                          Icons.water_drop_rounded,
-                          color: appColor,
-                          size: 28,
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                            Icons.water_drop_rounded,
+                            color: appColor,
+                            size: 28,
+                          ),
                         ),
                       ),
                     ),

@@ -60,6 +60,14 @@ class AttachmentCacheRepository {
     await update(att);
   }
 
+  /// Clears failed or stuck pending attachments so the sync banner can be cleared.
+  Future<void> clearPendingAttachments() async {
+    final pending = pendingUploads();
+    for (final att in pending) {
+      await remove(att.localId);
+    }
+  }
+
   /// When a temp incident gets a real id, attachments need their FK updated
   /// so subsequent uploads target the right URL.
   Future<void> remapIncidentId({

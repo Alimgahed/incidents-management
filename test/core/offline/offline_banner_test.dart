@@ -74,6 +74,15 @@ class _FakeOfflineStatusCubit extends Cubit<OfflineStatusState>
     retryCount++;
   }
 
+  @override
+  Future<void> dismissConflicts() async {}
+
+  @override
+  Future<void> clearAttachments() async {}
+
+  @override
+  List<dynamic> getConflictDetails() => [];
+
   void setOffline({required int pending, required int attachments}) => emit(
     OfflineStatusState(
       isOnline: false,

@@ -31,6 +31,8 @@ class DashboardCubit extends Cubit<DashboardState> {
   void updateFilter(String filter) {
     if (_selectedFilter == filter) return;
     _selectedFilter = filter;
+    const severityMap = {'حرجة': 4, 'عالية': 3, 'متوسطة': 2, 'منخفضة': 1};
+    _selectedSeverity = severityMap[filter];
     emit(DashboardFilterChanged(filter));
   }
 
@@ -45,16 +47,18 @@ class DashboardCubit extends Cubit<DashboardState> {
   ) {
     Iterable<CurrentIncidentModel> filtered = incidents;
 
-    // Apply filter by severity
-    if (_selectedFilter != 'الكل') {
-      const severityMap = {'حرجة': 4, 'عالية': 3, 'متوسطة': 2, 'منخفضة': 1};
-      final severity = severityMap[_selectedFilter];
-      if (severity != null) {
-        filtered = filtered.where((i) => i.currentIncidentSeverity == severity);
-      }
+    // Apply filter by severity (unified with _selectedSeverity)
+    final activeSeverity = _selectedSeverity ??
+        (_selectedFilter != 'الكل'
+            ? const {'حرجة': 4, 'عالية': 3, 'متوسطة': 2, 'منخفضة': 1}[_selectedFilter]
+            : null);
+    if (activeSeverity != null) {
+      filtered = filtered.where(
+        (i) => i.currentIncidentSeverity == activeSeverity,
+      );
     }
 
-    // Apply search query filter
+    // Apply search query filter (searches title, notes, type, branch, address, id, manager)
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       filtered = filtered.where((i) {
@@ -63,27 +67,37 @@ class DashboardCubit extends Cubit<DashboardState> {
             (i.currentIncidentTypeName ?? '').toLowerCase().contains(q) ||
             (i.branchName ?? '').toLowerCase().contains(q) ||
             (i.address ?? '').toLowerCase().contains(q) ||
+            (i.managerName ?? '').toLowerCase().contains(q) ||
+            (i.username ?? '').toLowerCase().contains(q) ||
             (i.currentIncidentId?.toString() ?? '').contains(q);
       });
     }
 
-    // Apply status filter (added)
+    // Apply status filter
     if (_selectedStatus != null) {
       filtered = filtered.where(
         (i) => i.currentIncidentStatus == _selectedStatus,
       );
     }
 
-    // Apply severity filter (added)
-    if (_selectedSeverity != null) {
+    // Apply branch filter
+    if (_selectedBranchId != null) {
+      filtered = filtered.where((i) => i.branchId == _selectedBranchId);
+    }
+
+    // Apply incident type filter
+    if (_selectedIncidentTypeId != null) {
       filtered = filtered.where(
-        (i) => i.currentIncidentSeverity == _selectedSeverity,
+        (i) => i.currentIncidentTypeId == _selectedIncidentTypeId,
       );
     }
 
-    // Apply branch filter (added)
-    if (_selectedBranchId != null) {
-      filtered = filtered.where((i) => i.branchId == _selectedBranchId);
+    // Apply has photos filter
+    if (_selectedHasPhotos != null) {
+      filtered = filtered.where((i) {
+        final count = i.photos?.length ?? 0;
+        return _selectedHasPhotos! ? count > 0 : count == 0;
+      });
     }
 
     return filtered.toList();
@@ -235,11 +249,15 @@ class DashboardCubit extends Cubit<DashboardState> {
   int? _selectedStatus;
   int? _selectedSeverity;
   int? _selectedBranchId;
+  int? _selectedIncidentTypeId;
+  bool? _selectedHasPhotos;
 
   // ---------------- GETTERS ----------------
   int? get selectedStatus => _selectedStatus;
   int? get selectedSeverity => _selectedSeverity;
   int? get selectedBranchId => _selectedBranchId;
+  int? get selectedIncidentTypeId => _selectedIncidentTypeId;
+  bool? get selectedHasPhotos => _selectedHasPhotos;
 
   // ---------------- FILTERING ----------------
   void updateStatusFilter(int? status) {
@@ -251,6 +269,13 @@ class DashboardCubit extends Cubit<DashboardState> {
   void updateSeverityFilter(int? severity) {
     if (_selectedSeverity == severity) return;
     _selectedSeverity = severity;
+    // Keep legacy _selectedFilter in sync
+    if (severity == null) {
+      _selectedFilter = 'الكل';
+    } else {
+      const reverseMap = {4: 'حرجة', 3: 'عالية', 2: 'متوسطة', 1: 'منخفضة'};
+      _selectedFilter = reverseMap[severity] ?? 'الكل';
+    }
     emit(DashboardFilterChanged('severity'));
   }
 
@@ -260,10 +285,25 @@ class DashboardCubit extends Cubit<DashboardState> {
     emit(DashboardFilterChanged('branch'));
   }
 
+  void updateIncidentTypeFilter(int? typeId) {
+    if (_selectedIncidentTypeId == typeId) return;
+    _selectedIncidentTypeId = typeId;
+    emit(DashboardFilterChanged('incident_type'));
+  }
+
+  void updateHasPhotosFilter(bool? hasPhotos) {
+    if (_selectedHasPhotos == hasPhotos) return;
+    _selectedHasPhotos = hasPhotos;
+    emit(DashboardFilterChanged('has_photos'));
+  }
+
   void clearAllFilters() {
+    _selectedFilter = 'الكل';
     _selectedStatus = null;
     _selectedSeverity = null;
     _selectedBranchId = null;
+    _selectedIncidentTypeId = null;
+    _selectedHasPhotos = null;
     _searchQuery = '';
     emit(const DashboardFilterChanged('clear_all'));
   }
@@ -272,6 +312,8 @@ class DashboardCubit extends Cubit<DashboardState> {
     return _selectedStatus != null ||
         _selectedSeverity != null ||
         _selectedBranchId != null ||
+        _selectedIncidentTypeId != null ||
+        _selectedHasPhotos != null ||
         _searchQuery.isNotEmpty;
   }
 }

@@ -4,7 +4,9 @@ import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
+import 'package:flutter/services.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/shared_incident_form.dart';
+import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 
 class AddIncidentMobileScreen extends StatefulWidget {
@@ -30,11 +32,13 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF4F7FB),
-        body: BlocListener<AddIncidentCubit, AddIncidentStates>(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: MobileSystemBars.standard,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF4F7FB),
+          body: BlocListener<AddIncidentCubit, AddIncidentStates>(
           listener: (context, state) {
             state.whenOrNull(
               success: () {
@@ -133,8 +137,9 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHeaderBanner(BuildContext context) {
     return Container(
@@ -182,14 +187,16 @@ class _AddIncidentMobileScreenState extends State<AddIncidentMobileScreen> {
                           ),
                         ],
                       ),
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                          Icons.water_drop_rounded,
-                          color: appColor,
-                          size: 28,
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                            Icons.water_drop_rounded,
+                            color: appColor,
+                            size: 28,
+                          ),
                         ),
                       ),
                     ),

@@ -319,10 +319,15 @@ class SyncManager {
         'y_axis': att.yAxis.toString(),
         if (att.updateLocation) 'update_location': 'true',
         'photo': kIsWeb
-            ? MultipartFile.fromBytes(
-                await XFile(att.localFilePath).readAsBytes(),
-                filename: att.fileName,
-              )
+            ? (att.localFilePath.startsWith('data:')
+                ? MultipartFile.fromBytes(
+                    UriData.parse(att.localFilePath).contentAsBytes(),
+                    filename: att.fileName,
+                  )
+                : MultipartFile.fromBytes(
+                    await XFile(att.localFilePath).readAsBytes(),
+                    filename: att.fileName,
+                  ))
             : await MultipartFile.fromFile(
                 att.localFilePath,
                 filename: att.fileName,
@@ -334,6 +339,8 @@ class SyncManager {
         '/upload-incident-photo/$incidentId',
         data: formData,
         options: Options(
+          sendTimeout: const Duration(seconds: 20),
+          receiveTimeout: const Duration(seconds: 20),
           headers: const {'X-Offline-Replay': 'true'},
         ),
       );

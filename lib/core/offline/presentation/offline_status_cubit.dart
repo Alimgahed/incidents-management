@@ -51,6 +51,24 @@ class OfflineStatusCubit extends Cubit<OfflineStatusState> {
     }
   }
 
+  /// Clears conflict items and stuck attachments so the warning/sync banner can be dismissed.
+  Future<void> dismissConflicts() async {
+    await queue.clearConflicts();
+    await attachments.clearPendingAttachments();
+    _emitFromSources();
+  }
+
+  /// Clears stuck pending attachments explicitly.
+  Future<void> clearAttachments() async {
+    await attachments.clearPendingAttachments();
+    _emitFromSources();
+  }
+
+  /// Returns the details of any conflicting or failed items in the queue.
+  List<dynamic> getConflictDetails() {
+    return queue.problematic();
+  }
+
   void _subscribeToInputs() {
     _netSub = networkMonitor.onlineStream.listen((online) {
       emit(state.copyWith(isOnline: online));

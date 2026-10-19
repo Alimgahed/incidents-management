@@ -5,6 +5,8 @@ import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_incident_type_states.dart';
+import 'package:flutter/services.dart';
+import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
@@ -33,23 +35,26 @@ class _AllIncidentTypeMobileScreenState
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-          backgroundColor: const Color(0xFFF4F7FB),
-          body: BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
-            builder: (context, state) {
-              return state.when(
-                initial: () => const SizedBox.shrink(),
-                loading: () => const Loadding(),
-                loaded: (incidentTypes) => _buildBody(context, incidentTypes),
-                error: (message) => const Error(),
-              );
-            },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: MobileSystemBars.standard,
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            backgroundColor: const Color(0xFFF4F7FB),
+            body: BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
+              builder: (context, state) {
+                return state.when(
+                  initial: () => const SizedBox.shrink(),
+                  loading: () => const Loadding(),
+                  loaded: (incidentTypes) => _buildBody(context, incidentTypes),
+                  error: (message) => const Error(),
+                );
+              },
+            ),
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.miniStartFloat,
+            floatingActionButton: _buildFloatingAddButton(context),
           ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.miniStartFloat,
-          floatingActionButton: _buildFloatingAddButton(context),
         ),
       ),
     );
@@ -58,17 +63,18 @@ class _AllIncidentTypeMobileScreenState
   Widget _buildBody(BuildContext context, List<IncidentType> allTypes) {
     // Filtered list
     final filteredTypes = allTypes.where((type) {
-      final matchesSearch = _searchQuery.isEmpty ||
-          type.incidentTypeName
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase()) ||
+      final matchesSearch =
+          _searchQuery.isEmpty ||
+          type.incidentTypeName.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
           (type.className != null &&
-              type.className!
-                  .toLowerCase()
-                  .contains(_searchQuery.toLowerCase()));
+              type.className!.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ));
 
-      final matchesCategory = _selectedCategory == null ||
-          type.className == _selectedCategory;
+      final matchesCategory =
+          _selectedCategory == null || type.className == _selectedCategory;
 
       return matchesSearch && matchesCategory;
     }).toList();
@@ -91,9 +97,7 @@ class _AllIncidentTypeMobileScreenState
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           // Top Header Banner
-          SliverToBoxAdapter(
-            child: _buildHeaderBanner(context),
-          ),
+          SliverToBoxAdapter(child: _buildHeaderBanner(context)),
 
           // Summary Hero Card & Search/Filter
           SliverToBoxAdapter(
@@ -116,29 +120,23 @@ class _AllIncidentTypeMobileScreenState
 
           // Incident Types List
           if (filteredTypes.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: _buildEmptyState(),
-            )
+            SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState())
           else
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final item = filteredTypes[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _IncidentTypeItemCard(
-                        incidentType: item,
-                        onTap: () {
-                          _showIncidentMissionsBottomSheet(context, item);
-                        },
-                      ),
-                    );
-                  },
-                  childCount: filteredTypes.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final item = filteredTypes[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _IncidentTypeItemCard(
+                      incidentType: item,
+                      onTap: () {
+                        _showIncidentMissionsBottomSheet(context, item);
+                      },
+                    ),
+                  );
+                }, childCount: filteredTypes.length),
               ),
             ),
         ],
@@ -194,14 +192,16 @@ class _AllIncidentTypeMobileScreenState
                           ),
                         ],
                       ),
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                          Icons.water_drop_rounded,
-                          color: appColor,
-                          size: 28,
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.water_drop_rounded,
+                                color: appColor,
+                                size: 28,
+                              ),
                         ),
                       ),
                     ),
@@ -265,11 +265,7 @@ class _AllIncidentTypeMobileScreenState
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1E56A0),
-            Color(0xFF163E75),
-            Color(0xFF0F2B56),
-          ],
+          colors: [Color(0xFF1E56A0), Color(0xFF163E75), Color(0xFF0F2B56)],
         ),
         boxShadow: [
           BoxShadow(
@@ -384,7 +380,9 @@ class _AllIncidentTypeMobileScreenState
 
   // --- SEARCH BAR & FILTER BUTTON ---
   Widget _buildSearchBarAndFilter(
-      BuildContext context, List<String> categories) {
+    BuildContext context,
+    List<String> categories,
+  ) {
     return Row(
       children: [
         // Search Input Field (Right in RTL)
@@ -558,7 +556,9 @@ class _AllIncidentTypeMobileScreenState
 
   // --- BOTTOM SHEET FOR MISSIONS RELATED ---
   void _showIncidentMissionsBottomSheet(
-      BuildContext context, IncidentType incidentType) {
+    BuildContext context,
+    IncidentType incidentType,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -571,8 +571,7 @@ class _AllIncidentTypeMobileScreenState
   }
 
   // --- CATEGORY FILTER MODAL ---
-  void _showCategoryFilterSheet(
-      BuildContext context, List<String> categories) {
+  void _showCategoryFilterSheet(BuildContext context, List<String> categories) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -623,8 +622,10 @@ class _AllIncidentTypeMobileScreenState
                       ),
                     ),
                     trailing: _selectedCategory == category
-                        ? const Icon(Icons.check_circle_rounded,
-                            color: Color(0xFF1B64F2))
+                        ? const Icon(
+                            Icons.check_circle_rounded,
+                            color: Color(0xFF1B64F2),
+                          )
                         : null,
                     onTap: () {
                       setState(() => _selectedCategory = category);
@@ -646,11 +647,7 @@ class _AllIncidentTypeMobileScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.category_outlined,
-            size: 64,
-            color: Color(0xFFCBD5E1),
-          ),
+          Icon(Icons.category_outlined, size: 64, color: Color(0xFFCBD5E1)),
           SizedBox(height: 16),
           Text(
             'لا توجد أنواع أزمات مطابقة للبحث',
@@ -808,7 +805,7 @@ class _IncidentTypeItemCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
-                    Icons.chevron_left_rounded,
+                    Icons.chevron_right_rounded,
                     color: Color(0xFF3B82F6),
                     size: 24,
                   ),
@@ -948,8 +945,10 @@ class _IncidentTypeMissionsModal extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded,
-                      color: Color(0xFF64748B)),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Color(0xFF64748B),
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -996,7 +995,9 @@ class _IncidentTypeMissionsModal extends StatelessWidget {
               child: ListView.separated(
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 16),
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 itemCount: missions.length,
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 10),

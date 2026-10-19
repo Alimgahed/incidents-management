@@ -119,16 +119,27 @@ class FilePreviewCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.insert_drive_file_rounded,
-                      size: 20,
-                      color: AppTheme.textSecondary,
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F3B6C).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.image_outlined,
+                        size: 18,
+                        color: Color(0xFF0F3B6C),
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         fileName,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -136,33 +147,63 @@ class FilePreviewCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.backgroundColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.storage_rounded,
-                        size: 16,
-                        color: AppTheme.textSecondary,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _formatFileSize(fileSize),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                          fontWeight: FontWeight.w500,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.sd_storage_outlined,
+                            size: 14,
+                            color: Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'الحجم: ${_formatFileSize(fileSize)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF475569),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (fileExtension.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F3B6C).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFF0F3B6C).withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Text(
+                          'النوع: ${fileExtension.toUpperCase()}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F3B6C),
+                          ),
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -208,12 +249,12 @@ class FilePreviewCard extends StatelessWidget {
   }
 
   String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024) return '$bytes بايت';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} ك.ب';
     if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} م.ب';
     }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} ج.ب';
   }
 }
 
@@ -282,11 +323,19 @@ class UploadProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          Text('Uploading...', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            'جاري رفع الصورة...',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF0F172A),
+                ),
+          ),
           const SizedBox(height: 8),
           Text(
             fileName,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF64748B),
+                ),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -307,9 +356,9 @@ class UploadProgressCard extends StatelessWidget {
                     return CircularProgressIndicator(
                       value: value,
                       strokeWidth: 8,
-                      backgroundColor: AppTheme.backgroundColor,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppTheme.accentColor,
+                      backgroundColor: const Color(0xFFE2E8F0),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFF0F3B6C),
                       ),
                     );
                   },
@@ -321,15 +370,17 @@ class UploadProgressCard extends StatelessWidget {
                   Text(
                     '$percentage%',
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: AppTheme.primaryColor,
+                      color: const Color(0xFF0F3B6C),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'Complete',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
+                  const Text(
+                    'مكتمل',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -342,7 +393,7 @@ class UploadProgressCard extends StatelessWidget {
           Container(
             height: 8,
             decoration: BoxDecoration(
-              color: AppTheme.backgroundColor,
+              color: const Color(0xFFE2E8F0),
               borderRadius: BorderRadius.circular(4),
             ),
             child: ClipRRect(
@@ -354,8 +405,8 @@ class UploadProgressCard extends StatelessWidget {
                   return LinearProgressIndicator(
                     value: value,
                     backgroundColor: Colors.transparent,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppTheme.accentColor,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(0xFF0F3B6C),
                     ),
                   );
                 },
@@ -366,16 +417,19 @@ class UploadProgressCard extends StatelessWidget {
 
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+            children: const [
               Icon(
-                Icons.schedule_rounded,
+                Icons.hourglass_top_rounded,
                 size: 16,
-                color: AppTheme.textSecondary,
+                color: Color(0xFF64748B),
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Text(
-                'Please wait, uploading your file...',
-                style: Theme.of(context).textTheme.bodySmall,
+                'يرجى الانتظار، جاري معالجة ورفع الصورة...',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                ),
               ),
             ],
           ),
@@ -386,74 +440,71 @@ class UploadProgressCard extends StatelessWidget {
 }
 
 class UploadButtonSection extends StatelessWidget {
-  final VoidCallback onPickFile;
   final VoidCallback onPickImageCamera;
-  final VoidCallback onPickImageGallery;
+  final VoidCallback? onPickFile;
+  final VoidCallback? onPickImageGallery;
 
   const UploadButtonSection({
     super.key,
-    required this.onPickFile,
     required this.onPickImageCamera,
-    required this.onPickImageGallery,
+    this.onPickFile,
+    this.onPickImageGallery,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Main upload options
-        // _buildUploadOption(
-        //   context: context,
-        //   icon: Icons.photo_library_rounded,
-        //   title: 'Gallery',
-        //   subtitle: 'Choose from your photos',
-        //   gradientColors: [AppTheme.accentColor, AppTheme.accentLight],
-        //   onTap: onPickImageGallery,
-        // ),
-        const SizedBox(height: 16),
         _buildUploadOption(
           context: context,
           icon: Icons.camera_alt_rounded,
-          title: 'كاميرا',
-          subtitle: 'التقاط صور',
-          gradientColors: [AppTheme.primaryColor, AppTheme.primaryLight],
+          title: 'التقاط صورة ميدانية بالكاميرا',
+          subtitle: 'فتح الكاميرا والتقاط صورة مباشرة وتحديد إحداثيات البلاغ تلقائياً',
+          gradientColors: const [Color(0xFF0F3B6C), Color(0xFF1E5BB0)],
           onTap: onPickImageCamera,
         ),
-        const SizedBox(height: 16),
-        // _buildUploadOption(
-        //   context: context,
-        //   icon: Icons.folder_rounded,
-        //   title: 'Files',
-        //   subtitle: 'Browse documents',
-        //   gradientColors: [AppTheme.infoColor, const Color(0xFF9FA8DA)],
-        //   onTap: onPickFile,
-        // ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
 
         // Info section
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppTheme.backgroundColor,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.borderColor),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    size: 20,
-                    color: AppTheme.textSecondary,
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F3B6C).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.verified_user_outlined,
+                      size: 18,
+                      color: Color(0xFF0F3B6C),
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'إرشادات رفع الملفات',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(fontSize: 16),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'ضوابط التوثيق الميداني للأزمة',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
                 ],
               ),
@@ -461,19 +512,19 @@ class UploadButtonSection extends StatelessWidget {
               _buildInfoItem(
                 context,
                 Icons.check_circle_outline,
-                'الحد الأقصى لحجم الملف: 50 ميجابايت',
+                'التوثيق بالكاميرا المباشرة فقط لضمان دقة ومصداقية البلاغ الميداني',
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               _buildInfoItem(
                 context,
                 Icons.check_circle_outline,
-                'الصيغ المدعومة: الصور، ملفات PDF، المستندات',
+                'يتم التقاط الإحداثيات الجغرافية (GPS) لحظياً مع الصورة',
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               _buildInfoItem(
                 context,
                 Icons.check_circle_outline,
-                'نقل آمن ومشفّر للملفات',
+                'حفظ ومزامنة تلقائية في حال انقطاع الاتصال بالإنترنت',
               ),
             ],
           ),
@@ -554,9 +605,9 @@ class UploadButtonSection extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.arrow_forward_rounded,
+                    Icons.arrow_back_ios_new_rounded,
                     color: Colors.white,
-                    size: 20,
+                    size: 16,
                   ),
                 ),
               ],

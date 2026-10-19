@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/helpers/startup_service.dart';
 import 'package:incidents_managment/core/network/fcm_service.dart';
 import 'package:incidents_managment/core/routing/app_router.dart';
@@ -17,6 +18,7 @@ final GlobalKey<ScaffoldMessengerState> messengerKey =
 /// [_AppBootstrapState] behind a lightweight splash frame.
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  MobileSystemBars.configureEdgeToEdge();
   _setupErrorHandlers();
   runApp(const _AppBootstrap());
 }

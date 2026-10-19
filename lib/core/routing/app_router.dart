@@ -109,8 +109,9 @@ class AppRouter {
       case Routes.editMissions:
         final rawMission = settings.arguments;
         final mission = rawMission is AllMissionModel ? rawMission : null;
-        if (mission == null)
+        if (mission == null) {
           return _invalidArguments('بيانات المهمة غير صالحة.');
+        }
         return MaterialPageRoute(
           builder: (_) => MultiBlocProvider(
             providers: [

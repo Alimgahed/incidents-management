@@ -29,14 +29,15 @@ class AddIncidentCubit extends Cubit<AddIncidentStates> {
           serverId = rawId is int ? rawId : int.tryParse('$rawId');
         }
 
-        final created = model.copyWith(
-          currentIncidentId: serverId ?? model.currentIncidentId,
-          currentIncidentCreatedAt: DateTime.now(),
-          currentIncidentStatus: model.currentIncidentStatus ?? 1,
-        );
-
-        if (getIt.isRegistered<IncidentMapCubit>()) {
-          getIt<IncidentMapCubit>().addIncident(created);
+        if (lastSubmissionQueued) {
+          final created = model.copyWith(
+            currentIncidentId: serverId ?? model.currentIncidentId,
+            currentIncidentCreatedAt: DateTime.now(),
+            currentIncidentStatus: model.currentIncidentStatus ?? 1,
+          );
+          if (getIt.isRegistered<IncidentMapCubit>()) {
+            getIt<IncidentMapCubit>().addIncident(created);
+          }
         }
 
         emit(const AddIncidentStates.success());

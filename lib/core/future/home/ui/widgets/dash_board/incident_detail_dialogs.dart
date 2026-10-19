@@ -5,7 +5,9 @@ import 'package:incidents_managment/core/constant/enms.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/edit_incident.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/update_statues.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
+import 'package:incidents_managment/core/security/session_manager.dart';
 import 'package:latlong2/latlong.dart';
 
 void showStatusSelector(
@@ -122,12 +124,19 @@ void showStatusSelector(
                         ),
                         onPressed: () {
                           Navigator.pop(dialogContext);
-                          
+
+                          final sessionUser = getIt.isRegistered<SessionManager>()
+                              ? getIt<SessionManager>().getCurrentUser()
+                              : null;
+                          final currentUserName =
+                              sessionUser?.empName ?? sessionUser?.username;
+
                           // Optimistically update the UI so it doesn't wait for server response/socket broadcast
                           context.read<IncidentMapCubit>().optimisticUpdateMission(
                             incidentId: incidentId,
                             missionId: mission.idCurrentIncidentMission!,
                             newStatus: selectedStatus,
+                            updatedByUserName: currentUserName,
                           );
 
                           cubit.updateStatues(

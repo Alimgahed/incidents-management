@@ -48,8 +48,9 @@ class IncidentPickerBridge {
     final incident = _pendingIncident;
     if (incident == null ||
         _selectListener == null ||
-        _openDetailsListener == null)
+        _openDetailsListener == null) {
       return;
+    }
     _pendingIncident = null;
     _selectListener!(incident);
     _openDetailsListener!();

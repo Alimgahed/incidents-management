@@ -6,6 +6,8 @@ import 'package:incidents_managment/core/theming/app_theme.dart';
 import 'package:incidents_managment/core/future/mobile/data/repo/file_upload_repo.dart';
 import 'package:incidents_managment/core/future/mobile/logic/file_upload_cubit.dart';
 import 'package:incidents_managment/core/future/mobile/logic/file_upload_state.dart';
+import 'package:flutter/services.dart';
+import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/future/mobile/ui/widgets/add_image_widget.dart';
 
 bool _isQueuedUploadMessage(String message) =>
@@ -29,9 +31,11 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
     return BlocProvider(
       create: (_) => FileUploadCubit(repository: FileUploadRepository()),
       child: Builder(
-        builder: (context) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold(
+        builder: (context) => AnnotatedRegion<SystemUiOverlayStyle>(
+          value: MobileSystemBars.standard,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
             backgroundColor: const Color(0xFFF4F7FB),
             body: BlocConsumer<FileUploadCubit, FileUploadState>(
               listener: (context, state) {
@@ -102,8 +106,9 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHeaderBanner(BuildContext context) {
     return Container(
@@ -131,35 +136,69 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Brand Logo (Right in RTL)
+                    // Official Company Logo (Circular badge matching home screen)
                     Container(
-                      width: 50,
-                      height: 50,
-                      padding: const EdgeInsets.all(4),
+                      width: 48,
+                      height: 48,
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                          Icons.water_drop_rounded,
-                          color: appColor,
-                          size: 28,
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                            Icons.water_drop_rounded,
+                            color: appColor,
+                            size: 26,
+                          ),
                         ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Title & Company Name
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'رفع وتوثيق صور الأزمة',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'شركة مياه الشرب والصرف الصحي بالمنيا',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white70,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
 
@@ -181,8 +220,8 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                         GestureDetector(
                           onTap: () => Navigator.of(context).maybePop(),
                           child: Container(
-                            width: 40,
-                            height: 40,
+                            width: 38,
+                            height: 38,
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.16),
                               shape: BoxShape.circle,
@@ -193,7 +232,7 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                             child: const Icon(
                               Icons.arrow_forward_rounded,
                               color: Colors.white,
-                              size: 22,
+                              size: 20,
                             ),
                           ),
                         ),
@@ -201,23 +240,35 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                const Text(
-                  'رفع وتوثيق صور الأزمة',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.18),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'توثيق ميداني للبلاغ بالصور المباشرة والإحداثيات',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white.withValues(alpha: 0.88),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.camera_alt_outlined,
+                        color: Colors.white,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'توثيق ميداني مباشر مع حفظ الإحداثيات الجغرافية للبلاغ',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withValues(alpha: 0.92),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -231,12 +282,8 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
   Widget _buildMainContent(BuildContext context, FileUploadState state) {
     return state.maybeWhen(
       initial: () => UploadButtonSection(
-        onPickFile: () => context.read<FileUploadCubit>().pickFile(),
         onPickImageCamera: () => context.read<FileUploadCubit>().pickImage(
           source: ImageSource.camera,
-        ),
-        onPickImageGallery: () => context.read<FileUploadCubit>().pickImage(
-          source: ImageSource.gallery,
         ),
       ),
       fileSelected: (fileName, filePath, fileSize, fileExtension) => Column(
@@ -318,7 +365,7 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
@@ -329,16 +376,20 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                       _updateLocation = false;
                     });
                   },
-                  icon: const Icon(Icons.close_rounded),
-                  label: const Text('إلغاء'),
+                  icon: const Icon(Icons.cancel_outlined, size: 20),
+                  label: const Text(
+                    'إلغاء',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: appColor,
+                    foregroundColor: const Color(0xFF64748B),
+                    backgroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: appColor),
+                    side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
+                    elevation: 0,
                   ),
                 ),
               ),
@@ -347,7 +398,6 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                 flex: 2,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    // Upload with incident parameters and updateLocation flag
                     context.read<FileUploadCubit>().uploadFile(
                       widget.incidentId ?? 0,
                       filePath,
@@ -355,14 +405,19 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                       updateLocation: _updateLocation,
                     );
                   },
-                  icon: const Icon(Icons.upload_rounded),
-                  label: const Text('رفع'),
+                  icon: const Icon(Icons.cloud_upload_rounded, size: 22),
+                  label: const Text(
+                    'تأكيد رفع الصورة',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
                     backgroundColor: appColor,
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 3,
+                    shadowColor: appColor.withValues(alpha: 0.4),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                 ),
@@ -381,52 +436,96 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
       uploadError: (error) => Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             decoration: BoxDecoration(
-              color: AppTheme.errorColor.withAlpha(26),
+              color: const Color(0xFFFEF2F2),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppTheme.errorColor.withAlpha(77),
-                width: 2,
-              ),
+              border: Border.all(color: const Color(0xFFFECACA), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: AppTheme.errorColor,
+                    color: const Color(0xFFEF4444),
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: const Icon(
                     Icons.error_outline_rounded,
-                    size: 48,
+                    size: 44,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  'فشل الرفع',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.errorColor,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 18),
+                const Text(
+                  'تعذر رفع الصورة',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFDC2626),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   error,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                    height: 1.5,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () => context.read<FileUploadCubit>().resetState(),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('حاول مرة أخرى'),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: AppTheme.errorColor,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF475569),
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Color(0xFFCBD5E1)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('إلغاء'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: () =>
+                            context.read<FileUploadCubit>().resetState(),
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: const Text('إعادة المحاولة'),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: const Color(0xFFDC2626),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -453,56 +552,124 @@ class UploadCompletionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final queued = _isQueuedUploadMessage(message);
-    final statusColor = queued ? AppTheme.queuedColor : AppTheme.successColor;
+    final statusColor = queued ? const Color(0xFFD97706) : const Color(0xFF10B981);
+    final bgColor = queued ? const Color(0xFFFFFBEB) : const Color(0xFFECFDF5);
+    final borderColor = queued ? const Color(0xFFFDE68A) : const Color(0xFFA7F3D0);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       decoration: BoxDecoration(
-        color: statusColor.withAlpha(26),
+        color: bgColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: statusColor.withAlpha(77), width: 2),
+        border: Border.all(color: borderColor, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: statusColor,
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: statusColor.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Icon(
-              queued ? Icons.schedule_send_rounded : Icons.check_rounded,
-              size: 48,
+              queued ? Icons.schedule_send_rounded : Icons.check_circle_rounded,
+              size: 44,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           Text(
-            queued ? 'تم حفظ الملف للمزامنة' : 'تم الرفع بنجاح!',
+            queued ? 'تم حفظ الصورة وستُرفع تلقائياً' : 'تم رفع الصورة بنجاح!',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            style: TextStyle(
+              fontSize: 20,
               color: statusColor,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: borderColor),
+            ),
+            child: Text(
+              fileName,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E293B),
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            '$fileName\n$message',
-            style: Theme.of(context).textTheme.bodyMedium,
+            message,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF64748B),
+              height: 1.5,
+            ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: onUploadAnother,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('رفع صورة أخرى'),
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: statusColor,
-              minimumSize: const Size(48, 48),
-            ),
+          const SizedBox(height: 28),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                  label: const Text('العودة للأزمة'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF334155),
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: onUploadAnother,
+                  icon: const Icon(Icons.add_a_photo_rounded, size: 18),
+                  label: const Text('رفع صورة أخرى'),
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: statusColor,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

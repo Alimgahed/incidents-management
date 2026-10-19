@@ -9,7 +9,6 @@ import 'package:incidents_managment/core/offline/data/models/cached_attachment.d
 import 'package:incidents_managment/core/offline/data/repositories/attachment_cache_repository.dart';
 import 'package:incidents_managment/core/offline/domain/sync_manager.dart';
 import 'package:incidents_managment/core/offline/domain/temp_id_generator.dart';
-import 'package:incidents_managment/core/offline/network/network_monitor.dart';
 
 class FileUploadRepository {
   /// ==============================
@@ -35,7 +34,6 @@ class FileUploadRepository {
   }) async {
     final dio = getIt<Dio>();
     final attachmentRepo = getIt<AttachmentCacheRepository>();
-    final monitor = getIt<NetworkMonitorService>();
 
     // 1. Copy file to durable storage so it survives OS cache purges.
     //    On web this is skipped — picker paths are session-scoped.
@@ -62,6 +60,20 @@ class FileUploadRepository {
         // blocking the user. SyncManager will detect a missing file later.
         if (kDebugMode) debugPrint('⚠️ Durable copy failed: $e');
       }
+    } else {
+      // On web: convert picked file bytes to a persistent Data URI so it survives
+      // page reloads and can be safely replayed offline from IndexedDB/Hive.
+      try {
+        if (!filePath.startsWith('data:')) {
+          final bytes = await XFile(filePath).readAsBytes();
+          final mime = _guessMime(fileName);
+          durablePath = UriData.fromBytes(bytes, mimeType: mime).toString();
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Web durable data uri conversion failed: $e');
+        }
+      }
     }
 
     // 2. Register the attachment locally — the UI shows it immediately
@@ -78,29 +90,19 @@ class FileUploadRepository {
       createdAtMs: DateTime.now().millisecondsSinceEpoch,
       updateLocation: updateLocation,
     );
-    await attachmentRepo.add(cached);
-
-    // 3. Offline or referencing a not-yet-synced incident → defer upload.
-    if (monitor.isOffline || incidentId < 0) {
-      // CachedAttachment currently persists a path, not the selected bytes.
-      // Browser picker paths are session scoped and cannot be replayed after
-      // reload, so never claim durable offline success on web.
-      if (kIsWeb) {
-        await attachmentRepo.remove(cached.localId);
-        throw Exception(
-          'لا يمكن حفظ الملف دون اتصال على هذا المتصفح. اتصل بالإنترنت ثم أعد المحاولة.',
-        );
-      }
+    // 2. For negative temp incident ids, defer until incident is synced.
+    if (incidentId < 0) {
+      await attachmentRepo.add(cached);
       onProgress(1.0); // optimistic completion for UI
       return {
         'success': true,
-        'message': 'تم حفظ الصورة محلياً وسيتم رفعها عند الاتصال',
+        'message': 'تم حفظ الصورة محلياً وسيتم رفعها عند مزامنة البلاغ',
         'data': {'local_id': cached.localId, '__offline': true},
         'statusCode': 202,
       };
     }
 
-    // 4. Online → upload now, mark cached attachment uploaded on success.
+    // 3. Attempt live upload with generous timeout (20s) for mobile networks.
     try {
       final formMap = <String, dynamic>{
         'description': description,
@@ -108,10 +110,15 @@ class FileUploadRepository {
         'y_axis': yAxis.toString(),
         if (updateLocation) 'update_location': 'true',
         'photo': kIsWeb
-            ? MultipartFile.fromBytes(
-                await XFile(filePath).readAsBytes(),
-                filename: fileName,
-              )
+            ? (durablePath.startsWith('data:')
+                ? MultipartFile.fromBytes(
+                    UriData.parse(durablePath).contentAsBytes(),
+                    filename: fileName,
+                  )
+                : MultipartFile.fromBytes(
+                    await XFile(filePath).readAsBytes(),
+                    filename: fileName,
+                  ))
             : await MultipartFile.fromFile(durablePath, filename: fileName),
       };
       final formData = FormData.fromMap(formMap);
@@ -124,7 +131,11 @@ class FileUploadRepository {
             onProgress(sent / total);
           }
         },
-        options: Options(extra: {'noOfflineQueue': true}),
+        options: Options(
+          sendTimeout: const Duration(seconds: 20),
+          receiveTimeout: const Duration(seconds: 20),
+          extra: {'noOfflineQueue': true},
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -135,10 +146,10 @@ class FileUploadRepository {
               (response.data as Map<String, dynamic>)['photo_id'];
           if (v is int) serverId = v;
         }
-        await attachmentRepo.markUploaded(
-          localId: cached.localId,
-          serverId: serverId,
-        );
+        cached.isUploaded = true;
+        cached.serverId = serverId;
+        cached.uploadedAtMs = DateTime.now().millisecondsSinceEpoch;
+        await attachmentRepo.add(cached);
 
         return {
           'success': true,
@@ -147,23 +158,18 @@ class FileUploadRepository {
           'statusCode': response.statusCode,
         };
       } else {
-        await attachmentRepo.recordFailure(
-          cached.localId,
-          'HTTP ${response.statusCode}',
-        );
         throw Exception('فشل الرفع برمز الحالة: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      // Network died → leave the cached attachment as "pending" so SyncManager
+      // Network died → save attachment to cache as "pending" so SyncManager
       // retries it on reconnect.
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.connectionError) {
-        await attachmentRepo.recordFailure(
-          cached.localId,
-          e.message ?? 'Transport error',
-        );
+        cached.retryCount = 1;
+        cached.lastError = e.message ?? 'Transport error';
+        await attachmentRepo.add(cached);
         return {
           'success': true,
           'message': 'سيتم رفع الصورة تلقائياً عند الاتصال',
@@ -171,17 +177,12 @@ class FileUploadRepository {
           'statusCode': 202,
         };
       }
-      await attachmentRepo.recordFailure(
-        cached.localId,
-        e.response?.data?.toString() ?? e.message ?? 'Error',
-      );
       final errorMsg =
           e.response?.data?['error'] ??
           e.response?.data?['message'] ??
           e.message;
       throw Exception('فشل الرفع: $errorMsg');
     } catch (e) {
-      await attachmentRepo.recordFailure(cached.localId, e.toString());
       throw Exception('فشل الرفع: $e');
     }
   }

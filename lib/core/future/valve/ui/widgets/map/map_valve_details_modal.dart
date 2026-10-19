@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:incidents_managment/core/future/valve/data/model/valve.dart';
 
 class MapValveDetailsModal extends StatefulWidget {
@@ -280,21 +282,62 @@ class _MapValveDetailsModalState extends State<MapValveDetailsModal> {
               ),
               const SizedBox(height: 24),
               Container(
-                height: 300,
+                height: 380,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                child: const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.map_outlined, size: 64, color: Color(0xFF94A3B8)),
-                      SizedBox(height: 12),
-                      Text('عرض الخريطة سيكون متاحاً قريباً', style: TextStyle(color: Color(0xFF64748B), fontSize: 16)),
-                    ],
-                  ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: (valve.lat != null && valve.long != null)
+                      ? FlutterMap(
+                          key: ValueKey('modal_valve_map_${valve.id}_${valve.lat}_${valve.long}'),
+                          options: MapOptions(
+                            initialCenter: LatLng(
+                              valve.lat!,
+                              valve.long!,
+                            ),
+                            initialZoom: 15.0,
+                            interactionOptions: const InteractionOptions(
+                              flags: InteractiveFlag.all,
+                            ),
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              userAgentPackageName: 'com.example.crisis_management',
+                            ),
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: LatLng(
+                                    valve.lat!,
+                                    valve.long!,
+                                  ),
+                                  width: 50,
+                                  height: 50,
+                                  alignment: Alignment.topCenter,
+                                  child: const Icon(
+                                    Icons.location_on,
+                                    color: Colors.blue,
+                                    size: 44,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      : const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.location_off_outlined, size: 56, color: Color(0xFF94A3B8)),
+                              SizedBox(height: 12),
+                              Text('الإحداثيات الجغرافية غير محددة لهذا المحبس', style: TextStyle(color: Color(0xFF64748B), fontSize: 15)),
+                            ],
+                          ),
+                        ),
                 ),
               ),
             ],

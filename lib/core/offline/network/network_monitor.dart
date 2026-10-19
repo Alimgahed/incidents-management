@@ -34,7 +34,7 @@ class NetworkMonitorService {
     this.baseUrl,
     this.probeIntervalOffline = const Duration(seconds: 15),
     this.probeIntervalOnline = const Duration(seconds: 30),
-    this.probeTimeout = const Duration(seconds: 4),
+    this.probeTimeout = const Duration(seconds: 20),
   })  : _connectivity = connectivity ?? Connectivity(),
         _probeClient = probeClient;
 

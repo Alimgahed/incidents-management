@@ -158,17 +158,26 @@ class _SidebarHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Image.asset(
-              'assets/images/logo.png',
-              width: 38,
-              height: 38,
-              errorBuilder: (_, _, _) => const Icon(Icons.shield_moon_outlined, color: Colors.white, size: 38),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/logo.png',
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const Icon(Icons.water_drop_rounded, color: Color(0xFF1E56A0), size: 24),
+              ),
             ),
           ),
           const SizedBox(width: 12),

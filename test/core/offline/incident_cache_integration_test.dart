@@ -14,8 +14,6 @@ import 'package:incidents_managment/core/network/api_result.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
 import 'package:incidents_managment/core/offline/data/models/cached_incident.dart';
 import 'package:incidents_managment/core/offline/data/repositories/incident_cache_repository.dart';
-import 'package:incidents_managment/core/offline/network/network_monitor.dart';
-import 'package:incidents_managment/core/offline/network/offline_interceptor.dart';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 
 class _FakeApiService implements ApiService {

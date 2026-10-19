@@ -9,6 +9,8 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/incident/lin
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_missions_state.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/incident_missions_state.dart';
+import 'package:flutter/services.dart';
+import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/link_missions/link_missions_header.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/link_missions/selected_missions_list.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/link_missions/available_missions_grid.dart';
@@ -105,9 +107,11 @@ class _AddIncidentMissionBodyState extends State<Addincidentmission> {
         ),
         BlocProvider(create: (_) => LinkMissionsFilterCubit()),
       ],
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: MobileSystemBars.standard,
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
           backgroundColor: const Color(0xFFF4F7FB),
           body: Builder(builder: (context) {
             return BlocConsumer<AddIncidentMissionCubit, AddincidentMissionsstates>(
@@ -349,6 +353,7 @@ class _AddIncidentMissionBodyState extends State<Addincidentmission> {
         }),
       ),
     ),
-  );
+  ),
+);
 }
 }

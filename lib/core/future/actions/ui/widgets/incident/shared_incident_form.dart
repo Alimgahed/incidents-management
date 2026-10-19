@@ -33,16 +33,35 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
   int? selectedSeverity;
   int? selectedBranchId;
 
+  void _resetForm() {
+    setState(() {
+      selectedTypeId = null;
+      selectedSeverity = null;
+      selectedBranchId = null;
+    });
+    widget.descriptionController.clear();
+    widget.notesController.clear();
+    widget.addressController.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        IncidentTypeDropdown(
-          selectedValue: selectedTypeId,
-          onChanged: (v) {
-            setState(() {
-              selectedTypeId = v;
+    return BlocListener<AddIncidentCubit, AddIncidentStates>(
+      listener: (context, state) {
+        state.whenOrNull(
+          success: () {
+            _resetForm();
+          },
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          IncidentTypeDropdown(
+            selectedValue: selectedTypeId,
+            onChanged: (v) {
+              setState(() {
+                selectedTypeId = v;
             });
           },
         ),
@@ -131,8 +150,9 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
           },
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   static const Map<int, String> _branchNames = {
     1: 'ديوان عام الشركة',

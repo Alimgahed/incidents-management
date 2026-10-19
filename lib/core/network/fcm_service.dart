@@ -83,15 +83,17 @@ class FcmService {
           }
         },
         onError: (error) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('--- [ERROR] FCM Foreground Listener Error: $error ---');
+          }
         },
       );
 
       // 3. Handle Notification Clicks (When app is in background but not terminated)
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('--- [DEBUG] Notification Clicked in Background ---');
+        }
         _handleNotificationClick(message.data);
       });
 
@@ -99,10 +101,11 @@ class FcmService {
       final initialMessage = await FirebaseMessaging.instance
           .getInitialMessage();
       if (initialMessage != null) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint(
             '--- [DEBUG] App Opened from Terminated State via Notification ---',
           );
+        }
         // Delay slightly to ensure UI is mounted before navigation
         Future.delayed(const Duration(milliseconds: 500), () {
           _handleNotificationClick(initialMessage.data);
@@ -143,8 +146,9 @@ class FcmService {
         }
       }
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('Error requesting notification permissions: $e');
+      }
     }
   }
 
@@ -163,25 +167,29 @@ class FcmService {
       String? token;
 
       if (kIsWeb) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('FCM: Requesting Web token with VAPID key...');
+        }
         try {
           token = await _fcm.getToken(vapidKey: _vapidKey);
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint(
               'FCM: Web token retrieved: ${token?.substring(0, 10)}...',
             );
+          }
         } catch (webError) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('FCM ERROR specifically on Web getToken: $webError');
+          }
         }
       } else {
         token = await _fcm.getToken();
       }
 
       if (token == null || token.isEmpty) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('FCM Token is empty, retrying in 2 seconds...');
+        }
         await Future.delayed(const Duration(seconds: 2));
         if (kIsWeb) {
           token = await _fcm.getToken(vapidKey: _vapidKey);
@@ -233,16 +241,18 @@ class FcmService {
         if (kDebugMode) debugPrint('Error while routing to incident: $e');
       }
     } else {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('No valid incident ID found in notification data.');
+      }
     }
   }
 }
 
 /// Must be a top-level function
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (kDebugMode)
+  if (kDebugMode) {
     debugPrint('Handling a background message: ${message.messageId}');
+  }
 
   final title = message.notification?.title ?? "إشعار جديد";
   final body = message.notification?.body ?? "";

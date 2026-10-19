@@ -81,22 +81,8 @@ class _IncidentDetailContent extends StatelessWidget {
     );
     final isWide = MediaQuery.sizeOf(context).width > 1050;
 
-    // Right Column widgets (Core Info)
+    // Right Column widgets (Visually RIGHT in RTL - Map, Address, Description, Media)
     final rightColumnWidgets = <Widget>[
-      _MissionsCard(incident: incident),
-      SizedBox(height: spacing),
-
-      if (incident.currentIncidentNotes != null &&
-          incident.currentIncidentNotes!.trim().isNotEmpty) ...[
-        _NotesCard(notes: incident.currentIncidentNotes!),
-        SizedBox(height: spacing),
-      ],
-
-      _TimelineCard(incident: incident),
-    ];
-
-    // Left Column widgets (Media, Map & Timeline)
-    final leftColumnWidgets = <Widget>[
       if (incident.address != null && incident.address!.isNotEmpty) ...[
         _AddressCard(address: incident.address!),
         SizedBox(height: spacing),
@@ -119,12 +105,26 @@ class _IncidentDetailContent extends StatelessWidget {
       SizedBox(height: spacing),
     ];
 
+    // Left Column widgets (Visually LEFT in RTL - Missions / Follow-up Actions, Notes, Timeline)
+    final leftColumnWidgets = <Widget>[
+      _MissionsCard(incident: incident),
+      SizedBox(height: spacing),
+
+      if (incident.currentIncidentNotes != null &&
+          incident.currentIncidentNotes!.trim().isNotEmpty) ...[
+        _NotesCard(notes: incident.currentIncidentNotes!),
+        SizedBox(height: spacing),
+      ],
+
+      _TimelineCard(incident: incident),
+    ];
+
     Widget mainLayout;
     if (isWide) {
       mainLayout = Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // RIGHT COLUMN (Core Info - read first in RTL)
+          // RIGHT COLUMN (Map, Address & Media - visually right/center in RTL)
           Expanded(
             flex: 11,
             child: Column(
@@ -133,7 +133,7 @@ class _IncidentDetailContent extends StatelessWidget {
             ),
           ),
           SizedBox(width: spacing),
-          // LEFT COLUMN (Secondary Info, Media & Timeline)
+          // LEFT COLUMN (Missions / Follow-up Actions & Timeline - visually left in RTL)
           Expanded(
             flex: 9,
             child: Column(
@@ -144,7 +144,7 @@ class _IncidentDetailContent extends StatelessWidget {
         ],
       );
     } else {
-      // Mobile stacked layout
+      // Mobile stacked layout (Address & Map first, then missions & timeline)
       mainLayout = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1110,7 +1110,7 @@ class _MissionsCard extends StatelessWidget {
 
     if (missions.isEmpty) {
       return _SectionCard(
-        title: 'المهام المطلوبة',
+        title: 'الاجراءات المتابعة',
         icon: Icons.task_alt,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 24),
@@ -1121,7 +1121,7 @@ class _MissionsCard extends StatelessWidget {
               Icon(Icons.checklist_rounded, size: 40, color: Color(0xFFCBD5E1)),
               SizedBox(height: 8),
               Text(
-                'لا توجد مهام معينة حالياً للأزمة',
+                'لا توجد إجراءات معينة حالياً للأزمة',
                 style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
               ),
             ],
@@ -1131,7 +1131,7 @@ class _MissionsCard extends StatelessWidget {
     }
 
     return _SectionCard(
-      title: 'المهام المطلوبة',
+      title: 'الاجراءات المتابعة',
       icon: Icons.task_alt,
       badge: '${missions.length}',
       child: Column(

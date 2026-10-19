@@ -18,7 +18,11 @@ class _HoverCardState extends State<HoverCard> {
     Widget animatedChild = AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
-      transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
+      transform: Matrix4.diagonal3Values(
+        _isHovered ? 1.02 : 1.0,
+        _isHovered ? 1.02 : 1.0,
+        1.0,
+      ),
       transformAlignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -28,7 +32,7 @@ class _HoverCardState extends State<HoverCard> {
                   color: Theme.of(context).primaryColor.withValues(alpha: 0.15),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
-                )
+                ),
               ]
             : [],
       ),

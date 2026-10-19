@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
-import 'package:incidents_managment/core/theming/app_theme.dart';
 
 /// Live operational KPIs from the current incident list with premium styling.
 class DashboardKpiStrip extends StatelessWidget {
@@ -135,8 +134,6 @@ class _KpiCard extends StatefulWidget {
 }
 
 class _KpiCardState extends State<_KpiCard> {
-  bool _isHovered = false;
-
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;

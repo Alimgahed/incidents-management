@@ -58,7 +58,13 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           leading: IconButton(
             icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
             tooltip: 'رجوع',
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                Navigator.of(context).maybePop();
+              }
+            },
           ),
           actions: [
             Container(

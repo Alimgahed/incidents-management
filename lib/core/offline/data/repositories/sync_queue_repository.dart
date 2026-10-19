@@ -119,6 +119,14 @@ class SyncQueueRepository {
         await _box.put(id, item);
       });
 
+  Future<void> clearConflicts() => _lock.synchronized(() async {
+        for (final item in _box.values.toList()) {
+          if (item.state == SyncState.conflict) {
+            await _box.delete(item.id);
+          }
+        }
+      });
+
   Future<void> markRetryable(String id) => _lock.synchronized(() async {
     final item = _box.get(id);
     if (item == null) return;

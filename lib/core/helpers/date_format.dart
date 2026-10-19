@@ -67,4 +67,15 @@ extension TimeAgoArabic on DateTime {
 
   String _pluralDay(int value) =>
       value == 1 ? 'يوم' : 'أيام';
+
+  /// يعرض التاريخ والوقت معاً، مثلاً: 2026/10/15 12:30 م
+  String formatDateTimeArabic() {
+    try {
+      final f = DateFormat('yyyy/MM/dd hh:mm a', 'ar');
+      return f.format(this);
+    } catch (_) {
+      final f = DateFormat('yyyy/MM/dd HH:mm');
+      return f.format(this);
+    }
+  }
 }

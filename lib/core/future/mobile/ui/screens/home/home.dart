@@ -10,7 +10,11 @@ import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/in
 import 'package:incidents_managment/core/future/mobile/ui/screens/incident_details/mobile_incident_details_screen.dart';
 import 'package:incidents_managment/core/gloable/gloable.dart';
 import 'package:incidents_managment/core/helpers/date_format.dart';
+import 'package:flutter/services.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
+import 'package:incidents_managment/core/security/session_manager.dart';
+import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 
 class MobileIncidentsListScreen extends StatefulWidget {
@@ -21,13 +25,15 @@ class MobileIncidentsListScreen extends StatefulWidget {
       _MobileIncidentsListScreenState();
 }
 
-class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
+class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
   int _currentBottomNavIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<IncidentMapCubit>().initialize();
@@ -36,7 +42,17 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      // Whenever the user unlocks the phone or switches back to the app,
+      // immediately verify and resurrect the socket if it was killed by OS backgrounding.
+      context.read<IncidentMapCubit>().reconnectIfDisconnected();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
   }
@@ -73,170 +89,191 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: _currentBottomNavIndex == 0,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (_currentBottomNavIndex != 0) {
-          setState(() => _currentBottomNavIndex = 0);
-        }
-      },
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF4F7FB),
-        body: BlocBuilder<IncidentMapCubit, IncidentMapState>(
-          builder: (context, incidentState) {
-            final incidents = context.read<IncidentMapCubit>().incidents;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: MobileSystemBars.standard,
+      child: PopScope(
+        canPop: _currentBottomNavIndex == 0,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          if (_currentBottomNavIndex != 0) {
+            setState(() => _currentBottomNavIndex = 0);
+          }
+        },
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF4F7FB),
+          body: BlocBuilder<IncidentMapCubit, IncidentMapState>(
+            builder: (context, incidentState) {
+              final incidents = context.read<IncidentMapCubit>().incidents;
 
-            return BlocBuilder<DashboardCubit, DashboardState>(
-              builder: (context, dashboardState) {
-                      final dashboardCubit = context.read<DashboardCubit>();
-                      final filteredIncidents =
-                          dashboardCubit.filterIncidents(incidents);
+              return BlocBuilder<DashboardCubit, DashboardState>(
+                builder: (context, dashboardState) {
+                  final dashboardCubit = context.read<DashboardCubit>();
+                  final filteredIncidents = dashboardCubit.filterIncidents(
+                    incidents,
+                  );
 
-                      final totalActive = incidents
-                          .where((i) =>
-                              i.currentIncidentStatus != 6 &&
-                              i.currentIncidentStatus != 7)
-                          .length;
-                      final criticalCount = incidents
-                          .where((i) => i.currentIncidentSeverity == 4)
-                          .length;
-                      final highCount = incidents
-                          .where((i) => i.currentIncidentSeverity == 3)
-                          .length;
-                      final mediumCount = incidents
-                          .where((i) => i.currentIncidentSeverity == 2)
-                          .length;
-                      final lowCount = incidents
-                          .where((i) => i.currentIncidentSeverity == 1)
-                          .length;
-                      final totalCount = incidents.isEmpty ? 1 : incidents.length;
+                  final totalActive = incidents
+                      .where(
+                        (i) =>
+                            i.currentIncidentStatus != 6 &&
+                            i.currentIncidentStatus != 7,
+                      )
+                      .length;
+                  final criticalCount = incidents
+                      .where((i) => i.currentIncidentSeverity == 4)
+                      .length;
+                  final highCount = incidents
+                      .where((i) => i.currentIncidentSeverity == 3)
+                      .length;
+                  final mediumCount = incidents
+                      .where((i) => i.currentIncidentSeverity == 2)
+                      .length;
+                  final lowCount = incidents
+                      .where((i) => i.currentIncidentSeverity == 1)
+                      .length;
+                  final totalCount = incidents.isEmpty ? 1 : incidents.length;
 
-                      return RefreshIndicator(
-                        color: appColor,
-                        backgroundColor: Colors.white,
-                        onRefresh: () async {
-                          await context.read<IncidentMapCubit>().refresh();
-                        },
-                        child: CustomScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          slivers: [
-                            // ================= TOP HEADER BANNER =================
-                            SliverToBoxAdapter(
-                              child: _buildHeaderBanner(context, incidents),
-                            ),
+                  return RefreshIndicator(
+                    color: appColor,
+                    backgroundColor: Colors.white,
+                    onRefresh: () async {
+                      await context.read<IncidentMapCubit>().refresh();
+                    },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        // ================= TOP HEADER BANNER =================
+                        SliverToBoxAdapter(
+                          child: _buildHeaderBanner(context, incidents),
+                        ),
 
-                            // ================= STATS & SUMMARY =================
-                            SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    const SizedBox(height: 14),
-                                    // Hero Active Incidents Card
-                                    _buildHeroActiveCard(totalActive),
-                                    const SizedBox(height: 12),
-                                    // 4 Compact Severity Cards Row
-                                    _buildSeverityCardsRow(
-                                      dashboardCubit: dashboardCubit,
-                                      criticalCount: criticalCount,
-                                      highCount: highCount,
-                                      mediumCount: mediumCount,
-                                      lowCount: lowCount,
-                                      totalCount: totalCount,
-                                    ),
-                                    const SizedBox(height: 14),
-                                    // Search Bar and Filter Button
-                                    _buildSearchAndFilterBar(
-                                      context,
-                                      dashboardCubit,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    // Recent Incidents Section Header
-                                    _buildSectionHeader(
-                                      context,
-                                      totalCount: filteredIncidents.length,
-                                      dashboardCubit: dashboardCubit,
-                                    ),
-
-                                    const SizedBox(height: 10),
-                                  ],
+                        // ================= STATS & SUMMARY =================
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const SizedBox(height: 14),
+                                // Hero Active Incidents Card
+                                _buildHeroActiveCard(totalActive),
+                                const SizedBox(height: 12),
+                                // 4 Compact Severity Cards Row
+                                _buildSeverityCardsRow(
+                                  dashboardCubit: dashboardCubit,
+                                  criticalCount: criticalCount,
+                                  highCount: highCount,
+                                  mediumCount: mediumCount,
+                                  lowCount: lowCount,
+                                  totalCount: totalCount,
                                 ),
-                              ),
+                                const SizedBox(height: 14),
+                                // Search Bar and Filter Button
+                                _buildSearchAndFilterBar(
+                                  context,
+                                  dashboardCubit,
+                                  incidents,
+                                ),
+                                // Active Filter Chips (if any active filters)
+                                _buildActiveFilterChips(
+                                  context,
+                                  dashboardCubit,
+                                  incidents,
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Recent Incidents Section Header
+                              ],
                             ),
-                            // ================= INCIDENTS LIST =================
-                            if (filteredIncidents.isEmpty)
-                              SliverFillRemaining(
-                                hasScrollBody: false,
-                                child: _EmptyStateWidget(),
-                              )
-                            else
-                              SliverPadding(
-                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                                sliver: SliverList(
-                                  delegate: SliverChildBuilderDelegate(
-                                    (context, index) {
-                                      final incident = filteredIncidents[index];
-                                      return RepaintBoundary(
-                                        child: _MobileIncidentCard(
-                                          incident: incident,
-                                          onTap: () {
-                                            incidentID =
-                                                incident.currentIncidentId ?? 0;
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) => MultiBlocProvider(
-                                                  providers: [
-                                                    BlocProvider.value(
-                                                      value: dashboardCubit,
-                                                    ),
-                                                    BlocProvider.value(
-                                                      value: context
-                                                          .read<IncidentMapCubit>(),
-                                                    ),
-                                                  ],
-                                                  child: MobileIncidentDetailsScreen(
-                                                    incidentId:
-                                                        incident.currentIncidentId,
-                                                    initialIncident: incident,
-                                                  ),
-                                                ),
+                          ),
+                        ),
+                        // ================= INCIDENTS LIST =================
+                        if (filteredIncidents.isEmpty)
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: _EmptyStateWidget(),
+                          )
+                        else
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                            sliver: SliverList(
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                final incident = filteredIncidents[index];
+                                return RepaintBoundary(
+                                  child: _MobileIncidentCard(
+                                    incident: incident,
+                                    onTap: () {
+                                      incidentID =
+                                          incident.currentIncidentId ?? 0;
+                                      dashboardCubit.selectIncident(incident);
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => MultiBlocProvider(
+                                            providers: [
+                                              BlocProvider.value(
+                                                value: dashboardCubit,
                                               ),
-                                            );
-                                          },
+                                              BlocProvider.value(
+                                                value: context
+                                                    .read<IncidentMapCubit>(),
+                                              ),
+                                            ],
+                                            child: MobileIncidentDetailsScreen(
+                                              incidentId:
+                                                  incident.currentIncidentId,
+                                              initialIncident: incident,
+                                            ),
+                                          ),
                                         ),
                                       );
                                     },
-                                    childCount: filteredIncidents.length,
                                   ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
+                                );
+                              }, childCount: filteredIncidents.length),
+                            ),
+                          ),
+                      ],
+                    ),
                   );
                 },
-              ),
-        bottomNavigationBar: _buildBottomNavigationBar(context),
+              );
+            },
+          ),
+          bottomNavigationBar: _buildBottomNavigationBar(context),
+        ),
       ),
     );
   }
 
-  // --- HEADER BANNER ---
+  // --- REDESIGNED COMPACT PROFESSIONAL MOBILE HEADER ---
   Widget _buildHeaderBanner(
     BuildContext context,
     List<CurrentIncidentModel> incidents,
   ) {
     final urgentAlertsCount = incidents
-        .where((i) =>
-            (i.currentIncidentSeverity == 4 ||
-                i.currentIncidentSeverity == 3) &&
-            i.currentIncidentStatus != 6 &&
-            i.currentIncidentStatus != 7)
+        .where(
+          (i) =>
+              (i.currentIncidentSeverity == 4 ||
+                  i.currentIncidentSeverity == 3) &&
+              i.currentIncidentStatus != 6 &&
+              i.currentIncidentStatus != 7,
+        )
         .length;
+
+    final currentUser = getIt<SessionManager>().getCurrentUser();
+    final rawName = currentUser?.empName?.trim().isNotEmpty == true
+        ? currentUser!.empName!.trim()
+        : (currentUser?.username?.trim().isNotEmpty == true
+              ? currentUser!.username!.trim()
+              : null);
+    final userGreeting = rawName != null ? 'مرحباً، $rawName' : 'أهلاً بعودتك';
+    final userRole = currentUser?.authorityName?.trim().isNotEmpty == true
+        ? currentUser!.authorityName!.trim()
+        : 'منظومة الطوارئ';
 
     return Container(
       decoration: const BoxDecoration(
@@ -261,37 +298,78 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
         child: SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Top App Bar
+                // Top Row: Company Branding on Right, Actions on Left
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Profile / Menu Icon -> Opens More Services Screen
-                    GestureDetector(
-                      onTap: () => context.pushNamed(Routes.mobileMoreServices),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            width: 1,
+                    // Official Company Logo (Circular badge, no square box)
+                    Container(
+                      width: 44,
+                      height: 44,
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.person_rounded,
-                          color: Colors.white,
-                          size: 22,
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.water_drop_rounded,
+                                color: appColor,
+                                size: 24,
+                              ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
 
-                    // Notification Icon with dynamic badge
+                    // Titles
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'منظومة إدارة الأزمات',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            'شركة مياه الشرب والصرف الصحي بالمنيا',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withValues(alpha: 0.82),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Notification Button with Dynamic Alert Badge
                     GestureDetector(
                       onTap: () {
                         final cubit = context.read<DashboardCubit>();
@@ -303,20 +381,20 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                         clipBehavior: Clip.none,
                         children: [
                           Container(
-                            width: 40,
-                            height: 40,
+                            width: 38,
+                            height: 38,
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.25),
+                                color: Colors.white.withValues(alpha: 0.22),
                                 width: 1,
                               ),
                             ),
                             child: const Icon(
                               Icons.notifications_none_rounded,
                               color: Colors.white,
-                              size: 22,
+                              size: 20,
                             ),
                           ),
                           if (urgentAlertsCount > 0)
@@ -352,10 +430,64 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
 
-                    const Spacer(),
+                    // Profile / Menu Icon -> Opens More Services Hub
+                  ],
+                ),
 
-                    // Date & Weather badge (Glassmorphic chip)
+                const SizedBox(height: 14),
+
+                // Bottom Row of Header: Personalized User Greeting on Right, Date & Weather Chip on Left
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // User Greeting
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF10B981),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                userRole,
+                                style: const TextStyle(
+                                  color: Color(0xFF6EE7B7),
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            userGreeting,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    // Date & Weather chip (Glassmorphic)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -363,7 +495,7 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: Colors.white.withValues(alpha: 0.18),
                         ),
@@ -374,77 +506,20 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                           const Icon(
                             Icons.wb_sunny_rounded,
                             color: Color(0xFFFBBF24),
-                            size: 16,
+                            size: 15,
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 5),
                           Text(
                             _formatArabicHeaderDate().replaceAll('\n', ' - '),
                             textAlign: TextAlign.right,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 11,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Center Title & Logo Badge
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.water_drop_rounded,
-                          color: appColor,
-                          size: 26,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'منظومة إدارة الأزمات',
-                          style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        Text(
-                          'شركة مياه الشرب والصرف الصحي بالمنيا',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withValues(alpha: 0.85),
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -464,11 +539,7 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1E56A0),
-            Color(0xFF163E75),
-            Color(0xFF0F2B56),
-          ],
+          colors: [Color(0xFF1E56A0), Color(0xFF163E75), Color(0xFF0F2B56)],
         ),
         boxShadow: [
           BoxShadow(
@@ -525,9 +596,9 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                       ),
                     ),
                     child: const Icon(
-                      Icons.crisis_alert_rounded,
+                      Icons.bar_chart_rounded,
                       color: Colors.white,
-                      size: 28,
+                      size: 30,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -615,26 +686,47 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
   }) {
     return Row(
       children: [
-        // 1. Follow-up / Medium (قيد المتابعة)
+        // 1. Low (منخفضة - Right in RTL, matching screenshot)
         Expanded(
           child: _buildSeverityCard(
-            label: 'قيد المتابعة',
-            count: mediumCount,
+            label: 'منخفضة',
+            count: lowCount,
             total: totalCount,
-            icon: Icons.pending_actions_rounded,
-            iconColor: const Color(0xFF2563EB),
-            barColor: const Color(0xFF2563EB),
-            isSelected: dashboardCubit.selectedSeverity == 2,
+            icon: Icons.check_circle_rounded,
+            iconColor: const Color(0xFF10B981),
+            barColor: const Color(0xFF10B981),
+            isSelected: dashboardCubit.selectedSeverity == 1,
             onTap: () {
-              final newSeverity =
-                  dashboardCubit.selectedSeverity == 2 ? null : 2;
+              final newSeverity = dashboardCubit.selectedSeverity == 1
+                  ? null
+                  : 1;
               dashboardCubit.updateSeverityFilter(newSeverity);
             },
           ),
         ),
         const SizedBox(width: 8),
 
-        // 2. High (عالية)
+        // 2. Critical (حرجة)
+        Expanded(
+          child: _buildSeverityCard(
+            label: 'حرجة',
+            count: criticalCount,
+            total: totalCount,
+            icon: Icons.notifications_active_rounded,
+            iconColor: const Color(0xFFEF4444),
+            barColor: const Color(0xFFEF4444),
+            isSelected: dashboardCubit.selectedSeverity == 4,
+            onTap: () {
+              final newSeverity = dashboardCubit.selectedSeverity == 4
+                  ? null
+                  : 4;
+              dashboardCubit.updateSeverityFilter(newSeverity);
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // 3. High (عالية)
         Expanded(
           child: _buildSeverityCard(
             label: 'عالية',
@@ -645,46 +737,29 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
             barColor: const Color(0xFFF59E0B),
             isSelected: dashboardCubit.selectedSeverity == 3,
             onTap: () {
-              final newSeverity =
-                  dashboardCubit.selectedSeverity == 3 ? null : 3;
+              final newSeverity = dashboardCubit.selectedSeverity == 3
+                  ? null
+                  : 3;
               dashboardCubit.updateSeverityFilter(newSeverity);
             },
           ),
         ),
         const SizedBox(width: 8),
 
-        // 3. Critical (حرجة)
+        // 4. In Follow-up / Medium (قيد المتابعة - Left in RTL, matching screenshot)
         Expanded(
           child: _buildSeverityCard(
-            label: 'حرجة',
-            count: criticalCount,
+            label: 'قيد المتابعة',
+            count: mediumCount,
             total: totalCount,
-            icon: Icons.priority_high_rounded,
-            iconColor: const Color(0xFFEF4444),
-            barColor: const Color(0xFFEF4444),
-            isSelected: dashboardCubit.selectedSeverity == 4,
+            icon: Icons.article_outlined,
+            iconColor: const Color(0xFF2563EB),
+            barColor: const Color(0xFF2563EB),
+            isSelected: dashboardCubit.selectedSeverity == 2,
             onTap: () {
-              final newSeverity =
-                  dashboardCubit.selectedSeverity == 4 ? null : 4;
-              dashboardCubit.updateSeverityFilter(newSeverity);
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        // 4. Low (منخفضة)
-        Expanded(
-          child: _buildSeverityCard(
-            label: 'منخفضة',
-            count: lowCount,
-            total: totalCount,
-            icon: Icons.shield_outlined,
-            iconColor: const Color(0xFF10B981),
-            barColor: const Color(0xFF10B981),
-            isSelected: dashboardCubit.selectedSeverity == 1,
-            onTap: () {
-              final newSeverity =
-                  dashboardCubit.selectedSeverity == 1 ? null : 1;
+              final newSeverity = dashboardCubit.selectedSeverity == 2
+                  ? null
+                  : 2;
               dashboardCubit.updateSeverityFilter(newSeverity);
             },
           ),
@@ -747,7 +822,9 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
-                    color: count > 0 ? primaryTextColor : const Color(0xFF94A3B8),
+                    color: count > 0
+                        ? primaryTextColor
+                        : const Color(0xFF94A3B8),
                   ),
                 ),
               ],
@@ -789,6 +866,7 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
   Widget _buildSearchAndFilterBar(
     BuildContext context,
     DashboardCubit dashboardCubit,
+    List<CurrentIncidentModel> incidents,
   ) {
     final hasActiveFilters = dashboardCubit.hasActiveFilters;
 
@@ -796,7 +874,7 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
       children: [
         // Filter Action Button (Left in RTL = End)
         GestureDetector(
-          onTap: () => _showFilterBottomSheet(context),
+          onTap: () => _showFilterBottomSheet(context, incidents),
           child: Container(
             width: 46,
             height: 46,
@@ -900,67 +978,255 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
     );
   }
 
-  // --- SECTION HEADER (أحدث الأزمات / عرض الكل) ---
-  Widget _buildSectionHeader(
-    BuildContext context, {
-    required int totalCount,
-    required DashboardCubit dashboardCubit,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // "عرض الكل" button on left
-        GestureDetector(
-          onTap: () {
-            dashboardCubit.updateSeverityFilter(null);
-            dashboardCubit.updateStatusFilter(null);
-            dashboardCubit.updateBranchFilter(null);
-            _searchController.clear();
-            dashboardCubit.updateSearchQuery('');
-          },
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(
-                Icons.chevron_left_rounded,
-                color: Color(0xFF2563EB),
-                size: 20,
-              ),
-              Text(
-                'عرض الكل',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2563EB),
+  // --- ACTIVE FILTER CHIPS ---
+  Widget _buildActiveFilterChips(
+    BuildContext context,
+    DashboardCubit dashboardCubit,
+    List<CurrentIncidentModel> incidents,
+  ) {
+    final status = dashboardCubit.selectedStatus;
+    final severity = dashboardCubit.selectedSeverity;
+    final branchId = dashboardCubit.selectedBranchId;
+    final typeId = dashboardCubit.selectedIncidentTypeId;
+    final hasPhotos = dashboardCubit.selectedHasPhotos;
+    final hasSearch = _searchController.text.trim().isNotEmpty;
+
+    final hasAnyFilter =
+        status != null ||
+        severity != null ||
+        branchId != null ||
+        typeId != null ||
+        hasPhotos != null ||
+        hasSearch;
+    if (!hasAnyFilter) return const SizedBox.shrink();
+
+    String getStatusLabel(int s) {
+      switch (s) {
+        case 1:
+          return 'تم التبليغ';
+        case 2:
+          return 'تم الارسال';
+        case 3:
+          return 'قيد التنفيذ';
+        case 4:
+          return 'قيد الانتظار';
+        case 5:
+          return 'قيد المراجعة';
+        case 6:
+          return 'تم حلها';
+        case 7:
+          return 'تم الرفض';
+        default:
+          return 'حالة $s';
+      }
+    }
+
+    String getSeverityLabel(int sev) {
+      switch (sev) {
+        case 4:
+          return 'حرجة';
+        case 3:
+          return 'عالية';
+        case 2:
+          return 'متوسطة';
+        case 1:
+          return 'منخفضة';
+        default:
+          return 'درجة $sev';
+      }
+    }
+
+    String getBranchLabel(int bId) {
+      for (final inc in incidents) {
+        if (inc.branchId == bId &&
+            inc.branchName != null &&
+            inc.branchName!.trim().isNotEmpty) {
+          return inc.branchName!;
+        }
+      }
+      return 'فرع #$bId';
+    }
+
+    String getTypeLabel(int tId) {
+      for (final inc in incidents) {
+        if (inc.currentIncidentTypeId == tId &&
+            inc.currentIncidentTypeName != null &&
+            inc.currentIncidentTypeName!.trim().isNotEmpty) {
+          return inc.currentIncidentTypeName!;
+        }
+      }
+      return 'نوع #$tId';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        reverse: true, // RTL natural scrolling
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Clear All Button
+            GestureDetector(
+              onTap: () {
+                _searchController.clear();
+                dashboardCubit.clearAllFilters();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEE2E2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFFCA5A5)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(
+                      Icons.refresh_rounded,
+                      size: 14,
+                      color: Color(0xFFDC2626),
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'إعادة ضبط',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFDC2626),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+            const SizedBox(width: 8),
 
-        // "أحدث الأزمات" with clock icon on right
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text(
-              'أحدث الأزمات',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: primaryTextColor,
+            // Search Query Chip
+            if (hasSearch) ...[
+              _buildFilterPill(
+                label: 'بحث: ${_searchController.text.trim()}',
+                icon: Icons.search_rounded,
+                color: const Color(0xFF2563EB),
+                onClear: () {
+                  _searchController.clear();
+                  dashboardCubit.updateSearchQuery('');
+                },
               ),
-            ),
-            SizedBox(width: 6),
-            Icon(
-              Icons.access_time_rounded,
-              color: Color(0xFF1E40AF),
-              size: 20,
-            ),
+              const SizedBox(width: 6),
+            ],
+
+            // Status Chip
+            if (status != null) ...[
+              _buildFilterPill(
+                label: 'الحالة: ${getStatusLabel(status)}',
+                icon: Icons.sync_alt_rounded,
+                color: getStatusColor(status),
+                onClear: () => dashboardCubit.updateStatusFilter(null),
+              ),
+              const SizedBox(width: 6),
+            ],
+
+            // Severity Chip
+            if (severity != null) ...[
+              _buildFilterPill(
+                label: 'الخطورة: ${getSeverityLabel(severity)}',
+                icon: Icons.priority_high_rounded,
+                color: getSeverityColor(severity),
+                onClear: () => dashboardCubit.updateSeverityFilter(null),
+              ),
+              const SizedBox(width: 6),
+            ],
+
+            // Branch Chip
+            if (branchId != null) ...[
+              _buildFilterPill(
+                label: 'الفرع: ${getBranchLabel(branchId)}',
+                icon: Icons.location_city_rounded,
+                color: const Color(0xFF0D9488),
+                onClear: () => dashboardCubit.updateBranchFilter(null),
+              ),
+              const SizedBox(width: 6),
+            ],
+
+            // Incident Type Chip
+            if (typeId != null) ...[
+              _buildFilterPill(
+                label: 'النوع: ${getTypeLabel(typeId)}',
+                icon: Icons.category_rounded,
+                color: const Color(0xFF7C3AED),
+                onClear: () => dashboardCubit.updateIncidentTypeFilter(null),
+              ),
+              const SizedBox(width: 6),
+            ],
+
+            // Has Photos Chip
+            if (hasPhotos != null) ...[
+              _buildFilterPill(
+                label: hasPhotos ? 'يحتوي على صور' : 'بدون صور',
+                icon: hasPhotos
+                    ? Icons.photo_library_rounded
+                    : Icons.no_photography_rounded,
+                color: hasPhotos
+                    ? const Color(0xFF0284C7)
+                    : const Color(0xFF64748B),
+                onClear: () => dashboardCubit.updateHasPhotosFilter(null),
+              ),
+              const SizedBox(width: 6),
+            ],
           ],
         ),
-      ],
+      ),
     );
   }
+
+  Widget _buildFilterPill({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onClear,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onClear,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.close_rounded, size: 12, color: color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- SECTION HEADER (أحدث الأزمات / عرض الكل) ---
 
   // --- NATIVE MOBILE BOTTOM NAVIGATION ---
   Widget _buildBottomNavigationBar(BuildContext context) {
@@ -993,11 +1259,11 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
                 },
               ),
 
-              // Tab 2: الأزمات (Incidents / Incident Types)
+              // Tab 2: أنواع الأزمات (Incident Types)
               _buildBottomNavItem(
                 index: 1,
-                icon: Icons.format_list_bulleted_rounded,
-                label: 'الأزمات',
+                icon: Icons.article_outlined,
+                label: 'أنواع الأزمات',
                 isActive: _currentBottomNavIndex == 1,
                 onTap: () {
                   context.pushNamed(Routes.allIncidentType);
@@ -1051,7 +1317,7 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
               // Tab 4: المهام (Tasks)
               _buildBottomNavItem(
                 index: 2,
-                icon: Icons.assignment_outlined,
+                icon: Icons.fact_check_outlined,
                 label: 'المهام',
                 isActive: _currentBottomNavIndex == 2,
                 onTap: () {
@@ -1099,7 +1365,9 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
             Icon(
               icon,
               size: 22,
-              color: isActive ? const Color(0xFF1B64F2) : const Color(0xFF6B7280),
+              color: isActive
+                  ? const Color(0xFF1B64F2)
+                  : const Color(0xFF6B7280),
             ),
             const SizedBox(height: 3),
             Text(
@@ -1118,7 +1386,10 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
     );
   }
 
-  void _showFilterBottomSheet(BuildContext context) {
+  void _showFilterBottomSheet(
+    BuildContext context,
+    List<CurrentIncidentModel> incidents,
+  ) {
     final dashboardCubit = context.read<DashboardCubit>();
 
     showModalBottomSheet(
@@ -1129,7 +1400,7 @@ class _MobileIncidentsListScreenState extends State<MobileIncidentsListScreen> {
       ),
       builder: (_) => BlocProvider.value(
         value: dashboardCubit,
-        child: _FilterBottomSheet(),
+        child: _FilterBottomSheet(incidents: incidents),
       ),
     );
   }
@@ -1148,17 +1419,17 @@ class _MobileIncidentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final severity = incident.currentIncidentSeverity ?? 1;
     final status = incident.currentIncidentStatus ?? 1;
-    final id = incident.currentIncidentId ?? 0;
     final branch = incident.branchName ?? 'المنيا';
     final typeName = incident.currentIncidentTypeName ?? 'توقف محطة مياه';
-    final description = (incident.currentIncidentDescription?.isNotEmpty == true)
+    final description =
+        (incident.currentIncidentDescription?.isNotEmpty == true)
         ? incident.currentIncidentDescription!
         : (incident.currentIncidentNotes?.isNotEmpty == true
-            ? incident.currentIncidentNotes!
-            : 'لا توجد تفاصيل إضافية مسجلة لهذه الأزمة');
+              ? incident.currentIncidentNotes!
+              : 'لا توجد تفاصيل إضافية مسجلة لهذه الأزمة');
 
-    final managerName = incident.managerName ??
-        (incident.username ?? 'أحمد محمد');
+    final managerName =
+        incident.managerName ?? (incident.username ?? 'أحمد محمد');
 
     final photosCount = incident.photos?.length ?? 0;
     final missions = incident.currentIncidentWithMissions ?? [];
@@ -1174,10 +1445,10 @@ class _MobileIncidentCard extends StatelessWidget {
     final severityIconData = isCritical
         ? Icons.notifications_active_rounded
         : (isHigh
-            ? Icons.warning_amber_rounded
-            : (severity == 2
-                ? Icons.info_outline_rounded
-                : Icons.check_circle_outline_rounded));
+              ? Icons.warning_amber_rounded
+              : (severity == 2
+                    ? Icons.info_outline_rounded
+                    : Icons.check_circle_outline_rounded));
 
     final severityBgColor = isCritical
         ? const Color(0xFFFEE2E2)
@@ -1215,37 +1486,23 @@ class _MobileIncidentCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Top Row: Details Arrow Button, Branch & Title, Severity Badge & Incident #
+                // Top Row: Details Arrow Button, Branch & Title, Severity Badge (Incident ID removed from UI)
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // 1. Right in RTL: Severity Icon Badge & Incident #
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: severityBgColor,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            severityIconData,
-                            color: severityColor,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '#$id',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: secondaryTextColor,
-                          ),
-                        ),
-                      ],
+                    // 1. Right in RTL: Severity Icon Badge
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: severityBgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        severityIconData,
+                        color: severityColor,
+                        size: 20,
+                      ),
                     ),
 
                     const SizedBox(width: 12),
@@ -1280,18 +1537,18 @@ class _MobileIncidentCard extends StatelessWidget {
 
                     const SizedBox(width: 8),
 
-                    // 3. Left in RTL: Arrow button pointing to details
+                    // 3. Left in RTL: Arrow button pointing to details (Right-pointing arrow inside circle)
                     Container(
                       width: 32,
                       height: 32,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEFF6FF),
+                        shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.chevron_left_rounded,
+                        Icons.arrow_forward_rounded,
                         color: Color(0xFF2563EB),
-                        size: 22,
+                        size: 18,
                       ),
                     ),
                   ],
@@ -1301,13 +1558,13 @@ class _MobileIncidentCard extends StatelessWidget {
 
                 // Description with vertical pipe accent
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: const BoxDecoration(
                     border: Border(
-                      right: BorderSide(
-                        color: Color(0xFF3B82F6),
-                        width: 2.5,
-                      ),
+                      right: BorderSide(color: Color(0xFF3B82F6), width: 2.5),
                     ),
                   ),
                   child: Text(
@@ -1324,8 +1581,11 @@ class _MobileIncidentCard extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                // Badges Row: Status Pill and Severity Pill
-                Row(
+                // Upper Metadata Badges Area: Status Pill, Severity Pill, Date & Time Pill
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     // Status Badge
                     Container(
@@ -1357,7 +1617,6 @@ class _MobileIncidentCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
 
                     // Severity Pill (عالية / حرجة with bar chart icon)
                     Container(
@@ -1389,6 +1648,39 @@ class _MobileIncidentCard extends StatelessWidget {
                         ],
                       ),
                     ),
+
+                    // Date & Time Pill (Moved next to Status & Severity)
+                    if (incident.currentIncidentCreatedAt != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.access_time_rounded,
+                              size: 13,
+                              color: Color(0xFF64748B),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              incident.currentIncidentCreatedAt!
+                                  .timeAgoArabic(),
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF475569),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
 
@@ -1396,7 +1688,7 @@ class _MobileIncidentCard extends StatelessWidget {
                 const Divider(height: 1, color: Color(0xFFF3F4F6)),
                 const SizedBox(height: 10),
 
-                // Footer Metadata Row: Attachments, Tasks, Responsible Person, Time
+                // Lower Metadata Row: Attachments, Tasks, Responsible Person (Date removed to avoid duplication)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1502,44 +1794,6 @@ class _MobileIncidentCard extends StatelessWidget {
                         ),
                       ],
                     ),
-
-                    // Time Ago & Full Date
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.access_time_rounded,
-                          size: 14,
-                          color: secondaryTextColor,
-                        ),
-                        const SizedBox(width: 4),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              incident.currentIncidentCreatedAt != null
-                                  ? incident.currentIncidentCreatedAt!
-                                      .timeAgoArabic()
-                                  : 'منذ قليل',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: primaryTextColor,
-                              ),
-                            ),
-                            Text(
-                              incident.currentIncidentCreatedAt != null
-                                  ? '${incident.currentIncidentCreatedAt!.day.toString().padLeft(2, '0')}/${incident.currentIncidentCreatedAt!.month.toString().padLeft(2, '0')}/${incident.currentIncidentCreatedAt!.year} ${incident.currentIncidentCreatedAt!.hour.toString().padLeft(2, '0')}:${incident.currentIncidentCreatedAt!.minute.toString().padLeft(2, '0')}'
-                                  : '',
-                              style: const TextStyle(
-                                fontSize: 8.5,
-                                color: disabledTextColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ],
@@ -1615,7 +1869,10 @@ class _EmptyStateWidget extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
               ),
             ),
           ],
@@ -1626,6 +1883,10 @@ class _EmptyStateWidget extends StatelessWidget {
 }
 
 class _FilterBottomSheet extends StatefulWidget {
+  final List<CurrentIncidentModel> incidents;
+
+  const _FilterBottomSheet({required this.incidents});
+
   @override
   State<_FilterBottomSheet> createState() => _FilterBottomSheetState();
 }
@@ -1634,6 +1895,8 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
   int? _tempStatus;
   int? _tempSeverity;
   int? _tempBranch;
+  int? _tempIncidentType;
+  bool? _tempHasPhotos;
 
   @override
   void initState() {
@@ -1642,6 +1905,43 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
     _tempStatus = cubit.selectedStatus;
     _tempSeverity = cubit.selectedSeverity;
     _tempBranch = cubit.selectedBranchId;
+    _tempIncidentType = cubit.selectedIncidentTypeId;
+    _tempHasPhotos = cubit.selectedHasPhotos;
+  }
+
+  /// Extracts dynamic branches from existing incidents data (no hardcoded branches)
+  List<Map<String, dynamic>> _getAvailableBranches() {
+    final branchMap = <int, String>{};
+    for (final inc in widget.incidents) {
+      if (inc.branchId != null &&
+          inc.branchName != null &&
+          inc.branchName!.trim().isNotEmpty) {
+        branchMap[inc.branchId!] = inc.branchName!.trim();
+      }
+    }
+
+    final sortedEntries = branchMap.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+
+    return sortedEntries.map((e) => {'id': e.key, 'label': e.value}).toList();
+  }
+
+  /// Extracts dynamic incident types from existing incidents data (no hardcoded types)
+  List<Map<String, dynamic>> _getAvailableIncidentTypes() {
+    final typeMap = <int, String>{};
+    for (final inc in widget.incidents) {
+      if (inc.currentIncidentTypeId != null &&
+          inc.currentIncidentTypeName != null &&
+          inc.currentIncidentTypeName!.trim().isNotEmpty) {
+        typeMap[inc.currentIncidentTypeId!] = inc.currentIncidentTypeName!
+            .trim();
+      }
+    }
+
+    final sortedEntries = typeMap.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+
+    return sortedEntries.map((e) => {'id': e.key, 'label': e.value}).toList();
   }
 
   @override
@@ -1651,108 +1951,227 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final viewInsetsBottom = MediaQuery.viewInsetsOf(context).bottom;
 
+    final hasAnyFilterSelection =
+        _tempStatus != null ||
+        _tempSeverity != null ||
+        _tempBranch != null ||
+        _tempIncidentType != null ||
+        _tempHasPhotos != null;
+
+    final availableBranches = _getAvailableBranches();
+    final availableTypes = _getAvailableIncidentTypes();
+
     return Container(
       padding: EdgeInsets.fromLTRB(
-        24,
-        24,
-        24,
-        24 + bottomPadding + viewInsetsBottom,
+        20,
+        16,
+        20,
+        16 + bottomPadding + viewInsetsBottom,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // Top Drag Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header Row
             Row(
               children: [
+                const Icon(Icons.tune_rounded, color: appColor, size: 22),
+                const SizedBox(width: 8),
                 const Text(
-                  'تصفية الأزمات',
+                  'تصفية البلاغات',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: appColor,
+                    color: primaryTextColor,
                   ),
                 ),
                 const Spacer(),
-                if (cubit.hasActiveFilters)
-                  TextButton(
+                if (hasAnyFilterSelection || cubit.hasActiveFilters)
+                  TextButton.icon(
                     onPressed: () {
                       setState(() {
                         _tempStatus = null;
                         _tempSeverity = null;
                         _tempBranch = null;
+                        _tempIncidentType = null;
+                        _tempHasPhotos = null;
                       });
                     },
-                    child: Text(
-                      'مسح الكل',
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      size: 15,
+                      color: Color(0xFFDC2626),
+                    ),
+                    label: const Text(
+                      'إعادة ضبط',
                       style: TextStyle(
-                        color: warningColor,
-                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFDC2626),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: secondaryTextColor,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const Divider(height: 24, thickness: 1, color: Color(0xFFF1F5F9)),
 
-            // Status Filter
+            // 1. Status Filter Section
             _buildFilterSection(
-              title: 'الحالة',
-              icon: Icons.sync_alt,
+              title: 'حالة البلاغ',
+              icon: Icons.sync_alt_rounded,
+              isSelected: _tempStatus != null,
+              onClear: () {
+                setState(() => _tempStatus = null);
+              },
               child: _buildStatusFilter(),
             ),
 
             const SizedBox(height: 20),
 
-            // Severity Filter
+            // 2. Severity Filter Section
             _buildFilterSection(
               title: 'درجة الخطورة',
-              icon: Icons.priority_high,
+              icon: Icons.priority_high_rounded,
+              isSelected: _tempSeverity != null,
+              onClear: () {
+                setState(() => _tempSeverity = null);
+              },
               child: _buildSeverityFilter(),
             ),
 
             const SizedBox(height: 20),
 
-            // Branch Filter
+            // 3. Branch Filter Section (Dynamically populated)
             _buildFilterSection(
-              title: 'الفرع',
-              icon: Icons.location_city,
-              child: _buildBranchFilter(),
+              title: 'الفرع أو المنطقة',
+              icon: Icons.location_city_rounded,
+              isSelected: _tempBranch != null,
+              onClear: () {
+                setState(() => _tempBranch = null);
+              },
+              child: _buildBranchFilter(availableBranches),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 20),
 
-            // Apply Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  cubit.updateStatusFilter(_tempStatus);
-                  cubit.updateSeverityFilter(_tempSeverity);
-                  cubit.updateBranchFilter(_tempBranch);
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: appColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // 4. Incident Type Filter Section (Dynamically populated)
+            _buildFilterSection(
+              title: 'نوع الأزمة',
+              icon: Icons.category_rounded,
+              isSelected: _tempIncidentType != null,
+              onClear: () {
+                setState(() => _tempIncidentType = null);
+              },
+              child: _buildIncidentTypeFilter(availableTypes),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 5. Photos / Attachments Filter Section
+            _buildFilterSection(
+              title: 'المرفقات والصور',
+              icon: Icons.photo_library_rounded,
+              isSelected: _tempHasPhotos != null,
+              onClear: () {
+                setState(() => _tempHasPhotos = null);
+              },
+              child: _buildPhotosFilter(),
+            ),
+
+            const SizedBox(height: 26),
+
+            // Actions: Apply & Clear Buttons
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      cubit.updateStatusFilter(_tempStatus);
+                      cubit.updateSeverityFilter(_tempSeverity);
+                      cubit.updateBranchFilter(_tempBranch);
+                      cubit.updateIncidentTypeFilter(_tempIncidentType);
+                      cubit.updateHasPhotosFilter(_tempHasPhotos);
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: appColor,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'تطبيق الفلتر',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
-                child: const Text(
-                  'تطبيق الفلتر',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
+                if (hasAnyFilterSelection) ...[
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setState(() {
+                          _tempStatus = null;
+                          _tempSeverity = null;
+                          _tempBranch = null;
+                          _tempIncidentType = null;
+                          _tempHasPhotos = null;
+                        });
+                        cubit.clearAllFilters();
+                        Navigator.pop(context);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      child: const Text(
+                        'مسح الكل',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -1763,6 +2182,8 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
   Widget _buildFilterSection({
     required String title,
     required IconData icon,
+    required bool isSelected,
+    required VoidCallback onClear,
     required Widget child,
   }) {
     return Column(
@@ -1770,19 +2191,43 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
       children: [
         Row(
           children: [
-            Icon(icon, color: appColor, size: 18),
-            const SizedBox(width: 8),
+            Icon(icon, color: appColor, size: 17),
+            const SizedBox(width: 6),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: primaryTextColor,
               ),
             ),
+            const Spacer(),
+            if (isSelected)
+              GestureDetector(
+                onTap: onClear,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(
+                      Icons.close_rounded,
+                      size: 14,
+                      color: Color(0xFFEF4444),
+                    ),
+                    SizedBox(width: 2),
+                    Text(
+                      'مسح',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFEF4444),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         child,
       ],
     );
@@ -1808,17 +2253,23 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
         final isSelected = _tempStatus == id;
         final color = getStatusColor(id);
 
-        return FilterChip(
+        return ChoiceChip(
           selected: isSelected,
           label: Text(label),
           labelStyle: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+            fontSize: 12.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
             color: isSelected ? Colors.white : color,
           ),
-          backgroundColor: color.withAlpha(26),
+          backgroundColor: color.withValues(alpha: 0.08),
           selectedColor: color,
-          checkmarkColor: Colors.white,
+          showCheckmark: false,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(
+              color: isSelected ? color : color.withValues(alpha: 0.25),
+            ),
+          ),
           onSelected: (selected) {
             setState(() {
               _tempStatus = selected ? id : null;
@@ -1846,7 +2297,7 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
         final isSelected = _tempSeverity == id;
         final color = getSeverityColor(id);
 
-        return FilterChip(
+        return ChoiceChip(
           selected: isSelected,
           label: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1856,18 +2307,24 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 size: 14,
                 color: isSelected ? Colors.white : color,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 5),
               Text(label),
             ],
           ),
           labelStyle: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+            fontSize: 12.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
             color: isSelected ? Colors.white : color,
           ),
-          backgroundColor: color.withAlpha(26),
+          backgroundColor: color.withValues(alpha: 0.08),
           selectedColor: color,
-          checkmarkColor: Colors.white,
+          showCheckmark: false,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(
+              color: isSelected ? color : color.withValues(alpha: 0.25),
+            ),
+          ),
           onSelected: (selected) {
             setState(() {
               _tempSeverity = selected ? id : null;
@@ -1878,39 +2335,55 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
     );
   }
 
-  Widget _buildBranchFilter() {
-    const branches = [
-      {'id': 213, 'label': 'المنيا'},
-      {'id': 373, 'label': 'المنيا الجديدة'},
-      {'id': 173, 'label': 'سمالوط'},
-      {'id': 133, 'label': 'مطاي'},
-      {'id': 93, 'label': 'بني مزار'},
-      {'id': 53, 'label': 'مغاغة'},
-      {'id': 13, 'label': 'العدوة'},
-      {'id': 253, 'label': 'أبو قرقاص'},
-      {'id': 293, 'label': 'ملاوي'},
-      {'id': 333, 'label': 'ديرمواس'},
-    ];
+  Widget _buildBranchFilter(List<Map<String, dynamic>> availableBranches) {
+    if (availableBranches.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: const Text(
+          'لا توجد فروع مسجلة بالبيانات الحالية',
+          style: TextStyle(fontSize: 12, color: secondaryTextColor),
+        ),
+      );
+    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
+        border: Border.all(
+          color: _tempBranch != null ? appColor : const Color(0xFFE2E8F0),
+          width: _tempBranch != null ? 1.5 : 1.0,
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int?>(
           isExpanded: true,
           value: _tempBranch,
-          hint: const Text('اختر الفرع'),
-          icon: Icon(Icons.arrow_drop_down, color: accentColor),
+          hint: const Text(
+            'اختر الفرع (الكل)',
+            style: TextStyle(fontSize: 13, color: secondaryTextColor),
+          ),
+          icon: const Icon(Icons.arrow_drop_down, color: secondaryTextColor),
           items: [
             const DropdownMenuItem<int?>(
               value: null,
-              child: Text('جميع الفروع'),
+              child: Text(
+                'جميع الفروع',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: primaryTextColor,
+                ),
+              ),
             ),
-            ...branches.map((branch) {
+            ...availableBranches.map((branch) {
               final id = branch['id'] as int;
               final label = branch['label'] as String;
               return DropdownMenuItem<int?>(
@@ -1918,12 +2391,21 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.location_city,
+                      Icons.location_city_rounded,
                       size: 16,
                       color: _tempBranch == id ? appColor : secondaryTextColor,
                     ),
                     const SizedBox(width: 8),
-                    Text(label),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: _tempBranch == id
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _tempBranch == id ? appColor : primaryTextColor,
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -1939,17 +2421,196 @@ class _FilterBottomSheetState extends State<_FilterBottomSheet> {
     );
   }
 
+  Widget _buildIncidentTypeFilter(List<Map<String, dynamic>> availableTypes) {
+    if (availableTypes.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: const Text(
+          'لا توجد أنواع أزمات مسجلة بالبيانات الحالية',
+          style: TextStyle(fontSize: 12, color: secondaryTextColor),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _tempIncidentType != null ? appColor : const Color(0xFFE2E8F0),
+          width: _tempIncidentType != null ? 1.5 : 1.0,
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int?>(
+          isExpanded: true,
+          value: _tempIncidentType,
+          hint: const Text(
+            'اختر نوع الأزمة (الكل)',
+            style: TextStyle(fontSize: 13, color: secondaryTextColor),
+          ),
+          icon: const Icon(Icons.arrow_drop_down, color: secondaryTextColor),
+          items: [
+            const DropdownMenuItem<int?>(
+              value: null,
+              child: Text(
+                'جميع أنواع الأزمات',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: primaryTextColor,
+                ),
+              ),
+            ),
+            ...availableTypes.map((type) {
+              final id = type['id'] as int;
+              final label = type['label'] as String;
+              return DropdownMenuItem<int?>(
+                value: id,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.category_rounded,
+                      size: 16,
+                      color: _tempIncidentType == id
+                          ? appColor
+                          : secondaryTextColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: _tempIncidentType == id
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _tempIncidentType == id
+                              ? appColor
+                              : primaryTextColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+          onChanged: (value) {
+            setState(() {
+              _tempIncidentType = value;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotosFilter() {
+    return Row(
+      children: [
+        // Has photos
+        Expanded(
+          child: ChoiceChip(
+            selected: _tempHasPhotos == true,
+            label: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.photo_library_rounded, size: 14),
+                SizedBox(width: 6),
+                Text('يحتوي على صور'),
+              ],
+            ),
+            labelStyle: TextStyle(
+              fontSize: 12,
+              fontWeight: _tempHasPhotos == true
+                  ? FontWeight.bold
+                  : FontWeight.w600,
+              color: _tempHasPhotos == true
+                  ? Colors.white
+                  : const Color(0xFF0284C7),
+            ),
+            backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.08),
+            selectedColor: const Color(0xFF0284C7),
+            showCheckmark: false,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(
+                color: _tempHasPhotos == true
+                    ? const Color(0xFF0284C7)
+                    : const Color(0xFF0284C7).withValues(alpha: 0.25),
+              ),
+            ),
+            onSelected: (selected) {
+              setState(() {
+                _tempHasPhotos = selected ? true : null;
+              });
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // No photos
+        Expanded(
+          child: ChoiceChip(
+            selected: _tempHasPhotos == false,
+            label: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.no_photography_rounded, size: 14),
+                SizedBox(width: 6),
+                Text('بدون صور'),
+              ],
+            ),
+            labelStyle: TextStyle(
+              fontSize: 12,
+              fontWeight: _tempHasPhotos == false
+                  ? FontWeight.bold
+                  : FontWeight.w600,
+              color: _tempHasPhotos == false
+                  ? Colors.white
+                  : const Color(0xFF64748B),
+            ),
+            backgroundColor: const Color(0xFF64748B).withValues(alpha: 0.08),
+            selectedColor: const Color(0xFF64748B),
+            showCheckmark: false,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(
+                color: _tempHasPhotos == false
+                    ? const Color(0xFF64748B)
+                    : const Color(0xFF64748B).withValues(alpha: 0.25),
+              ),
+            ),
+            onSelected: (selected) {
+              setState(() {
+                _tempHasPhotos = selected ? false : null;
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   IconData _getSeverityIcon(int severity) {
     switch (severity) {
       case 4:
         return Icons.priority_high;
       case 3:
-        return Icons.warning;
+        return Icons.warning_amber_rounded;
       case 2:
-        return Icons.info;
+        return Icons.info_outline;
       default:
-        return Icons.check_circle;
+        return Icons.check_circle_outline;
     }
   }
 }
-
