@@ -206,7 +206,7 @@ class _MobileIncidentCardState extends State<MobileIncidentCard> {
 
                     const SizedBox(width: 8),
 
-                    // 3. Left in RTL: Arrow button pointing forward (left in RTL)
+                    // 3. Left in RTL: Arrow button pointing to the left (forward into details in RTL)
                     Container(
                       width: 32,
                       height: 32,

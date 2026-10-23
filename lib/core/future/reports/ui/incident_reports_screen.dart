@@ -52,19 +52,14 @@ class _ReportsView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // 1. Top Header
-                    const ReportsHeader(),
-
-                    const SizedBox(height: 14),
-
-                    // 2. Filters Bar
+                    // 1. Filters Bar
                     ReportsFilterBar(
                       onExport: () => _handleExport(context, state),
                     ),
 
                     const SizedBox(height: 14),
 
-                    // 3. Tabs Navigation & Export Row
+                    // 2. Tabs Navigation & Export Row
                     ReportsTabBar(
                       onExport: () => _handleExport(context, state),
                     ),

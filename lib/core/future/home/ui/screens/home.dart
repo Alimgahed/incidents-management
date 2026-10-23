@@ -148,9 +148,6 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                     final children = List<Widget>.generate(_tabs.length, (i) {
                       final content = _tabs[i];
                       if (content == null) return const SizedBox.shrink();
-                      if (i == 3) {
-                        return content;
-                      }
                       if (isMobile) {
                         return ColoredBox(
                           color: AppTheme.backgroundColor,
