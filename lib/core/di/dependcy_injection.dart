@@ -42,8 +42,13 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cub
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
 import 'package:incidents_managment/core/network/api_services.dart';
 import 'package:incidents_managment/core/network/dio_factory.dart';
+import 'package:incidents_managment/core/future/reports/data/repo/reports_repo.dart';
+import 'package:incidents_managment/core/future/reports/data/services/report_export_service.dart';
+import 'dart:async';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
+import 'package:incidents_managment/core/realtime/services/activity_center_store.dart';
+import 'package:incidents_managment/core/realtime/services/realtime_alert_manager.dart';
 
 final getIt = GetIt.instance;
 
@@ -55,6 +60,14 @@ Future<void> setup() async {
   getIt.registerLazySingleton<SessionManager>(() => SessionManager());
   getIt.registerLazySingleton<IncidentPickerBridge>(
     () => IncidentPickerBridge(),
+  );
+
+  // Real-Time Alert & Activity Center Services
+  final activityStore = ActivityCenterStore();
+  unawaited(activityStore.init());
+  getIt.registerSingleton<ActivityCenterStore>(activityStore);
+  getIt.registerLazySingleton<RealTimeAlertManager>(
+    () => RealTimeAlertManager(activityStore: getIt<ActivityCenterStore>()),
   );
 
   // File Upload Repository
@@ -117,6 +130,14 @@ Future<void> setup() async {
 
   getIt.registerLazySingleton<AllIncidentTypeRepo>(
     () => AllIncidentTypeRepo(apiService: getIt<ApiService>()),
+  );
+
+  getIt.registerLazySingleton<ReportsRepo>(
+    () => ReportsRepo(dio: getIt<Dio>()),
+  );
+
+  getIt.registerLazySingleton<ReportExportService>(
+    () => ReportExportService(),
   );
 
   // Cubits - ALL should be Factory to get fresh instances

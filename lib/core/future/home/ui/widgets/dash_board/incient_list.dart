@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/constant/enms.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_state.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/list_header.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/incident_description_present.dart';
 import 'package:incidents_managment/core/helpers/date_format.dart';
+import 'package:incidents_managment/core/realtime/services/realtime_alert_manager.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
 import 'package:incidents_managment/core/theming/styling.dart';
 
@@ -76,72 +78,126 @@ class _IncidentCardState extends State<IncidentCard> {
               'أزمة #${widget.incident.currentIncidentId}')
         : headline;
 
-    // ===================== WEB GRID CARD (compact) =====================
-    if (widget.useWebTileLayout) {
-      return MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          transform: Matrix4.identity()
-            ..scaleByDouble(
-              _isHovered ? 1.02 : 1.0,
-              _isHovered ? 1.02 : 1.0,
-              1,
-              1,
-            ),
-          decoration: BoxDecoration(
-            color: cardBgColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: baseBorderColor,
-              width: widget.isSelected ? 1.8 : 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: _isHovered ? 0.08 : 0.03),
-                blurRadius: _isHovered ? 16 : 8,
-                offset: Offset(0, _isHovered ? 6 : 3),
-              ),
-              if (widget.isSelected)
-                BoxShadow(
-                  color: appColor.withValues(alpha: 0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
+    final alertManager = getIt.isRegistered<RealTimeAlertManager>()
+        ? getIt<RealTimeAlertManager>()
+        : null;
+
+    return StreamBuilder<Set<int>>(
+      stream: alertManager?.highlightedIncidentIdsStream,
+      initialData: alertManager?.highlightedIncidentIds ?? const {},
+      builder: (context, snapshot) {
+        final isHighlighted = widget.incident.currentIncidentId != null &&
+            (snapshot.data?.contains(widget.incident.currentIncidentId) ?? false);
+
+        final effectiveBorderColor = isHighlighted
+            ? const Color(0xFF2563EB)
+            : baseBorderColor;
+        final effectiveBorderWidth = isHighlighted
+            ? 2.0
+            : (widget.isSelected ? 1.8 : 1.0);
+
+        // ===================== WEB GRID CARD (compact) =====================
+        if (widget.useWebTileLayout) {
+          return MouseRegion(
+            onEnter: (_) => setState(() => _isHovered = true),
+            onExit: (_) => setState(() => _isHovered = false),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              transform: Matrix4.identity()
+                ..scaleByDouble(
+                  _isHovered ? 1.02 : 1.0,
+                  _isHovered ? 1.02 : 1.0,
+                  1,
+                  1,
                 ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: widget.onTap,
-              child: Row(
-                children: [
-                  Container(width: 4, color: severityColor),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
+              decoration: BoxDecoration(
+                color: cardBgColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: effectiveBorderColor,
+                  width: effectiveBorderWidth,
+                ),
+                boxShadow: [
+                  if (isHighlighted)
+                    BoxShadow(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.22),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 3),
+                    )
+                  else ...[
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: _isHovered ? 0.08 : 0.03),
+                      blurRadius: _isHovered ? 16 : 8,
+                      offset: Offset(0, _isHovered ? 6 : 3),
+                    ),
+                    if (widget.isSelected)
+                      BoxShadow(
+                        color: appColor.withValues(alpha: 0.06),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // الصف الأول: عنوان الأزمة فقط
-                          Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyles.size13(
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
-                            ),
+                  ],
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: widget.onTap,
+                  child: Row(
+                    children: [
+                      Container(width: 4, color: severityColor),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
                           ),
-                          const SizedBox(height: 7),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // الصف الأول: عنوان الأزمة فقط
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyles.size13(
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isHighlighted) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2563EB),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'تحديث جديد',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 7),
                           // الصف الثاني: الفرع + التاريخ والوقت + خطورة الأزمة + حالة الأزمة (أعمدة متساوية)
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -185,17 +241,26 @@ class _IncidentCardState extends State<IncidentCard> {
                                     ),
                                     const SizedBox(width: 4),
                                     Expanded(
-                                      child: Text(
-                                        widget.incident.currentIncidentCreatedAt != null
-                                            ? widget.incident.currentIncidentCreatedAt!
-                                                .formatDateTimeArabic()
-                                            : '—',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyles.size10(
-                                          color: AppTheme.textTertiary,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            widget
+                                                        .incident
+                                                        .currentIncidentCreatedAt !=
+                                                    null
+                                                ? widget
+                                                      .incident
+                                                      .currentIncidentCreatedAt!
+                                                      .formatDateTimeArabic()
+                                                : '—',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyles.size10(
+                                              color: AppTheme.textTertiary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -249,157 +314,177 @@ class _IncidentCardState extends State<IncidentCard> {
 
     // ===================== MOBILE LIST CARD / VERTICAL LIST CARD =====================
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        transform: Matrix4.identity()
-          ..scaleByDouble(
-            _isHovered ? 1.02 : 1.0,
-            _isHovered ? 1.02 : 1.0,
-            1,
-            1,
-          ),
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-        decoration: BoxDecoration(
-          color: cardBgColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: baseBorderColor,
-            width: widget.isSelected ? 2.0 : 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: _isHovered ? 0.08 : 0.03),
-              blurRadius: _isHovered ? 16 : 8,
-              offset: Offset(0, _isHovered ? 6 : 3),
-            ),
-            if (widget.isSelected)
-              BoxShadow(
-                color: appColor.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 2),
+        return MouseRegion(
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            transform: Matrix4.identity()
+              ..scaleByDouble(
+                _isHovered ? 1.02 : 1.0,
+                _isHovered ? 1.02 : 1.0,
+                1,
+                1,
               ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: widget.onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Row 1: Title
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyles.size12(
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
-                    ),
+            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            decoration: BoxDecoration(
+              color: cardBgColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: effectiveBorderColor,
+                width: effectiveBorderWidth,
+              ),
+              boxShadow: [
+                if (isHighlighted)
+                  BoxShadow(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.22),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 3),
+                  )
+                else ...[
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: _isHovered ? 0.08 : 0.03),
+                    blurRadius: _isHovered ? 16 : 8,
+                    offset: Offset(0, _isHovered ? 6 : 3),
                   ),
-
-                  const SizedBox(height: 8),
-
-                  // Row 2: Branch + Date and Time + Severity + Status (بمسافات متساوية)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  if (widget.isSelected)
+                    BoxShadow(
+                      color: appColor.withValues(alpha: 0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
+                    ),
+                ],
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: widget.onTap,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. الفرع
-                      Expanded(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.apartment_rounded,
-                              size: 13,
-                              color: AppTheme.textTertiary,
+                      // Row 1: Title
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyles.size12(
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textPrimary,
+                              ),
                             ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                widget.incident.branchName ?? '—',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyles.size10(
-                                  color: AppTheme.textSecondary,
-                                  fontWeight: FontWeight.w600,
+                          ),
+                          if (isHighlighted) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2563EB),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'تحديث جديد',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
 
-                      // 2. التاريخ والوقت
-                      Expanded(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              size: 11,
-                              color: AppTheme.textTertiary,
-                            ),
-                            const SizedBox(width: 3),
-                            Expanded(
-                              child: Text(
-                                widget.incident.currentIncidentCreatedAt != null
-                                    ? widget.incident.currentIncidentCreatedAt!
-                                        .formatDateTimeArabic()
-                                    : '—',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyles.size10(
+                      const SizedBox(height: 8),
+
+                      // Row 2: Branch and date followed by severity and status
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.apartment_rounded,
+                                  size: 13,
                                   color: AppTheme.textTertiary,
-                                  fontWeight: FontWeight.w500,
                                 ),
-                              ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    widget.incident.branchName ?? '—',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyles.size10(
+                                      color: AppTheme.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 11,
+                                  color: AppTheme.textTertiary,
+                                ),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(
+                                    widget.incident.currentIncidentCreatedAt != null
+                                        ? widget.incident.currentIncidentCreatedAt!
+                                              .formatDateTimeArabic()
+                                        : '—',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyles.size10(
+                                      color: AppTheme.textTertiary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // 3. خطورة الأزمة
-                      Expanded(
-                        child: Center(
-                          child: _SeverityBadge(
-                            severity: severity,
-                            severityColor: severityColor,
-                            compact: true,
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // 4. حالة الأزمة
-                      Expanded(
-                        child: Center(
-                          child: _StatusBadge(
-                            status: status,
-                            statusColor: statusColor,
-                            compact: true,
+                          const SizedBox(width: 8),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _SeverityBadge(
+                                severity: severity,
+                                severityColor: severityColor,
+                                compact: true,
+                              ),
+                              const SizedBox(width: 6),
+                              _StatusBadge(
+                                status: status,
+                                statusColor: statusColor,
+                                compact: true,
+                              ),
+                            ],
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -512,7 +597,6 @@ class IncidentsList extends StatelessWidget {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(useWebGrid ? 12 : 16),
-         
           ),
           child: Padding(
             padding: EdgeInsets.fromLTRB(

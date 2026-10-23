@@ -8,8 +8,15 @@ class ApiErrorModel {
 
   ApiErrorModel({this.error});
 
-  factory ApiErrorModel.fromJson(Map<String, dynamic> json) =>
-      _$ApiErrorModelFromJson(json);
+  factory ApiErrorModel.fromJson(Map<String, dynamic> json) {
+    final extracted = json['error'] ??
+        json['message'] ??
+        json['msg'] ??
+        json['detail'];
+    return ApiErrorModel(
+      error: extracted?.toString() ?? _$ApiErrorModelFromJson(json).error,
+    );
+  }
 
   Map<String, dynamic> toJson() => _$ApiErrorModelToJson(this);
 }

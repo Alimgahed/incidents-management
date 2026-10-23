@@ -481,7 +481,9 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  error,
+                  error.trim().isNotEmpty && error.trim() != 'null'
+                      ? error
+                      : 'حدث خطأ غير متوقع أثناء رفع الصورة، يرجى إعادة المحاولة',
                   style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF64748B),

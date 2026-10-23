@@ -12,8 +12,6 @@ void main() {
   }
   
   // Replace the entire return GetMaterialApp block safely using regex or index
-  final startIndex = content.indexOf('return GetMaterialApp(');
-  final endIndex = content.indexOf('        );', startIndex) + 10; 
   // Wait, looking at the code, GetMaterialApp ends at line 98 `        );`
   // Actually, I can just read it line by line and construct the new file.
   

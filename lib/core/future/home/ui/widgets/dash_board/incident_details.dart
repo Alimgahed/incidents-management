@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/constant/enms.dart';
@@ -55,8 +56,53 @@ class IncidentDetailsPanel extends StatelessWidget {
   }
 }
 
+// ==================== MEASURE SIZE HELPER ====================
+typedef _OnWidgetSizeChange = void Function(Size size);
+
+class _MeasureSizeRenderObject extends RenderProxyBox {
+  Size? _oldSize;
+  _OnWidgetSizeChange onChange;
+
+  _MeasureSizeRenderObject(this.onChange);
+
+  @override
+  void performLayout() {
+    super.performLayout();
+
+    final Size newSize = child?.size ?? Size.zero;
+    if (_oldSize == newSize) return;
+
+    _oldSize = newSize;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      onChange(newSize);
+    });
+  }
+}
+
+class _MeasureSize extends SingleChildRenderObjectWidget {
+  final _OnWidgetSizeChange onChange;
+
+  const _MeasureSize({
+    required this.onChange,
+    required Widget super.child,
+  });
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _MeasureSizeRenderObject(onChange);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant _MeasureSizeRenderObject renderObject,
+  ) {
+    renderObject.onChange = onChange;
+  }
+}
+
 // ==================== CONTENT LAYOUT ====================
-class _IncidentDetailContent extends StatelessWidget {
+class _IncidentDetailContent extends StatefulWidget {
   const _IncidentDetailContent({
     super.key,
     required this.incident,
@@ -71,52 +117,91 @@ class _IncidentDetailContent extends StatelessWidget {
   final VoidCallback? onBackToList;
 
   @override
+  State<_IncidentDetailContent> createState() => _IncidentDetailContentState();
+}
+
+class _IncidentDetailContentState extends State<_IncidentDetailContent> {
+  double? _measuredMapAndAddressHeight;
+
+  void _onMapAndAddressSizeChanged(Size size) {
+    if (!mounted) return;
+    if ((_measuredMapAndAddressHeight ?? 0) != size.height) {
+      setState(() {
+        _measuredMapAndAddressHeight = size.height;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final padding =
-        contentPadding ?? ResponsiveHelper.responsivePadding(context);
+        widget.contentPadding ?? ResponsiveHelper.responsivePadding(context);
     final spacing = ResponsiveHelper.responsiveSpacing(
       context,
       mobileSpacing: 10,
       desktopSpacing: 10,
     );
     final isWide = MediaQuery.sizeOf(context).width > 1050;
+    final hasAddress = widget.incident.address != null &&
+        widget.incident.address!.trim().isNotEmpty;
+
+    // Top Right section: Map & Address combined
+    final mapAndAddressWidgets = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (hasAddress) ...[
+          _AddressCard(address: widget.incident.address!),
+          SizedBox(height: spacing),
+        ],
+        AppMapSection(
+          lat: widget.incident.currentIncidentXAxis ?? 28.0871,
+          lng: widget.incident.currentIncidentYAxis ?? 30.7618,
+          mapHeight: 320,
+        ),
+      ],
+    );
+
+    // Dynamic matched height on web for missions card
+    final webMatchedHeight =
+        _measuredMapAndAddressHeight ?? (hasAddress ? 515.0 : 410.0);
 
     // Right Column widgets (Visually RIGHT in RTL - Map, Address, Description, Media)
     final rightColumnWidgets = <Widget>[
-      if (incident.address != null && incident.address!.isNotEmpty) ...[
-        _AddressCard(address: incident.address!),
-        SizedBox(height: spacing),
-      ],
-
-      AppMapSection(
-        lat: incident.currentIncidentXAxis ?? 28.0871,
-        lng: incident.currentIncidentYAxis ?? 30.7618,
-        mapHeight: 320,
-      ),
+      if (isWide)
+        _MeasureSize(
+          onChange: _onMapAndAddressSizeChanged,
+          child: mapAndAddressWidgets,
+        )
+      else
+        mapAndAddressWidgets,
       SizedBox(height: spacing),
 
-      _DescriptionCard(incident: incident),
+      _DescriptionCard(incident: widget.incident),
       SizedBox(height: spacing),
 
       IncidentPhotosGrid(
-        incident: incident,
-        incidentId: incident.currentIncidentId ?? 0,
+        incident: widget.incident,
+        incidentId: widget.incident.currentIncidentId ?? 0,
       ),
       SizedBox(height: spacing),
     ];
 
     // Left Column widgets (Visually LEFT in RTL - Missions / Follow-up Actions, Notes, Timeline)
     final leftColumnWidgets = <Widget>[
-      _MissionsCard(incident: incident),
+      _MissionsCard(
+        incident: widget.incident,
+        height: isWide ? webMatchedHeight : null,
+      ),
       SizedBox(height: spacing),
 
-      if (incident.currentIncidentNotes != null &&
-          incident.currentIncidentNotes!.trim().isNotEmpty) ...[
-        _NotesCard(notes: incident.currentIncidentNotes!),
+      if (widget.incident.currentIncidentNotes != null &&
+          widget.incident.currentIncidentNotes!.trim().isNotEmpty) ...[
+        _NotesCard(notes: widget.incident.currentIncidentNotes!),
         SizedBox(height: spacing),
       ],
 
-      _TimelineCard(incident: incident),
+      _TimelineCard(incident: widget.incident),
     ];
 
     Widget mainLayout;
@@ -160,15 +245,18 @@ class _IncidentDetailContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (showBackToList) _BackNavigation(onPressed: onBackToList),
+          if (widget.showBackToList)
+            _BackNavigation(onPressed: widget.onBackToList),
           Expanded(
             child: SingleChildScrollView(
-              padding: padding.copyWith(top: showBackToList ? 8 : padding.top),
+              padding: padding.copyWith(
+                top: widget.showBackToList ? 8 : padding.top,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Header Section (Always on top, full width)
-                  _IncidentHeaderSection(incident: incident),
+                  _IncidentHeaderSection(incident: widget.incident),
                   SizedBox(height: spacing),
                   // Responsive main content
                   mainLayout,
@@ -1095,13 +1183,31 @@ class _NotesCard extends StatelessWidget {
 }
 
 // ==================== MISSIONS CARD ====================
-class _MissionsCard extends StatelessWidget {
-  const _MissionsCard({required this.incident});
+class _MissionsCard extends StatefulWidget {
+  const _MissionsCard({
+    required this.incident,
+    this.height,
+  });
+
   final CurrentIncidentModel incident;
+  final double? height;
+
+  @override
+  State<_MissionsCard> createState() => _MissionsCardState();
+}
+
+class _MissionsCardState extends State<_MissionsCard> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final missions = [...(incident.currentIncidentWithMissions ?? [])]
+    final missions = [...(widget.incident.currentIncidentWithMissions ?? [])]
       ..sort(
         (a, b) => (a.currentIncidentMissionOrder ?? 0).compareTo(
           b.currentIncidentMissionOrder ?? 0,
@@ -1110,12 +1216,11 @@ class _MissionsCard extends StatelessWidget {
 
     if (missions.isEmpty) {
       return _SectionCard(
+        height: widget.height,
         title: 'الاجراءات المتابعة',
         icon: Icons.task_alt,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          alignment: Alignment.center,
-          child: const Column(
+        child: const Center(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.checklist_rounded, size: 40, color: Color(0xFFCBD5E1)),
@@ -1130,23 +1235,47 @@ class _MissionsCard extends StatelessWidget {
       );
     }
 
-    return _SectionCard(
-      title: 'الاجراءات المتابعة',
-      icon: Icons.task_alt,
-      badge: '${missions.length}',
-      child: Column(
+    Widget content;
+    if (widget.height != null) {
+      content = Scrollbar(
+        controller: _scrollController,
+        thumbVisibility: true,
+        radius: const Radius.circular(8),
+        thickness: 6,
+        child: ListView.separated(
+          controller: _scrollController,
+          primary: false,
+          padding: const EdgeInsets.only(left: 6, right: 2, bottom: 4),
+          itemCount: missions.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 10),
+          itemBuilder: (context, index) => _MissionItem(
+            mission: missions[index],
+            incidentId: widget.incident.currentIncidentId ?? 0,
+          ),
+        ),
+      );
+    } else {
+      content = Column(
         children: missions
             .map(
               (mission) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _MissionItem(
                   mission: mission,
-                  incidentId: incident.currentIncidentId!,
+                  incidentId: widget.incident.currentIncidentId ?? 0,
                 ),
               ),
             )
             .toList(),
-      ),
+      );
+    }
+
+    return _SectionCard(
+      height: widget.height,
+      title: 'الاجراءات المتابعة',
+      icon: Icons.task_alt,
+      badge: '${missions.length}',
+      child: content,
     );
   }
 }
@@ -1532,16 +1661,19 @@ class _SectionCard extends StatelessWidget {
     required this.icon,
     required this.child,
     this.badge,
+    this.height,
   });
 
   final String title;
   final IconData icon;
   final Widget child;
   final String? badge;
+  final double? height;
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: height,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1593,7 +1725,10 @@ class _SectionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          child,
+          if (height != null)
+            Expanded(child: child)
+          else
+            child,
         ],
       ),
     );

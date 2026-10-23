@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
+import 'package:incidents_managment/core/helpers/arabic_text_helper.dart';
 import 'dash_board_state.dart';
 
 class DashboardCubit extends Cubit<DashboardState> {
@@ -60,15 +61,15 @@ class DashboardCubit extends Cubit<DashboardState> {
 
     // Apply search query filter (searches title, notes, type, branch, address, id, manager)
     if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.trim().toLowerCase();
+      final q = ArabicTextHelper.normalize(_searchQuery);
       filtered = filtered.where((i) {
-        return (i.currentIncidentDescription ?? '').toLowerCase().contains(q) ||
-            (i.currentIncidentNotes ?? '').toLowerCase().contains(q) ||
-            (i.currentIncidentTypeName ?? '').toLowerCase().contains(q) ||
-            (i.branchName ?? '').toLowerCase().contains(q) ||
-            (i.address ?? '').toLowerCase().contains(q) ||
-            (i.managerName ?? '').toLowerCase().contains(q) ||
-            (i.username ?? '').toLowerCase().contains(q) ||
+        return ArabicTextHelper.normalize(i.currentIncidentDescription).contains(q) ||
+            ArabicTextHelper.normalize(i.currentIncidentNotes).contains(q) ||
+            ArabicTextHelper.normalize(i.currentIncidentTypeName).contains(q) ||
+            ArabicTextHelper.normalize(i.branchName).contains(q) ||
+            ArabicTextHelper.normalize(i.address).contains(q) ||
+            ArabicTextHelper.normalize(i.managerName).contains(q) ||
+            ArabicTextHelper.normalize(i.username).contains(q) ||
             (i.currentIncidentId?.toString() ?? '').contains(q);
       });
     }
@@ -295,6 +296,37 @@ class DashboardCubit extends Cubit<DashboardState> {
     if (_selectedHasPhotos == hasPhotos) return;
     _selectedHasPhotos = hasPhotos;
     emit(DashboardFilterChanged('has_photos'));
+  }
+
+  void applyFilters({
+    int? status,
+    int? severity,
+    int? branchId,
+    int? incidentTypeId,
+    bool? hasPhotos,
+  }) {
+    final changed = _selectedStatus != status ||
+        _selectedSeverity != severity ||
+        _selectedBranchId != branchId ||
+        _selectedIncidentTypeId != incidentTypeId ||
+        _selectedHasPhotos != hasPhotos;
+
+    if (!changed) return;
+
+    _selectedStatus = status;
+    _selectedSeverity = severity;
+    _selectedBranchId = branchId;
+    _selectedIncidentTypeId = incidentTypeId;
+    _selectedHasPhotos = hasPhotos;
+
+    if (severity == null) {
+      _selectedFilter = 'الكل';
+    } else {
+      const reverseMap = {4: 'حرجة', 3: 'عالية', 2: 'متوسطة', 1: 'منخفضة'};
+      _selectedFilter = reverseMap[severity] ?? 'الكل';
+    }
+
+    emit(const DashboardFilterChanged('applied'));
   }
 
   void clearAllFilters() {

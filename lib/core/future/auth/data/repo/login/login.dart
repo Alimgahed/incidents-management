@@ -49,21 +49,49 @@ class LoginRepo {
         );
       }
     } on DioException catch (e) {
-      if (e.response?.data != null) {
-        try {
-          final errorModel = ApiErrorModel.fromJson(e.response!.data);
-          return ApiResult.error(errorModel);
-        } catch (_) {
-          return ApiResult.error(
-            ApiErrorModel(error: 'Failed to parse error response'),
-          );
-        }
-      } else {
-        // No response from server (network issue)
+      // 1. Connection and timeout errors
+      final isConnectionIssue =
+          e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout;
+
+      if (isConnectionIssue) {
         return ApiResult.error(
-          ApiErrorModel(error: 'Network error. Please check your connection'),
+          ApiErrorModel(
+            error:
+                'تعذر الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.',
+          ),
         );
       }
+
+      // 2. HTTP status code & payload parsing
+      final statusCode = e.response?.statusCode;
+      String? errorMessage;
+
+      if (e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map) {
+          errorMessage = data['message']?.toString() ??
+              data['error']?.toString() ??
+              data['msg']?.toString() ??
+              data['detail']?.toString();
+        } else if (data is String && data.trim().isNotEmpty) {
+          errorMessage = data.trim();
+        }
+      }
+
+      if (statusCode == 401) {
+        errorMessage ??= 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+      } else if (statusCode == 403) {
+        errorMessage ??= 'غير مصرح لك بتسجيل الدخول.';
+      } else if (statusCode != null && statusCode >= 500) {
+        errorMessage ??= 'حدث خطأ في الخادم (رمز $statusCode). يرجى المحاولة لاحقاً.';
+      } else {
+        errorMessage ??= 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+      }
+
+      return ApiResult.error(ApiErrorModel(error: errorMessage));
     } catch (e) {
       return ApiResult.error(
         ApiErrorModel(error: 'حدث خطأ أثناء معالجة الاستجابة'),

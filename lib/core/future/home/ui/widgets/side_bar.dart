@@ -76,6 +76,14 @@ Widget buildSidebar(BuildContext context, {bool isDrawer = false}) {
                       index: 8,
                       isDrawer: isDrawer,
                     ),
+                    buildNavItem(
+                      context,
+                      icon: Icons.bar_chart_outlined,
+                      selectedIcon: Icons.bar_chart_rounded,
+                      label: 'التقارير',
+                      index: 3,
+                      isDrawer: isDrawer,
+                    ),
                     _sectionLabel('المستخدمين والبيانات', isDrawer),
                     buildNavItem(
                       context,

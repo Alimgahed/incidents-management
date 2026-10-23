@@ -14,6 +14,8 @@ import 'package:incidents_managment/core/future/home/logic/incident_picker_bridg
 import 'package:incidents_managment/core/offline/data/models/cached_incident.dart';
 import 'package:incidents_managment/core/offline/data/repositories/incident_cache_repository.dart';
 import 'package:incidents_managment/core/offline/network/network_monitor.dart';
+import 'package:incidents_managment/core/realtime/services/event_classifier.dart';
+import 'package:incidents_managment/core/realtime/services/realtime_alert_manager.dart';
 
 // ---------------------------------------------------------------------------
 // Top-level isolate helpers (must live outside the class for compute())
@@ -58,7 +60,6 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
   StreamSubscription<bool>? _networkSub;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _isAlertPlaying = false;
   Future<void>? _initializeFuture;
 
   // ================= ALERT STATE =================
@@ -408,7 +409,11 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       if (kDebugMode) debugPrint('Socket.IO incident_created received: $data');
       final newIncident = _parseIncidentPayload(data);
       addIncident(newIncident);
-      _playAlertFor5Seconds();
+      if (getIt.isRegistered<RealTimeAlertManager>()) {
+        getIt<RealTimeAlertManager>().processEvent(
+          EventClassifier.classifyCreated(newIncident),
+        );
+      }
     } catch (e, st) {
       if (kDebugMode) debugPrint('Error handling incident_created: $e\n$st');
       // If parsing fails, instantly refresh from server so incident is never lost
@@ -491,23 +496,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     }
   }
 
-  Future<void> _playAlertFor5Seconds() async {
-    if (_isAlertPlaying) return;
-    try {
-      _isAlertPlaying = true;
-      await _audioPlayer.setVolume(1.0);
-      await _audioPlayer.play(AssetSource('sounds/alarm.ogg'));
 
-      _alertTimer?.cancel();
-      _alertTimer = Timer(const Duration(seconds: 5), () async {
-        await _audioPlayer.stop();
-        _isAlertPlaying = false;
-      });
-    } catch (e) {
-      _isAlertPlaying = false;
-      debugPrint('Error playing alert sound: $e');
-    }
-  }
 
   void _handleIncidentUpdated(dynamic data) {
     try {
@@ -519,6 +508,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       );
 
       if (index != -1) {
+        final oldIncident = incidentss[index];
         final updated = List<CurrentIncidentModel>.of(incidentss);
         updated[index] = updatedIncident;
         incidentss = updated;
@@ -532,9 +522,21 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
             ),
           ));
         }
+        if (getIt.isRegistered<RealTimeAlertManager>()) {
+          final event =
+              EventClassifier.classifyUpdated(oldIncident, updatedIncident);
+          if (event != null) {
+            getIt<RealTimeAlertManager>().processEvent(event);
+          }
+        }
         emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
       } else {
         addIncident(updatedIncident);
+        if (getIt.isRegistered<RealTimeAlertManager>()) {
+          getIt<RealTimeAlertManager>().processEvent(
+            EventClassifier.classifyCreated(updatedIncident),
+          );
+        }
       }
     } catch (e, st) {
       if (kDebugMode) debugPrint('Error handling incident_updated: $e\n$st');
@@ -554,6 +556,11 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     final delId = id is int ? id : int.tryParse('$id');
     if (delId != null && getIt.isRegistered<IncidentCacheRepository>()) {
       unawaited(getIt<IncidentCacheRepository>().remove(delId));
+    }
+    if (delId != null && getIt.isRegistered<RealTimeAlertManager>()) {
+      getIt<RealTimeAlertManager>().processEvent(
+        EventClassifier.classifyDeleted(delId),
+      );
     }
     emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
   }
@@ -661,6 +668,20 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
         );
 
         missions[missionIndex] = updatedMission;
+
+        if (getIt.isRegistered<RealTimeAlertManager>()) {
+          getIt<RealTimeAlertManager>().processEvent(
+            EventClassifier.classifyMissionStatus(
+              incidentId: incidentId,
+              missionName: mission.missionName ??
+                  'مهمة #${mission.currentIncidentMissionId}',
+              newStatus: newStatus,
+              oldStatus: mission.currentIncidentMissionStatus,
+              branchName: incident.branchName,
+              actorName: updatedByUserName ?? mission.statusUpdatedByUser,
+            ),
+          );
+        }
       } else {
         // Mission not found locally — ask server for a fresh snapshot.
         refresh();
@@ -691,6 +712,9 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     required int newStatus,
     required int newSeverity,
   }) {
+    if (getIt.isRegistered<RealTimeAlertManager>()) {
+      getIt<RealTimeAlertManager>().recordLocalAction('incident_$incidentId');
+    }
     final index = incidentss.indexWhere(
       (i) => i.currentIncidentId == incidentId,
     );
@@ -717,6 +741,9 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     required int newStatus,
     String? updatedByUserName,
   }) {
+    if (getIt.isRegistered<RealTimeAlertManager>()) {
+      getIt<RealTimeAlertManager>().recordLocalAction('incident_$incidentId');
+    }
     // Calls the same logic the socket uses, so the UI updates immediately
     // even if we are offline and haven't received a socket broadcast.
     _handleMissionStatusUpdated({

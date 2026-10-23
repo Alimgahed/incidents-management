@@ -13,7 +13,6 @@ void main() {
     
     // Instead of complex regex, let's just find the start and end of the column children and replace them.
     final startMarker = isWeb ? 'IncidentTypeDropdown(' : '/// ================= TYPE =================';
-    final endMarker = isWeb ? '];' : '],'; // The end of the children array
     
     final startIndex = content.indexOf(startMarker);
     if (startIndex == -1) return;

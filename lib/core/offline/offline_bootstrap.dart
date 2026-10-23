@@ -15,6 +15,7 @@ import 'domain/sync_manager.dart';
 import 'network/network_monitor.dart';
 import 'network/offline_interceptor.dart';
 import 'presentation/offline_status_cubit.dart';
+import '../security/session_manager.dart';
 
 /// One-stop initialiser for the offline subsystem.
 ///
@@ -93,6 +94,12 @@ class OfflineBootstrap {
             conflictResolver: getIt<ConflictResolver>(),
             idRemapService: getIt<IdRemapService>(),
             dioBuilder: dioBuilder,
+            isAuthenticated: () async {
+              if (!getIt.isRegistered<SessionManager>()) return false;
+              final session = getIt<SessionManager>();
+              return session.getCurrentUser() != null ||
+                  await session.isLoggedIn();
+            },
           ));
     }
     await getIt<SyncManager>().start();

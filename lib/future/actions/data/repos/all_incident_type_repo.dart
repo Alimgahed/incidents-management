@@ -14,23 +14,11 @@ class AllIncidentTypeRepo {
   static const String _cacheKey = 'lookup_incident_types';
 
   Future<ApiResult<List<IncidentType>>> getAllIncidentTypes() async {
-    // ── 1. Serve from fresh local cache (avoids network round-trip on restart) ──
-    final cached = await LookupCacheService.read(_cacheKey);
-    if (cached != null) {
-      return ApiResult.success(
-        List<IncidentType>.generate(
-          cached.length,
-          (i) => IncidentType.fromJson(cached[i]),
-          growable: false,
-        ),
-      );
-    }
-
-    // ── 2. Cache miss or expired → fetch from network ──
+    // ── 1. Always fetch fresh data directly from the server / database ──
     try {
       final response = await apiService.getAllIncidentTypes();
 
-      // Persist to local cache for next app start (fire-and-forget).
+      // Update local cache in background for offline support
       LookupCacheService.write(
         _cacheKey,
         response.map((e) => e.toJson()).toList(growable: false),
@@ -38,7 +26,7 @@ class AllIncidentTypeRepo {
 
       return ApiResult.success(response);
     } on DioException catch (e) {
-      // ── 3. Network failed → fall back to stale cache if available ──
+      // ── 2. Network failed (offline) → fall back to local cache if available ──
       final stale = await LookupCacheService.readStale(_cacheKey);
       if (stale != null) {
         return ApiResult.success(

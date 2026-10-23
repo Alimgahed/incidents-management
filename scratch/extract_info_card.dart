@@ -1,7 +1,6 @@
 import 'dart:io';
 
 void main() {
-  final baseDir = 'c:\\Users\\ali\\incidents_managment\\lib\\core\\future\\mission_assigen';
   final files = [
     File('\$baseDir\\ui\\screens\\mission_assign_mobile.dart'),
     File('\$baseDir\\ui\\screens\\mission_assign_web.dart'),
@@ -29,5 +28,4 @@ void main() {
     
     file.writeAsStringSync(content);
   }
-  print('Done');
 }

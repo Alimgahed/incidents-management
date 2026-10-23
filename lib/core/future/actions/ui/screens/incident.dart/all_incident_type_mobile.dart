@@ -91,7 +91,7 @@ class _AllIncidentTypeMobileScreenState
       color: appColor,
       backgroundColor: Colors.white,
       onRefresh: () async {
-        context.read<AllIncidentTypeCubit>().getAllIncidentTypes();
+        await context.read<AllIncidentTypeCubit>().getAllIncidentTypes();
       },
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),

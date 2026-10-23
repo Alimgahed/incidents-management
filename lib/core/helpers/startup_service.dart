@@ -36,48 +36,18 @@ class StartupService {
   const StartupService._();
 
   static Future<AppStartupResult> initialize() async {
-    // Determine which base URL to use
-    await _determineBaseUrl();
+    // ── Step 0: Fast Base URL configuration (no network stall) ───────────────
+    _determineBaseUrl();
 
-    // ── Step 1: Firebase (blocking — DI needs it) ────────────────────────────
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-
-      // Fire-and-forget; analytics collection doesn't need to await.
-      try {
-        await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
-      } catch (analyticsError) {
-        if (kDebugMode) {
-          debugPrint('⚠️ Firebase Analytics config failed (expected offline/web): $analyticsError');
-        }
-      }
-    } catch (firebaseError) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Firebase initializeApp failed (expected offline/web): $firebaseError');
-      }
-      // On Web or Offline environments, Firebase might fail to load (e.g. DNS block or
-      // offline state prevents loading Firebase Web JS SDK from gstatic).
-      // We catch this to allow the app to boot up in offline mode.
-    }
-
-    // ── Step 2: DI + SP warm-up in parallel ─────────────────────────────────
-    // [setup] registers all GetIt singletons/factories.
-    // [SharedPreferences.getInstance] loads all SP keys into memory.
-    // We capture the resolved instance and hand it to [SharedPreferencesHelper]
-    // so every subsequent SP access is synchronous (no async getInstance()
-    // overhead after this point).
+    // ── Step 1: Firebase, DI + SP warm-up concurrently in parallel ───────────
     final results = await Future.wait<dynamic>([
+      _initFirebase(),
       setup(),
       SharedPreferences.getInstance(),
     ]);
-    SharedPreferencesHelper.init(results[1] as SharedPreferences);
+    SharedPreferencesHelper.init(results[2] as SharedPreferences);
 
-    // ── Step 2b: Offline subsystem ───────────────────────────────────────────
-    // Opens Hive boxes, starts NetworkMonitor + SyncManager, installs the
-    // OfflineInterceptor onto the shared Dio. Safe to call after [setup]
-    // because it depends on the singletons just registered.
+    // ── Step 2: Offline subsystem & local database ───────────────────────────
     await OfflineBootstrap.initialize(
       getIt: getIt,
       dioBuilder: () => getIt.isRegistered<Dio>()
@@ -85,7 +55,7 @@ class StartupService {
           : DioFactory.getDioInstance(),
     );
 
-    // ── Step 3: Token and Session read ──────
+    // ── Step 3: Token and Session read ───────────────────────────────────────
     final sessionManager = getIt<SessionManager>();
     await sessionManager.initializeSession();
     final token = await getIt<SecureStorageService>().getUserToken();
@@ -94,46 +64,48 @@ class StartupService {
     return AppStartupResult(isLoggedIn: isLoggedIn);
   }
 
-  static Future<void> _determineBaseUrl() async {
-    // If we are running on the web, we can check the URL we are being served from.
+  static Future<void> _initFirebase() async {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+
+      try {
+        await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+      } catch (analyticsError) {
+        if (kDebugMode) {
+          debugPrint(
+            '⚠️ Firebase Analytics config failed (expected offline/web): $analyticsError',
+          );
+        }
+      }
+    } catch (firebaseError) {
+      if (kDebugMode) {
+        debugPrint(
+          '⚠️ Firebase initializeApp failed (expected offline/web): $firebaseError',
+        );
+      }
+    }
+  }
+
+  static void _determineBaseUrl() {
     if (kIsWeb) {
       final host = Uri.base.host;
       if (host == '172.16.0.31' || host == 'localhost' || host == '127.0.0.1') {
         ApiConstants.baseUrl = ApiConstants.internalBaseUrl;
-        if (kDebugMode) {
-          debugPrint('🌐 Using Internal Network Base URL (Detected via Web Host): ${ApiConstants.baseUrl}');
-        }
       } else {
         ApiConstants.baseUrl = ApiConstants.externalBaseUrl;
-        if (kDebugMode) {
-          debugPrint('🌐 Using External Network Base URL (Detected via Web Host): ${ApiConstants.baseUrl}');
-        }
       }
-      return; // Pinging is completely unnecessary and broken by Mixed Content on Web.
+      if (kDebugMode) {
+        debugPrint('🌐 Web Base URL detected: ${ApiConstants.baseUrl}');
+      }
+      return;
     }
 
-    final dio = Dio(BaseOptions(
-      connectTimeout: const Duration(milliseconds: 1500),
-      receiveTimeout: const Duration(milliseconds: 1500),
-    ));
-    try {
-      await dio.get(ApiConstants.internalBaseUrl);
-      ApiConstants.baseUrl = ApiConstants.internalBaseUrl;
-      if (kDebugMode) {
-        debugPrint('🌐 Using Internal Network Base URL: ${ApiConstants.baseUrl}');
-      }
-    } catch (e) {
-      if (e is DioException && e.response != null) {
-        ApiConstants.baseUrl = ApiConstants.internalBaseUrl;
-        if (kDebugMode) {
-          debugPrint('🌐 Using Internal Network Base URL (Server Responded): ${ApiConstants.baseUrl}');
-        }
-      } else {
-        ApiConstants.baseUrl = ApiConstants.externalBaseUrl;
-        if (kDebugMode) {
-          debugPrint('🌐 Using External Network Base URL: ${ApiConstants.baseUrl}');
-        }
-      }
+    // On Mobile: Directly use externalBaseUrl without any blocking network roundtrip.
+    ApiConstants.baseUrl = ApiConstants.externalBaseUrl;
+    if (kDebugMode) {
+      debugPrint('🌐 Mobile Base URL: ${ApiConstants.baseUrl}');
     }
   }
 }

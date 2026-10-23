@@ -57,12 +57,16 @@ abstract class ApiService {
   );
   @GET(ApiConstants.allActiveUsers)
   Future<List<ActiveUser>> allActiveUsers();
+  @Extra({'noOfflineQueue': true, 'noCache': true})
   @POST(ApiConstants.register)
   Future<dynamic> register(@Body() ActiveUser data);
+  @Extra({'noCache': true})
   @GET(ApiConstants.register)
   Future<RegistrationModel> getregister();
+  @Extra({'noOfflineQueue': true, 'noCache': true})
   @POST(ApiConstants.login)
   Future<LoginResponseModel> login(@Body() LoginModel loginModel);
+  @Extra({'noOfflineQueue': true, 'noCache': true})
   @POST(ApiConstants.logout)
   Future<dynamic> logout(@Body() Map<String, dynamic> data);
   @GET(ApiConstants.allValves)

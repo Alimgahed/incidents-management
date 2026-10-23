@@ -97,7 +97,9 @@ class FileUploadCubit extends Cubit<FileUploadState> {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: source,
-        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 80,
       );
 
       if (image != null) {
@@ -119,7 +121,7 @@ class FileUploadCubit extends Cubit<FileUploadState> {
         );
       }
     } catch (e) {
-      emit(FileUploadState.uploadError(error: 'Failed to pick image: $e'));
+      emit(FileUploadState.uploadError(error: 'تعذر التقاط الصورة: $e'));
     }
   }
 
@@ -256,7 +258,11 @@ class FileUploadCubit extends Cubit<FileUploadState> {
         ),
       );
     } catch (e) {
-      emit(FileUploadState.uploadError(error: e.toString()));
+      String msg = e.toString().replaceFirst('Exception: ', '').trim();
+      if (msg.isEmpty || msg == 'null') {
+        msg = 'تعذر رفع الصورة، يرجى التحقق من جودة الاتصال بالإنترنت والمحاولة مرة أخرى';
+      }
+      emit(FileUploadState.uploadError(error: msg));
     }
   }
 

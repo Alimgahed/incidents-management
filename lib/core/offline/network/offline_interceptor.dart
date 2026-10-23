@@ -51,6 +51,23 @@ class OfflineInterceptor extends Interceptor {
   /// queue item as an attachment upload.
   static const String kAttachmentPath = 'attachmentPath';
 
+  /// Returns whether [options] represents an authentication or non-queueable operation
+  /// that MUST NOT be queued offline, cached, or treated as an offline mutation.
+  static bool isAuthEndpoint(RequestOptions options) {
+    if (options.extra[kSkipOfflineQueue] == true ||
+        options.extra['noOfflineQueue'] == true) {
+      return true;
+    }
+    final path = options.path.toLowerCase();
+    final uriPath = options.uri.path.toLowerCase();
+    return path.contains('/login') ||
+        uriPath.contains('/login') ||
+        path.contains('/register') ||
+        uriPath.contains('/register') ||
+        path.contains('/logout') ||
+        uriPath.contains('/logout');
+  }
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -58,6 +75,21 @@ class OfflineInterceptor extends Interceptor {
   ) async {
     // Replay path → pass through.
     if (options.headers['X-Offline-Replay'] == 'true') {
+      return handler.next(options);
+    }
+
+    // ── Auth & Opt-out endpoints: NEVER offline-queue, NEVER offline-cache ──
+    if (isAuthEndpoint(options)) {
+      if (!networkMonitor.isOnline) {
+        return handler.reject(
+          DioException(
+            requestOptions: options,
+            type: DioExceptionType.connectionError,
+            error: 'offline_auth_blocked',
+            message: 'يتطلب هذا الإجراء وجود اتصال بالإنترنت.',
+          ),
+        );
+      }
       return handler.next(options);
     }
 
@@ -161,9 +193,12 @@ class OfflineInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    // Cache successful GETs for the offline-read path.
+    // Cache successful GETs for the offline-read path, excluding auth endpoints.
     final method = response.requestOptions.method.toUpperCase();
-    if (method == 'GET' && (response.statusCode ?? 0) == 200) {
+    if (method == 'GET' &&
+        (response.statusCode ?? 0) == 200 &&
+        !isAuthEndpoint(response.requestOptions) &&
+        response.requestOptions.extra['noCache'] != true) {
       _writeCachedGet(response);
     }
     return handler.next(response);
@@ -174,6 +209,11 @@ class OfflineInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
+    // Auth endpoints and opt-outs MUST NEVER be queued offline or trigger transport failure reports.
+    if (isAuthEndpoint(err.requestOptions)) {
+      return handler.next(err);
+    }
+
     final method = err.requestOptions.method.toUpperCase();
     final isWrite =
         method == 'POST' ||
@@ -187,7 +227,7 @@ class OfflineInterceptor extends Interceptor {
         err.type == DioExceptionType.sendTimeout ||
         err.type == DioExceptionType.receiveTimeout;
 
-    // Any transport failure is the earliest possible signal that we've gone
+    // Any transport failure on an eligible business request is the earliest possible signal that we've gone
     // offline — much earlier than the OS-level event (which iOS sometimes
     // swallows entirely). Ask the monitor to immediately re-probe.
     if (isTransport && networkMonitor.isOnline) {

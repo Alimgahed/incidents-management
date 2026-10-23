@@ -37,6 +37,7 @@ import 'package:incidents_managment/core/future/mobile/ui/screens/home/home.dart
 import 'package:incidents_managment/core/future/mobile/ui/screens/more_services/more_services_screen.dart';
 import 'package:incidents_managment/core/future/valve/logic/cubit/valve_cubit.dart';
 import 'package:incidents_managment/core/future/valve/ui/map_screen.dart';
+import 'package:incidents_managment/core/future/reports/ui/incident_reports_screen.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/security/access_denied_screen.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
@@ -243,6 +244,10 @@ class AppRouter {
       case Routes.mobileMoreServices:
         return MaterialPageRoute(
           builder: (_) => const MobileMoreServicesScreen(),
+        );
+      case Routes.reports:
+        return MaterialPageRoute(
+          builder: (_) => const IncidentReportsScreen(),
         );
 
       default:

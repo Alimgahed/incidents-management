@@ -7,7 +7,7 @@ import 'package:incidents_managment/core/future/actions/ui/screens/missions/rela
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_cubit.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_states.dart';
 import 'package:incidents_managment/core/future/home/ui/screens/user_management_screen.dart';
-import 'package:incidents_managment/core/future/home/ui/screens/analytics_overview_screen.dart';
+import 'package:incidents_managment/core/future/reports/ui/incident_reports_screen.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dash_board.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dashboard_command_palette.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dashboard_live_status.dart';
@@ -17,6 +17,8 @@ import 'package:incidents_managment/core/future/valve/ui/web_valve_map_screen.da
 import 'package:incidents_managment/core/theming/app_theme.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/realtime/services/activity_center_store.dart';
+import 'package:incidents_managment/core/realtime/ui/live_activity_center_sheet.dart';
 
 class CrisisDashboard extends StatefulWidget {
   const CrisisDashboard({super.key});
@@ -32,7 +34,7 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
     'لوحة التحكم',
     'الخريطة',
     'المستخدمين',
-    '',
+    'تقارير الأزمات',
     'إضافة أزمة',
     'أنواع الأزمات',
     'جميع المهام',
@@ -61,6 +63,11 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                       foregroundColor: AppTheme.textOnPrimary,
                       surfaceTintColor: Colors.transparent,
                       actions: [
+                        IconButton(
+                          tooltip: 'مركز التنبيهات والأحداث',
+                          icon: const Icon(Icons.notifications_none_rounded),
+                          onPressed: () => showLiveActivityCenter(context),
+                        ),
                         IconButton(
                           tooltip: 'بحث وتنقل سريع (Ctrl+K)',
                           icon: const Icon(Icons.search_rounded),
@@ -127,7 +134,7 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                           0 => const DashboardView(),
                           1 => const IncidentsMapScreen(),
                           2 => const UserManagementScreen(),
-                          3 => const AnalyticsOverviewScreen(),
+                          3 => const IncidentReportsScreen(),
                           4 => const AddIncidentScreen(),
                           5 => AllIncidentType(key: UniqueKey()),
                           6 => AllMissions(key: UniqueKey()),
@@ -141,6 +148,9 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                     final children = List<Widget>.generate(_tabs.length, (i) {
                       final content = _tabs[i];
                       if (content == null) return const SizedBox.shrink();
+                      if (i == 3) {
+                        return content;
+                      }
                       if (isMobile) {
                         return ColoredBox(
                           color: AppTheme.backgroundColor,
@@ -287,27 +297,49 @@ class _DesktopSectionHeader extends StatelessWidget {
           
           const SizedBox(width: 16),
           
-          // Notification Bell
-          Stack(
-            alignment: Alignment.topRight,
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1B4F8A)),
-              ),
-              Positioned(
-                top: 10,
-                right: 12,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
+          // Notification Bell with Activity Center Stream
+          StreamBuilder<int>(
+            stream: getIt.isRegistered<ActivityCenterStore>()
+                ? getIt<ActivityCenterStore>().unreadCountStream
+                : null,
+            initialData: getIt.isRegistered<ActivityCenterStore>()
+                ? getIt<ActivityCenterStore>().unreadCount
+                : 0,
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                alignment: Alignment.topRight,
+                children: [
+                  IconButton(
+                    tooltip: 'مركز التنبيهات والأحداث',
+                    onPressed: () => showLiveActivityCenter(context),
+                    icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF1B4F8A)),
                   ),
-                ),
-              ),
-            ],
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDC2626),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           
           const SizedBox(width: 20),

@@ -7,12 +7,22 @@ import 'package:incidents_managment/core/future/valve/data/model/valve.dart';
 class ProximityResult {
   final ValveModel valve;
   final double distanceMeters;
+  final bool isCritical;
 
-  const ProximityResult({required this.valve, required this.distanceMeters});
+  const ProximityResult({
+    required this.valve,
+    required this.distanceMeters,
+    this.isCritical = false,
+  });
 }
 
 class ProximityService {
-  static const double _alarmRadiusMeters = 100.0;
+  static const double defaultAlarmRadiusMeters = 50.0;
+  static const double criticalAlarmRadiusMeters = 0.5; // Half a meter (0.5m)
+
+  final double alarmRadiusMeters;
+
+  const ProximityService({this.alarmRadiusMeters = defaultAlarmRadiusMeters});
 
   /// Returns the nearest valve and its distance.
   ProximityResult? checkProximity({
@@ -20,24 +30,24 @@ class ProximityService {
     required double userLng,
     required List<ValveModel> valves,
   }) {
-    if (valves.isEmpty) return null;
+    final validValves = valves
+        .where((v) => v.lat != null && v.long != null && v.lat != 0 && v.long != 0)
+        .toList();
+    if (validValves.isEmpty) return null;
+
     ValveModel? nearestValve;
     double minDistance = double.infinity;
 
-    for (final valve in valves) {
-      // Fast bypass: Simple lat/lng bounding box check before expensive trig.
-      // We only skip if DISTANCE is definitely > 1000m for this sweep,
-      // unless we want to always know the absolute nearest.
-      // Let's use a larger bypass (0.01 degrees ~= 1km) to still catch nearby ones for adaptive GPS.
-      final latDiff = (userLat - (valve.lat ?? 0)).abs();
-      final lngDiff = (userLng - (valve.long ?? 0)).abs();
+    for (final valve in validValves) {
+      final latDiff = (userLat - valve.lat!).abs();
+      final lngDiff = (userLng - valve.long!).abs();
       if (latDiff > 0.1 || lngDiff > 0.1) continue; // Skip if > 10km away
 
       final dist = _haversineMeters(
         userLat,
         userLng,
-        valve.lat ?? 0,
-        valve.long ?? 0,
+        valve.lat!,
+        valve.long!,
       );
 
       if (dist < minDistance) {
@@ -46,24 +56,31 @@ class ProximityService {
       }
     }
 
-    // fallback to first valve if none found within 10km (though rare)
-    if (nearestValve == null && valves.isNotEmpty) {
-      nearestValve = valves.first;
+    // fallback if all valves were > 10km away
+    if (nearestValve == null && validValves.isNotEmpty) {
+      nearestValve = validValves.first;
       minDistance = _haversineMeters(
         userLat,
         userLng,
-        nearestValve.lat ?? 0,
-        nearestValve.long ?? 0,
+        nearestValve.lat!,
+        nearestValve.long!,
       );
     }
 
+    if (nearestValve == null) return null;
+
+    final isCritical = minDistance <= criticalAlarmRadiusMeters;
+
     return ProximityResult(
-      valve: nearestValve ?? valves.first,
+      valve: nearestValve,
       distanceMeters: minDistance,
+      isCritical: isCritical,
     );
   }
 
-  bool isWithinAlarmRadius(double distance) => distance <= _alarmRadiusMeters;
+  bool isWithinAlarmRadius(double distance) => distance <= alarmRadiusMeters;
+
+  bool isWithinCriticalRadius(double distance) => distance <= criticalAlarmRadiusMeters;
 
   /// Haversine formula — returns distance in metres between two WGS-84 coords.
   double _haversineMeters(double lat1, double lon1, double lat2, double lon2) {

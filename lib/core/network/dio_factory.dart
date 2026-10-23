@@ -5,7 +5,6 @@ import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/network/api_constants.dart';
 import 'dart:convert';
 import 'package:incidents_managment/core/security/secure_storage_service.dart';
-import 'package:incidents_managment/core/security/session_manager.dart';
 import 'package:incidents_managment/core/offline/network/cache_key.dart';
 
 class DioFactory {
@@ -34,7 +33,7 @@ class DioFactory {
       ),
     );
 
-    // Dynamic Header Injection & 401 Error Interception
+    // Dynamic Header Injection & Cache Busting
     _dio!.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -52,19 +51,6 @@ class DioFactory {
           }
 
           return handler.next(options);
-        },
-        onError: (DioException error, handler) async {
-          final requestPath = error.requestOptions.path;
-          if (error.response?.statusCode == 401 &&
-              !requestPath.endsWith(ApiConstants.logout) &&
-              !requestPath.endsWith('/login') &&
-              getIt<SessionManager>().isLoggingOut == false) {
-            try {
-              final sessionManager = getIt<SessionManager>();
-              unawaited(sessionManager.logout(sessionExpired: true));
-            } catch (_) {}
-          }
-          return handler.next(error);
         },
       ),
     );
@@ -103,8 +89,10 @@ class RetryInterceptor extends Interceptor {
     final retryCount = err.requestOptions.extra['retryCount'] ?? 0;
 
     // Only retry on transient network/timeout errors, not server responses
+    // Do not retry FormData requests because the multipart stream has already been consumed
     final shouldRetry =
         retryCount < maxRetries &&
+        err.requestOptions.data is! FormData &&
         (err.type == DioExceptionType.connectionTimeout ||
             err.type == DioExceptionType.sendTimeout ||
             err.type == DioExceptionType.connectionError);

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_incident_type_states.dart';
+import 'package:incidents_managment/core/future/auth/data/model/registration_model.dart';
+import 'package:incidents_managment/core/future/auth/data/repo/registration/registration_get.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
+import 'package:incidents_managment/core/network/api_result.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/add_incident_widget.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
@@ -32,12 +36,44 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
   int? selectedTypeId;
   int? selectedSeverity;
   int? selectedBranchId;
+  String? selectedBranchName;
+  List<Sector> _branches = [];
+  bool _isLoadingBranches = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBranchesFromApi();
+  }
+
+  Future<void> _fetchBranchesFromApi() async {
+    setState(() => _isLoadingBranches = true);
+    try {
+      final res = await getIt<RegistrationGet>().getregister();
+      res.when(
+        success: (data) {
+          if (mounted) {
+            setState(() {
+              _branches = data.sectors;
+              _isLoadingBranches = false;
+            });
+          }
+        },
+        error: (_) {
+          if (mounted) setState(() => _isLoadingBranches = false);
+        },
+      );
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingBranches = false);
+    }
+  }
 
   void _resetForm() {
     setState(() {
       selectedTypeId = null;
       selectedSeverity = null;
       selectedBranchId = null;
+      selectedBranchName = null;
     });
     widget.descriptionController.clear();
     widget.notesController.clear();
@@ -82,25 +118,22 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
           },
         ),
         const SizedBox(height: 16),
-        CustomDropdownFormField(
+        CustomDropdownFormField<int>(
           value: selectedBranchId,
-          hintText: 'الفرع',
-          items: const [
-            DropdownMenuItem(value: 1, child: Text('ديوان عام الشركة')),
-            DropdownMenuItem(value: 213, child: Text('المنيا')),
-            DropdownMenuItem(value: 373, child: Text('المنيا الجديدة')),
-            DropdownMenuItem(value: 173, child: Text('سمالوط')),
-            DropdownMenuItem(value: 133, child: Text('مطاي')),
-            DropdownMenuItem(value: 93, child: Text('بني مزار')),
-            DropdownMenuItem(value: 53, child: Text('مغاغة')),
-            DropdownMenuItem(value: 13, child: Text('العدوة')),
-            DropdownMenuItem(value: 253, child: Text('أبو قرقاص')),
-            DropdownMenuItem(value: 293, child: Text('ملوي')),
-            DropdownMenuItem(value: 333, child: Text('ديرمواس')),
-          ],
+          hintText: _isLoadingBranches ? 'جاري تحميل الفروع...' : 'الفرع',
+          items: _branches
+              .map(
+                (sector) => DropdownMenuItem<int>(
+                  value: sector.id,
+                  child: Text(sector.name),
+                ),
+              )
+              .toList(),
           onChanged: (v) {
             setState(() {
               selectedBranchId = v;
+              final match = _branches.where((b) => b.id == v);
+              selectedBranchName = match.isNotEmpty ? match.first.name : null;
             });
           },
         ),
@@ -154,20 +187,6 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
   );
 }
 
-  static const Map<int, String> _branchNames = {
-    1: 'ديوان عام الشركة',
-    213: 'المنيا',
-    373: 'المنيا الجديدة',
-    173: 'سمالوط',
-    133: 'مطاي',
-    93: 'بني مزار',
-    53: 'مغاغة',
-    13: 'العدوة',
-    253: 'أبو قرقاص',
-    293: 'ملوي',
-    333: 'ديرمواس',
-  };
-
   void _submit(BuildContext context) {
     if (selectedTypeId == null ||
         selectedSeverity == null ||
@@ -198,6 +217,11 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
       );
     } catch (_) {}
 
+    final branchName = selectedBranchName ??
+        (_branches.where((b) => b.id == selectedBranchId).isNotEmpty
+            ? _branches.firstWhere((b) => b.id == selectedBranchId).name
+            : null);
+
     context.read<AddIncidentCubit>().submitIncident(
       model: CurrentIncidentModel(
         currentIncidentTypeId: selectedTypeId!,
@@ -213,7 +237,7 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
             ? null
             : widget.addressController.text.trim(),
         currentIncidentStatus: 1,
-        branchName: _branchNames[selectedBranchId],
+        branchName: branchName,
         currentIncidentTypeName: typeName,
       ),
     );

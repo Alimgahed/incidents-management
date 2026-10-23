@@ -553,3 +553,18 @@ class _InfoItem extends StatelessWidget {
     );
   }
 }
+
+/// Helper function to display the MapIncidentDetailsModal as a dialog
+Future<void> showMapIncidentDetailsModal(
+  BuildContext context,
+  CurrentIncidentModel incident,
+) {
+  return showDialog<void>(
+    context: context,
+    barrierColor: Colors.black54,
+    builder: (ctx) => MapIncidentDetailsModal(
+      incident: incident,
+      onClose: () => Navigator.of(ctx).pop(),
+    ),
+  );
+}

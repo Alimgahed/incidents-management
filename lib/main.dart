@@ -79,14 +79,8 @@ class _AppBootstrapState extends State<_AppBootstrap> {
 
     final stopwatch = Stopwatch()..start();
 
-    // Start a 2-second minimum delay timer
-    final minDelay = Future.delayed(const Duration(seconds: 2));
-
     try {
       final result = await StartupService.initialize();
-
-      // Wait until at least 2 seconds have passed
-      await minDelay;
 
       if (kDebugMode) {
         stopwatch.stop();

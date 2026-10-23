@@ -7,6 +7,7 @@ import 'package:responsive_framework/responsive_framework.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/offline/presentation/offline_banner.dart';
 import 'package:incidents_managment/core/offline/presentation/offline_status_cubit.dart';
+import 'package:incidents_managment/core/realtime/ui/global_alert_host.dart';
 import 'package:incidents_managment/core/routing/app_router.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
@@ -89,11 +90,21 @@ class Incidents extends StatelessWidget {
                               context,
                             ).clamp(minScaleFactor: 0.9, maxScaleFactor: 2.0),
                           ),
-                          // Wrap the child so OfflineBanner always sits at the top of the visible UI.
-                          child: Column(
-                            children: [
-                              const OfflineBanner(),
-                              Expanded(child: child ?? const SizedBox.shrink()),
+                          child: Overlay(
+                            initialEntries: [
+                              OverlayEntry(
+                                builder: (context) => Stack(
+                                  children: [
+                                    Column(
+                                      children: [
+                                        const OfflineBanner(),
+                                        Expanded(child: child ?? const SizedBox.shrink()),
+                                      ],
+                                    ),
+                                    const GlobalAlertHost(),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),

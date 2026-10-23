@@ -39,7 +39,9 @@ class SyncManager {
     required this.conflictResolver,
     required this.idRemapService,
     required Dio Function() dioBuilder,
-  }) : _dioBuilder = dioBuilder;
+    Future<bool> Function()? isAuthenticated,
+  })  : _dioBuilder = dioBuilder,
+        _isAuthenticated = isAuthenticated;
 
   final SyncQueueRepository queue;
   final AttachmentCacheRepository attachments;
@@ -50,6 +52,7 @@ class SyncManager {
   final IdRemapService idRemapService;
 
   final Dio Function() _dioBuilder;
+  final Future<bool> Function()? _isAuthenticated;
 
   final Lock _drainLock = Lock();
   bool _isSyncing = false;
@@ -119,6 +122,8 @@ class SyncManager {
   /// while a previous drain is in flight are coalesced by [_drainLock].
   Future<void> syncNow() async {
     if (!networkMonitor.isOnline) return;
+    final isAuth = _isAuthenticated;
+    if (isAuth != null && !await isAuth()) return;
     await _drainLock.synchronized(_drainOnce);
   }
 
@@ -127,11 +132,16 @@ class SyncManager {
     _events.add(const SyncStatusEvent.started());
 
     try {
+      final isAuth = _isAuthenticated;
       // 1. Drain regular write queue (FIFO).
       var items = queue.pending();
       while (items.isNotEmpty) {
         for (final item in items) {
           if (!networkMonitor.isOnline) {
+            _events.add(const SyncStatusEvent.pausedOffline());
+            return;
+          }
+          if (isAuth != null && !await isAuth()) {
             _events.add(const SyncStatusEvent.pausedOffline());
             return;
           }
@@ -144,6 +154,10 @@ class SyncManager {
       final pendingAttachments = attachments.pendingUploads();
       for (final att in pendingAttachments) {
         if (!networkMonitor.isOnline) {
+          _events.add(const SyncStatusEvent.pausedOffline());
+          return;
+        }
+        if (isAuth != null && !await isAuth()) {
           _events.add(const SyncStatusEvent.pausedOffline());
           return;
         }
@@ -197,8 +211,13 @@ class SyncManager {
         final decision = conflictResolver.inspect(fakeError);
         await conflictResolver.apply(item: item, decision: decision);
         _events.add(SyncStatusEvent.itemConflict(item.id, decision.detail));
+      } else if (status == 401 || status == 403) {
+        // Authentication failure during replay: token expired or user not logged in.
+        // DO NOT mark as conflict! Mark failed so it stays in queue for retry once re-authenticated.
+        await queue.markFailed(item.id, 'HTTP $status: Auth required');
+        _events.add(SyncStatusEvent.itemFailed(item.id, 'Auth required'));
       } else {
-        // 4xx other than 409: don't retry — the server is rejecting the data.
+        // 4xx other than 401/403/409: don't retry — the server is rejecting the data.
         await queue.markConflict(item.id, 'HTTP $status: ${response.data}');
         _events.add(SyncStatusEvent.itemFailed(item.id, 'HTTP $status'));
       }
@@ -217,6 +236,14 @@ class SyncManager {
         final decision = conflictResolver.inspect(e);
         await conflictResolver.apply(item: item, decision: decision);
         _events.add(SyncStatusEvent.itemConflict(item.id, decision.detail));
+      } else if (e.response?.statusCode == 401 ||
+          e.response?.statusCode == 403) {
+        // Auth failure during replay: keep in queue until re-authenticated.
+        await queue.markFailed(
+          item.id,
+          'HTTP ${e.response?.statusCode}: Auth required',
+        );
+        _events.add(SyncStatusEvent.itemFailed(item.id, 'Auth required'));
       } else {
         await queue.markConflict(
             item.id, e.response?.data?.toString() ?? e.message ?? 'Unknown');

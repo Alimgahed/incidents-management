@@ -132,8 +132,9 @@ class FileUploadRepository {
           }
         },
         options: Options(
-          sendTimeout: const Duration(seconds: 20),
-          receiveTimeout: const Duration(seconds: 20),
+          connectTimeout: const Duration(seconds: 45),
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
           extra: {'noOfflineQueue': true},
         ),
       );
@@ -161,29 +162,66 @@ class FileUploadRepository {
         throw Exception('فشل الرفع برمز الحالة: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      // Network died → save attachment to cache as "pending" so SyncManager
-      // retries it on reconnect.
-      if (e.type == DioExceptionType.connectionTimeout ||
+      // Check for network/timeout/transport failure
+      final isNetworkOrTimeout =
+          e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
+          e.type == DioExceptionType.connectionError ||
+          (e.error != null &&
+              e.error.toString().toLowerCase().contains('socket')) ||
+          (e.error != null &&
+              e.error.toString().toLowerCase().contains('stream')) ||
+          (e.message != null &&
+              e.message!.toLowerCase().contains('socket'));
+
+      if (isNetworkOrTimeout) {
         cached.retryCount = 1;
-        cached.lastError = e.message ?? 'Transport error';
+        cached.lastError =
+            e.message ?? e.error?.toString() ?? 'Network/Timeout error';
         await attachmentRepo.add(cached);
         return {
           'success': true,
-          'message': 'سيتم رفع الصورة تلقائياً عند الاتصال',
+          'message': 'سيتم رفع الصورة تلقائياً عند استقرار الاتصال',
           'data': {'local_id': cached.localId, '__offline': true},
           'statusCode': 202,
         };
       }
-      final errorMsg =
-          e.response?.data?['error'] ??
-          e.response?.data?['message'] ??
-          e.message;
-      throw Exception('فشل الرفع: $errorMsg');
+
+      // Extract a meaningful error message from server response without returning null
+      String errorMsg = 'حدث خطأ أثناء رفع الصورة، يرجى المحاولة لاحقاً';
+      final responseData = e.response?.data;
+      if (responseData is Map) {
+        final err = responseData['error'] ??
+            responseData['message'] ??
+            responseData['msg'] ??
+            responseData['detail'];
+        if (err != null &&
+            err.toString().trim().isNotEmpty &&
+            err.toString().trim() != 'null') {
+          errorMsg = err.toString().trim();
+        }
+      } else if (responseData is String && responseData.trim().isNotEmpty) {
+        if (!responseData.contains('<html') && responseData.length < 200) {
+          errorMsg = responseData.trim();
+        } else if (e.response?.statusCode != null) {
+          errorMsg = 'فشل الرفع من الخادم برمز (${e.response!.statusCode})';
+        }
+      } else if (e.message != null &&
+          e.message!.trim().isNotEmpty &&
+          e.message!.trim() != 'null') {
+        errorMsg = e.message!.trim();
+      } else if (e.error != null && e.error.toString() != 'null') {
+        errorMsg = e.error.toString();
+      }
+
+      throw Exception(errorMsg);
     } catch (e) {
-      throw Exception('فشل الرفع: $e');
+      String msg = e.toString().replaceFirst('Exception: ', '').trim();
+      if (msg.isEmpty || msg == 'null') {
+        msg = 'حدث خطأ غير متوقع أثناء معالجة الصورة، يرجى إعادة المحاولة';
+      }
+      throw Exception(msg);
     }
   }
 

@@ -17,5 +17,6 @@ class Routes {
   static const String login = '/login';
   static const String valveMap = '/valve_map';
   static const String mobileMoreServices = '/mobile_more_services';
+  static const String reports = '/reports';
   static const String accessDenied = '/access_denied';
 }

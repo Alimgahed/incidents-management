@@ -327,7 +327,7 @@ class _ApiService implements ApiService {
 
   @override
   Future<dynamic> register(ActiveUser data) async {
-    final _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{'noOfflineQueue': true, 'noCache': true};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
@@ -349,7 +349,7 @@ class _ApiService implements ApiService {
 
   @override
   Future<RegistrationModel> getregister() async {
-    final _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{'noCache': true};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
@@ -376,7 +376,7 @@ class _ApiService implements ApiService {
 
   @override
   Future<LoginResponseModel> login(LoginModel loginModel) async {
-    final _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{'noOfflineQueue': true, 'noCache': true};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
@@ -404,7 +404,7 @@ class _ApiService implements ApiService {
 
   @override
   Future<dynamic> logout(Map<String, dynamic> data) async {
-    final _extra = <String, dynamic>{};
+    final _extra = <String, dynamic>{'noOfflineQueue': true, 'noCache': true};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};

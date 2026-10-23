@@ -18,7 +18,6 @@ import 'package:incidents_managment/core/security/secure_storage_service.dart';
 class SessionManager {
   final SecureStorageService _secureStorage;
   CurrentUser? _currentUser;
-  bool _isSessionExpiredAlertShowing = false;
   Future<void>? _logoutInFlight;
   bool get isLoggingOut => _logoutInFlight != null;
 
@@ -67,13 +66,13 @@ class SessionManager {
   Future<void> logout({bool sessionExpired = false}) {
     final inFlight = _logoutInFlight;
     if (inFlight != null) return inFlight;
-    final operation = _logoutFlow(sessionExpired: sessionExpired);
+    final operation = _logoutFlow();
     _logoutInFlight = operation;
     return operation.whenComplete(() => _logoutInFlight = null);
   }
 
-  Future<void> _logoutFlow({required bool sessionExpired}) async {
-    if (!sessionExpired && await _hasPendingWork()) {
+  Future<void> _logoutFlow() async {
+    if (await _hasPendingWork()) {
       try {
         if (getIt<NetworkMonitorService>().isOnline &&
             getIt.isRegistered<SyncManager>()) {
@@ -85,7 +84,7 @@ class SessionManager {
         return;
       }
     }
-    await _performLogout(sessionExpired: sessionExpired);
+    await _performLogout();
   }
 
   Future<bool> _hasPendingWork() async {
@@ -112,16 +111,7 @@ class SessionManager {
     );
   }
 
-  Future<void> _performLogout({required bool sessionExpired}) async {
-    if (sessionExpired && await _hasPendingWork()) {
-      final ownerId = _currentUser?.userId;
-      if (ownerId != null) {
-        await SharedPreferencesHelper.saveData<int>(
-          SharedPreferenceKeys.pendingOfflineOwnerId,
-          ownerId,
-        );
-      }
-    }
+  Future<void> _performLogout() async {
     try {
       if (getIt.isRegistered<SyncManager>()) await getIt<SyncManager>().stop();
     } catch (_) {}
@@ -150,65 +140,7 @@ class SessionManager {
       }
     } catch (_) {}
 
-    // Preserve queued writes and cached attachments across logout so work
-    // created offline is not silently discarded.
-
-    // 5. Redirect to login
-    if (sessionExpired) {
-      _showSessionExpiredAlert();
-    } else {
-      Get.offAllNamed(Routes.login);
-    }
-  }
-
-  /// Display a professional dialog on session expiration
-  void _showSessionExpiredAlert() {
-    if (_isSessionExpiredAlertShowing) return;
-    _isSessionExpiredAlertShowing = true;
-
-    Get.dialog(
-      PopScope(
-        canPop: false, // Prevent dismissal by back button
-        child: AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: const [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
-              SizedBox(width: 12),
-              Text(
-                'انتهت الجلسة',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ],
-          ),
-          content: const Text(
-            'لقد انتهت صلاحية الجلسة الخاصة بك. يرجى تسجيل الدخول مرة أخرى للمتابعة.',
-            style: TextStyle(fontSize: 14, height: 1.5),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                _isSessionExpiredAlertShowing = false;
-                Get.back(); // Close dialog
-                Get.offAllNamed(Routes.login); // Redirect to login
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD32F2F),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'تسجيل الدخول',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
-      barrierDismissible: false,
-    );
+    // 4. Redirect to login directly without any session expired dialogs
+    Get.offAllNamed(Routes.login);
   }
 }
