@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:incidents_managment/core/future/actions/data/models/branch/branch_model.dart';
 import 'package:incidents_managment/core/future/actions/data/models/classes/all_incident_classes.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/actions/data/models/incident_missions/incident_mission.dart';
@@ -38,6 +39,8 @@ abstract class ApiService {
   );
   @POST(ApiConstants.addcurrentincdient)
   Future<dynamic> addCurrentIncident(@Body() CurrentIncidentModel incident);
+  @GET(ApiConstants.addcurrentincdient)
+  Future<List<BranchModel>> getBranches();
   @POST(ApiConstants.editcurrentincdient)
   Future<dynamic> editCurrentIncident(
     @Path("id") int id,

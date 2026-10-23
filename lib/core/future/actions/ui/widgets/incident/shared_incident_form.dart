@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/future/actions/data/models/branch/branch_model.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
+import 'package:incidents_managment/core/future/actions/data/repos/add_incident/add_incdient_repo.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_incident_type_states.dart';
-import 'package:incidents_managment/core/future/auth/data/model/registration_model.dart';
-import 'package:incidents_managment/core/future/auth/data/repo/registration/registration_get.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
 import 'package:incidents_managment/core/network/api_result.dart';
@@ -37,8 +37,22 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
   int? selectedSeverity;
   int? selectedBranchId;
   String? selectedBranchName;
-  List<Sector> _branches = [];
+  List<BranchModel> _branches = [];
   bool _isLoadingBranches = false;
+
+  static const List<BranchModel> _fallbackBranches = [
+    BranchModel(branchId: 1, branchName: 'ديوان عام الشركة'),
+    BranchModel(branchId: 213, branchName: 'المنيا'),
+    BranchModel(branchId: 373, branchName: 'المنيا الجديدة'),
+    BranchModel(branchId: 173, branchName: 'سمالوط'),
+    BranchModel(branchId: 133, branchName: 'مطاي'),
+    BranchModel(branchId: 93, branchName: 'بني مزار'),
+    BranchModel(branchId: 53, branchName: 'مغاغة'),
+    BranchModel(branchId: 13, branchName: 'العدوة'),
+    BranchModel(branchId: 253, branchName: 'أبو قرقاص'),
+    BranchModel(branchId: 293, branchName: 'ملوي'),
+    BranchModel(branchId: 333, branchName: 'ديرمواس'),
+  ];
 
   @override
   void initState() {
@@ -49,22 +63,32 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
   Future<void> _fetchBranchesFromApi() async {
     setState(() => _isLoadingBranches = true);
     try {
-      final res = await getIt<RegistrationGet>().getregister();
+      final res = await getIt<AddIncdientRepo>().getBranches();
       res.when(
         success: (data) {
           if (mounted) {
             setState(() {
-              _branches = data.sectors;
+              _branches = data.isNotEmpty ? data : _fallbackBranches;
               _isLoadingBranches = false;
             });
           }
         },
         error: (_) {
-          if (mounted) setState(() => _isLoadingBranches = false);
+          if (mounted) {
+            setState(() {
+              _branches = _fallbackBranches;
+              _isLoadingBranches = false;
+            });
+          }
         },
       );
     } catch (_) {
-      if (mounted) setState(() => _isLoadingBranches = false);
+      if (mounted) {
+        setState(() {
+          _branches = _fallbackBranches;
+          _isLoadingBranches = false;
+        });
+      }
     }
   }
 
@@ -123,17 +147,17 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
           hintText: _isLoadingBranches ? 'جاري تحميل الفروع...' : 'الفرع',
           items: _branches
               .map(
-                (sector) => DropdownMenuItem<int>(
-                  value: sector.id,
-                  child: Text(sector.name),
+                (branch) => DropdownMenuItem<int>(
+                  value: branch.branchId,
+                  child: Text(branch.branchName),
                 ),
               )
               .toList(),
           onChanged: (v) {
             setState(() {
               selectedBranchId = v;
-              final match = _branches.where((b) => b.id == v);
-              selectedBranchName = match.isNotEmpty ? match.first.name : null;
+              final match = _branches.where((b) => b.branchId == v);
+              selectedBranchName = match.isNotEmpty ? match.first.branchName : null;
             });
           },
         ),
@@ -218,8 +242,8 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
     } catch (_) {}
 
     final branchName = selectedBranchName ??
-        (_branches.where((b) => b.id == selectedBranchId).isNotEmpty
-            ? _branches.firstWhere((b) => b.id == selectedBranchId).name
+        (_branches.where((b) => b.branchId == selectedBranchId).isNotEmpty
+            ? _branches.firstWhere((b) => b.branchId == selectedBranchId).branchName
             : null);
 
     context.read<AddIncidentCubit>().submitIncident(

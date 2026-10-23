@@ -221,6 +221,34 @@ class _ApiService implements ApiService {
   }
 
   @override
+  Future<List<BranchModel>> getBranches() async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<List<BranchModel>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/add-current-incident',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<List<dynamic>>(_options);
+    late List<BranchModel> _value;
+    if (_result.data is List) {
+      _value = _result.data!
+          .map((dynamic i) => BranchModel.fromJson(i as Map<String, dynamic>))
+          .toList();
+    } else {
+      _value = [];
+    }
+    return _value;
+  }
+
+  @override
   Future<dynamic> editCurrentIncident(
     int id,
     CurrentIncidentModel incident,

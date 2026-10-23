@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/future/actions/data/models/branch/branch_model.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/network/api_constants.dart';
 import 'package:incidents_managment/core/network/api_error_model.dart';
@@ -111,6 +112,17 @@ class AddIncdientRepo {
       await _cache.remove(tempId);
       return ApiResult.error(
         ApiErrorModel(error: 'An unexpected error occurred'),
+      );
+    }
+  }
+
+  Future<ApiResult<List<BranchModel>>> getBranches() async {
+    try {
+      final response = await apiService.getBranches();
+      return ApiResult.success(response);
+    } catch (e) {
+      return ApiResult.error(
+        ApiErrorModel(error: 'Failed to fetch branches: $e'),
       );
     }
   }
