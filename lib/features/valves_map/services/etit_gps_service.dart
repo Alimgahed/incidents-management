@@ -47,9 +47,10 @@ class EtitGpsService {
   }
 
   Map<String, dynamic> _headers({String? contentType, String? referer}) {
-    final h = <String, dynamic>{'X-Requested-With': 'XMLHttpRequest'};
+    final h = <String, dynamic>{};
     if (contentType != null) h['Content-Type'] = contentType;
     if (!kIsWeb) {
+      h['X-Requested-With'] = 'XMLHttpRequest';
       // On web the proxy adds cookies/referer; browsers forbid setting them.
       if (_jar.isNotEmpty) h['Cookie'] = _cookieHeader;
       if (referer != null) h['Referer'] = referer;
@@ -176,7 +177,7 @@ class EtitGpsService {
           data: jsonEncode(payload),
           options: Options(
             headers: _headers(
-              contentType: 'application/json; charset=UTF-8',
+              contentType: kIsWeb ? 'text/plain;charset=UTF-8' : 'application/json; charset=UTF-8',
               referer: '$_fmsBase/WebPages/Transporters/List.aspx',
             ),
           ),
@@ -241,6 +242,8 @@ class EtitGpsService {
       final statuses = par[2].split(',');
       final lons = par[3].split(',');
       final lats = par[4].split(',');
+      final dates = par.length > 5 ? par[5].split(',') : const <String>[];
+      final devCodes = par.length > 20 ? par[20].split(',') : const <String>[];
 
       final coords = <String, Map<String, dynamic>>{};
       for (var i = 0; i < ids.length; i++) {
@@ -248,12 +251,13 @@ class EtitGpsService {
         if (id.isEmpty) continue;
         final lat = i < lats.length ? double.tryParse(lats[i].trim()) : null;
         final lon = i < lons.length ? double.tryParse(lons[i].trim()) : null;
-        if (lat == null || lon == null || lat == 0 || lon == 0) continue;
         coords[id] = {
-          'lat': lat,
-          'lon': lon,
+          'lat': (lat != null && lat != 0) ? lat : null,
+          'lon': (lon != null && lon != 0) ? lon : null,
           'speed': i < speeds.length ? double.tryParse(speeds[i].trim()) ?? 0.0 : 0.0,
           'status': i < statuses.length ? statuses[i].trim() : '',
+          'lastUpdate': i < dates.length ? dates[i].trim() : '',
+          'deviceCode': i < devCodes.length ? devCodes[i].trim() : '',
         };
       }
       return coords;
@@ -265,8 +269,9 @@ class EtitGpsService {
 
   /// 3. Vehicles merged with their live coordinates.
   Future<List<EtitVehicleModel>> getVehiclesWithLiveTracking() async {
-    final vehicles = await getVehicles();
-    final live = await getLiveCoordinates();
+    final results = await Future.wait([getVehicles(), getLiveCoordinates()]);
+    final vehicles = results[0] as List<EtitVehicleModel>;
+    final live = results[1] as Map<String, Map<String, dynamic>>;
     for (final v in vehicles) {
       final loc = live[v.id];
       if (loc != null) {
@@ -274,6 +279,12 @@ class EtitGpsService {
         v.longitude = loc['lon'] as double?;
         v.speed = loc['speed'] as double?;
         v.statusCode = loc['status'] as String?;
+        v.lastUpdate = loc['lastUpdate'] as String?;
+        final liveImei = (loc['deviceCode'] as String?)?.trim() ?? '';
+        if ((v.deviceCode == null || v.deviceCode!.trim().isEmpty) &&
+            liveImei.isNotEmpty) {
+          v.deviceCode = liveImei;
+        }
       }
     }
     return vehicles;

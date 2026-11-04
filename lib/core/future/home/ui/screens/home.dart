@@ -168,6 +168,7 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                         );
                       }
                       final dashboardTab = i == 0;
+                      final unboxedTab = i == 0 || i == 11;
                       return Padding(
                         padding: EdgeInsets.fromLTRB(
                           dashboardTab ? 10 : 16,
@@ -184,11 +185,11 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                             SizedBox(height: dashboardTab ? 6 : 12),
                             Expanded(
                               child: Material(
-                                color: dashboardTab
+                                color: unboxedTab
                                     ? Colors.transparent
                                     : AppTheme.surfaceColor,
                                 surfaceTintColor: Colors.transparent,
-                                shape: dashboardTab
+                                shape: unboxedTab
                                     ? null
                                     : RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
@@ -197,7 +198,7 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                                               .withValues(alpha: 0.65),
                                         ),
                                       ),
-                                clipBehavior: dashboardTab
+                                clipBehavior: unboxedTab
                                     ? Clip.none
                                     : Clip.antiAlias,
                                 child: content,

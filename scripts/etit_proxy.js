@@ -146,9 +146,14 @@ http.createServer(async (req, res) => {
     // Login page itself is handled by the proxy – the app does not need to log in on web.
     await ensureLogin();
 
-    const fwdHeaders = {};
-    for (const h of ['content-type', 'accept', 'x-requested-with']) {
-      if (req.headers[h]) fwdHeaders[h] = req.headers[h];
+    const fwdHeaders = {
+      'X-Requested-With': 'XMLHttpRequest',
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+    };
+    if (targetUrl.pathname.endsWith('GetAllTransporterBySearchCriteria')) {
+      fwdHeaders['Content-Type'] = 'application/json; charset=UTF-8';
+    } else if (req.headers['content-type']) {
+      fwdHeaders['Content-Type'] = req.headers['content-type'];
     }
     fwdHeaders.Referer = targetUrl.hostname.startsWith('fms-gps')
       ? 'https://fms-gps.etit-eg.com/WebPages/Maps.aspx'
