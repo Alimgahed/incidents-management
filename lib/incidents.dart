@@ -5,14 +5,17 @@ import 'package:get/get.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
+import 'package:incidents_managment/core/future/home/logic/dash_board_cubit/dash_board_cubit.dart';
 import 'package:incidents_managment/core/offline/presentation/offline_banner.dart';
 import 'package:incidents_managment/core/offline/presentation/offline_status_cubit.dart';
 import 'package:incidents_managment/core/realtime/ui/global_alert_host.dart';
 import 'package:incidents_managment/core/routing/app_router.dart';
-import 'package:incidents_managment/core/routing/routes.dart';
+import 'package:incidents_managment/core/future/mobile/ui/screens/home/home.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
 import 'package:incidents_managment/core/theming/logic/theme_cubit.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:incidents_managment/core/future/home/ui/screens/home.dart';
 import 'package:incidents_managment/main.dart';
 
 class WebScrollBehavior extends MaterialScrollBehavior {
@@ -42,13 +45,7 @@ class Incidents extends StatelessWidget {
       splitScreenMode: true,
       useInheritedMediaQuery: true,
       builder: (context, _) {
-        // MediaQuery is now available because ScreenUtilInit provides it
         final isMobile = MediaQuery.sizeOf(context).width < 600;
-
-        // Choose starting screen correctly based on login status and platform
-        final initialRoute = isLoggedIn
-            ? (isMobile ? Routes.mobileHome : Routes.crisisDashboardScreen)
-            : Routes.login;
 
         return BlocProvider<ThemeCubit>(
           create: (_) => ThemeCubit(),
@@ -62,7 +59,13 @@ class Incidents extends StatelessWidget {
                 darkTheme: AppTheme.darkTheme,
                 themeMode: themeMode,
                 onGenerateRoute: appRouter.generateRoute,
-                initialRoute: initialRoute,
+                home: MultiBlocProvider(
+                  providers: [
+                    BlocProvider(create: (context) => DashboardCubit()),
+                    BlocProvider.value(value: getIt<IncidentMapCubit>()),
+                  ],
+                  child: isMobile ? const MobileIncidentsListScreen() : const CrisisDashboard(),
+                ),
                 scrollBehavior: WebScrollBehavior(),
                 // Set the app's locale to Arabic
                 locale: const Locale('ar', 'AE'), // Arabic (UAE) locale

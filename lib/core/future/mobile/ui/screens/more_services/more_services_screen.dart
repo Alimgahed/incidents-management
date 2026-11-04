@@ -105,7 +105,21 @@ class MobileMoreServicesScreen extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               // 1. الخرائط والعمليات الميدانية
-              _buildSectionTitle('الخرائط والعمليات الميدانية'),
+              _buildSectionTitle('الخرائط والعمليات الميدانية وتتبع الأسطول'),
+              _buildServiceTile(
+                icon: Icons.local_shipping_rounded,
+                iconColor: const Color(0xFF0284C7),
+                title: 'تتبع أسطول سيارات المياه (ETIT GPS)',
+                subtitle: 'استعراض مواقع وسرعات سيارات شركة المياه لحظياً على الخريطة',
+                onTap: () => context.pushNamed(Routes.etitFleetMap),
+              ),
+              _buildServiceTile(
+                icon: Icons.directions_car_filled_rounded,
+                iconColor: const Color(0xFF10B981),
+                title: 'قائمة سيارات الأسطول (ETIT)',
+                subtitle: 'بيانات الـ 162 مركبة، الفروع، أجهزة Teltonika، وحالات التشغيل',
+                onTap: () => context.pushNamed(Routes.etitVehicles),
+              ),
               _buildServiceTile(
                 icon: Icons.layers_rounded,
                 iconColor: const Color(0xFF0F3B6C),

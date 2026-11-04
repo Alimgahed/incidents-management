@@ -19,5 +19,7 @@ class Routes {
   static const String mobileMoreServices = '/mobile_more_services';
   static const String reports = '/reports';
   static const String gisMap = '/gis_map';
+  static const String etitVehicles = '/etit_vehicles';
+  static const String etitFleetMap = '/etit_fleet_map';
   static const String accessDenied = '/access_denied';
 }

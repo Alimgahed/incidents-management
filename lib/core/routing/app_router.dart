@@ -40,6 +40,8 @@ import 'package:incidents_managment/core/future/valve/ui/map_screen.dart';
 import 'package:incidents_managment/core/future/gis/logic/gis_cubit.dart';
 import 'package:incidents_managment/core/future/gis/ui/gis_map_screen.dart';
 import 'package:incidents_managment/core/future/reports/ui/incident_reports_screen.dart';
+import 'package:incidents_managment/features/valves_map/presentation/screens/etit_vehicles_list_screen.dart';
+import 'package:incidents_managment/features/valves_map/presentation/screens/etit_fleet_map_screen.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/security/access_denied_screen.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
@@ -259,6 +261,16 @@ class AppRouter {
             create: (context) => getIt<GisCubit>(),
             child: GisMapScreen(onAssetSelected: onAssetSelected),
           ),
+        );
+
+      case Routes.etitVehicles:
+        return MaterialPageRoute(
+          builder: (_) => const EtitVehiclesListScreen(),
+        );
+
+      case Routes.etitFleetMap:
+        return MaterialPageRoute(
+          builder: (_) => const EtitFleetMapScreen(),
         );
 
 

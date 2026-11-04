@@ -8,6 +8,8 @@ import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_states.dart';
 import 'package:incidents_managment/core/future/home/ui/screens/user_management_screen.dart';
 import 'package:incidents_managment/core/future/reports/ui/incident_reports_screen.dart';
+import 'package:incidents_managment/features/valves_map/presentation/screens/etit_fleet_map_screen.dart';
+import 'package:incidents_managment/features/valves_map/presentation/screens/etit_vehicles_list_screen.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dash_board.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dashboard_command_palette.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dashboard_live_status.dart';
@@ -30,7 +32,7 @@ class CrisisDashboard extends StatefulWidget {
 }
 
 class _CrisisDashboardState extends State<CrisisDashboard> {
-  final List<Widget?> _tabs = List<Widget?>.filled(10, null);
+  final List<Widget?> _tabs = List<Widget?>.filled(12, null);
 
   static const _titles = <String>[
     'لوحة التحكم',
@@ -43,6 +45,8 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
     'ربط مهام بالأزمة',
     'خريطة المحابس',
     'خريطة نظم المعلومات (GIS)',
+    'تتبع سيارات المياه (ETIT GPS)',
+    'قائمة سيارات الأسطول (ETIT)',
   ];
 
   @override
@@ -147,6 +151,8 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                               create: (_) => getIt<GisCubit>(),
                               child: const GisMapScreen(),
                             ),
+                          10 => const EtitFleetMapScreen(),
+                          11 => const EtitVehiclesListScreen(),
                           _ => const SizedBox.shrink(),
                         };
                       }

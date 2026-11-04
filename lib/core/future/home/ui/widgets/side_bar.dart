@@ -86,6 +86,22 @@ Widget buildSidebar(BuildContext context, {bool isDrawer = false}) {
                     ),
                     buildNavItem(
                       context,
+                      icon: Icons.local_shipping_outlined,
+                      selectedIcon: Icons.local_shipping_rounded,
+                      label: 'تتبع سيارات المياه (ETIT)',
+                      index: 10,
+                      isDrawer: isDrawer,
+                    ),
+                    buildNavItem(
+                      context,
+                      icon: Icons.directions_car_outlined,
+                      selectedIcon: Icons.directions_car_rounded,
+                      label: 'أسطول السيارات (ETIT)',
+                      index: 11,
+                      isDrawer: isDrawer,
+                    ),
+                    buildNavItem(
+                      context,
                       icon: Icons.bar_chart_outlined,
                       selectedIcon: Icons.bar_chart_rounded,
                       label: 'التقارير',
