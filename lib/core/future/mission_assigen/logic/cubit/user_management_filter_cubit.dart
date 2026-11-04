@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/future/mission_assigen/data/model/all_active_user_model.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/user_management_filter_state.dart';
+import 'package:incidents_managment/core/helpers/arabic_text_helper.dart';
 
 class UserManagementFilterCubit extends Cubit<UserManagementFilterState> {
   UserManagementFilterCubit() : super(const UserManagementFilterState());
@@ -19,20 +20,22 @@ class UserManagementFilterCubit extends Cubit<UserManagementFilterState> {
     bool clearSectorName = false,
     bool clearClassName = false,
   }) {
-    emit(state.copyWith(
-      empCode: empCode,
-      name: name,
-      status: status,
-      authorityName: authorityName,
-      groupName: groupName,
-      sectorName: sectorName,
-      className: className,
-      clearStatus: clearStatus,
-      clearAuthorityName: clearAuthorityName,
-      clearGroupName: clearGroupName,
-      clearSectorName: clearSectorName,
-      clearClassName: clearClassName,
-    ));
+    emit(
+      state.copyWith(
+        empCode: empCode,
+        name: name,
+        status: status,
+        authorityName: authorityName,
+        groupName: groupName,
+        sectorName: sectorName,
+        className: className,
+        clearStatus: clearStatus,
+        clearAuthorityName: clearAuthorityName,
+        clearGroupName: clearGroupName,
+        clearSectorName: clearSectorName,
+        clearClassName: clearClassName,
+      ),
+    );
   }
 
   void resetFilters() {
@@ -42,29 +45,36 @@ class UserManagementFilterCubit extends Cubit<UserManagementFilterState> {
   List<ActiveUser> filterUsers(List<ActiveUser> users) {
     return users.where((user) {
       if (state.empCode.isNotEmpty) {
-        final codeMatch = user.empCode?.toLowerCase().contains(state.empCode.toLowerCase()) ?? false;
+        final codeMatch =
+            user.empCode?.toLowerCase().contains(state.empCode.toLowerCase()) ??
+            false;
         if (!codeMatch) return false;
       }
-      
+
       if (state.name.isNotEmpty) {
-        final searchTerms = state.name.toLowerCase().split(' ').where((s) => s.isNotEmpty).toList();
-        final empName = user.empName?.toLowerCase() ?? '';
-        final username = user.username?.toLowerCase() ?? '';
-        
-        bool matchesName = true;
-        for (var term in searchTerms) {
-          if (!empName.contains(term) && !username.contains(term)) {
-            matchesName = false;
-            break;
-          }
+        final q = state.name.trim();
+        final matchesName = ArabicTextHelper.contains(user.empName, q);
+        final matchesUsername = (user.username ?? '').toLowerCase().contains(
+          q.toLowerCase(),
+        );
+        final matchesCode = (user.empCode ?? '').toLowerCase().contains(
+          q.toLowerCase(),
+        );
+        final matchesAuth = ArabicTextHelper.contains(user.authorityName, q);
+        if (!matchesName && !matchesUsername && !matchesCode && !matchesAuth) {
+          return false;
         }
-        if (!matchesName) return false;
       }
 
-      if (state.status != null) {
-        final isActive = user.isActive == true;
-        if (state.status == 'نشط' && !isActive) return false;
-        if (state.status == 'غير نشط' && isActive) return false;
+      if (state.status != null && state.status!.isNotEmpty) {
+        final isActive = user.isActive != false;
+        if ((state.status == 'نشط' || state.status == 'متاح') && !isActive) {
+          return false;
+        }
+        if ((state.status == 'غير نشط' || state.status == 'غير متاح') &&
+            isActive) {
+          return false;
+        }
       }
 
       if (state.authorityName != null && state.authorityName!.isNotEmpty) {
@@ -80,7 +90,11 @@ class UserManagementFilterCubit extends Cubit<UserManagementFilterState> {
       }
 
       if (state.className != null && state.className!.isNotEmpty) {
-        final hasClass = user.userClasses?.any((c) => c.classInfo?.className == state.className) ?? false;
+        final hasClass =
+            user.userClasses?.any(
+              (c) => c.classInfo?.className == state.className,
+            ) ??
+            false;
         if (!hasClass) return false;
       }
 

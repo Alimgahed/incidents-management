@@ -209,7 +209,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
       }
 
       emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
-    } catch (e, st) {
+    } catch (e) {
       if (kDebugMode) {
         debugPrint('Error in _handleStatusSeverityHistoryUpdated: $e');
       }
@@ -743,7 +743,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
           );
         }
       }
-    } catch (e, st) {
+    } catch (e) {
       if (kDebugMode) debugPrint('Error handling incident_updated: \n');
       refresh();
     }

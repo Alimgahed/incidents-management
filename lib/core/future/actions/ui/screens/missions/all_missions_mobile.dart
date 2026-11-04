@@ -3,13 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/future/actions/data/models/missions/all_mission_model.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/get_all_missions_cubit.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/missions_cubit/missions_filter_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_missions_state.dart';
+import 'package:incidents_managment/core/future/actions/logic/states/missions_filter_state.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/missions/missions_card.dart';
 import 'package:flutter/services.dart';
 import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class AllMissionsMobile extends StatefulWidget {
   const AllMissionsMobile({super.key});
@@ -20,8 +23,6 @@ class AllMissionsMobile extends StatefulWidget {
 
 class _AllMissionsMobileState extends State<AllMissionsMobile> {
   final TextEditingController _searchController = TextEditingController();
-  bool _isSearchActive = false;
-  String? _selectedCategory;
 
   @override
   void dispose() {
@@ -29,35 +30,36 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
     super.dispose();
   }
 
-  void _clearSearch() {
+  void _clearSearch(BuildContext context) {
     _searchController.clear();
     context.read<AllMissionsCubit>().clearSearch();
-    setState(() {
-      _isSearchActive = false;
-    });
+    context.read<MissionsFilterCubit>().updateFilters(searchName: '');
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: MobileSystemBars.standard,
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-          backgroundColor: const Color(0xFFF4F7FB),
-          body: BlocBuilder<AllMissionsCubit, GetAllMissionState>(
-            builder: (context, state) {
-              return state.when(
-                initial: () => const Center(child: Loadding()),
-                loading: () => const Center(child: Loadding()),
-                error: (message) => const Center(child: Error()),
-                loaded: (missions) => _buildContent(context, missions),
-              );
-            },
+    return BlocProvider(
+      create: (_) => MissionsFilterCubit(),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: MobileSystemBars.standard,
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            backgroundColor: const Color(0xFFF4F7FB),
+            body: BlocBuilder<AllMissionsCubit, GetAllMissionState>(
+              builder: (context, state) {
+                return state.when(
+                  initial: () => const MissionsScreenShimmer(),
+                  loading: () => const MissionsScreenShimmer(),
+                  error: (message) => const Center(child: Error()),
+                  loaded: (missions) => _buildContent(context, missions),
+                );
+              },
+            ),
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.miniStartFloat,
+            floatingActionButton: _buildFloatingAddButton(context),
           ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.miniStartFloat,
-          floatingActionButton: _buildFloatingAddButton(context),
         ),
       ),
     );
@@ -71,64 +73,70 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
         .toSet()
         .toList();
 
-    final filteredMissions = allMissions.where((m) {
-      final matchesCategory = _selectedCategory == null ||
-          m.className == _selectedCategory;
-      return matchesCategory;
-    }).toList();
+    return BlocBuilder<MissionsFilterCubit, MissionsFilterState>(
+      builder: (context, filterState) {
+        final filteredMissions = context
+            .read<MissionsFilterCubit>()
+            .filterMissions(allMissions);
 
-    return RefreshIndicator(
-      color: appColor,
-      backgroundColor: Colors.white,
-      onRefresh: () async {
-        await context.read<AllMissionsCubit>().getAllMissions();
-      },
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          // 1. Top Header Banner
-          SliverToBoxAdapter(
-            child: _buildHeaderBanner(context),
-          ),
-
-          // 2. Executive Hero Summary Card & Search/Filter
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 14),
-                  _buildSummaryHeroCard(allMissions.length),
-                  const SizedBox(height: 14),
-                  _buildSearchBarAndFilter(context, categories),
-                  const SizedBox(height: 16),
-                ],
+        return RefreshIndicator(
+          color: appColor,
+          backgroundColor: Colors.white,
+          onRefresh: () async {
+            await context.read<AllMissionsCubit>().getAllMissions();
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // 1. Top Header Banner
+              SliverToBoxAdapter(
+                child: _buildHeaderBanner(context),
               ),
-            ),
-          ),
 
-          // 3. Missions List
-          if (filteredMissions.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: _buildEmptyState(),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final item = filteredMissions[index];
-                    return MissionCard(mission: item, index: index);
-                  },
-                  childCount: filteredMissions.length,
+              // 2. Executive Hero Summary Card & Search/Filter
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 14),
+                      _buildSummaryHeroCard(allMissions.length),
+                      const SizedBox(height: 14),
+                      _buildSearchBarAndFilter(
+                        context,
+                        categories,
+                        filterState,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
-      ),
+
+              // 3. Missions List
+              if (filteredMissions.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildEmptyState(),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final item = filteredMissions[index];
+                        return MissionCard(mission: item, index: index);
+                      },
+                      childCount: filteredMissions.length,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -350,7 +358,12 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
 
   // --- SEARCH BAR & FILTER ---
   Widget _buildSearchBarAndFilter(
-      BuildContext context, List<String> categories) {
+    BuildContext context,
+    List<String> categories,
+    MissionsFilterState filterState,
+  ) {
+    final selectedCategory = filterState.className;
+    final isSearchActive = filterState.searchName.isNotEmpty;
     return Row(
       children: [
         // Search Input Field (Right in RTL)
@@ -373,8 +386,9 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
               controller: _searchController,
               textAlign: TextAlign.right,
               onChanged: (val) {
-                setState(() => _isSearchActive = val.isNotEmpty);
-                context.read<AllMissionsCubit>().searchMissions(val);
+                context.read<MissionsFilterCubit>().updateFilters(
+                  searchName: val,
+                );
               },
               style: const TextStyle(fontSize: 13, color: primaryTextColor),
               decoration: InputDecoration(
@@ -393,14 +407,14 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
                   color: secondaryTextColor,
                   size: 20,
                 ),
-                suffixIcon: _isSearchActive
+                suffixIcon: isSearchActive
                     ? IconButton(
                         icon: const Icon(
                           Icons.close_rounded,
                           size: 18,
                           color: disabledTextColor,
                         ),
-                        onPressed: _clearSearch,
+                        onPressed: () => _clearSearch(context),
                       )
                     : null,
               ),
@@ -411,7 +425,7 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
 
         // Filter Button (Left in RTL)
         GestureDetector(
-          onTap: () => _showFilterDialog(context, categories),
+          onTap: () => _showFilterDialog(context, categories, selectedCategory),
           child: Container(
             width: 48,
             height: 48,
@@ -419,10 +433,10 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _selectedCategory != null
+                color: selectedCategory != null
                     ? const Color(0xFF1B64F2)
                     : const Color(0xFFE2E8F0),
-                width: _selectedCategory != null ? 1.6 : 1.0,
+                width: selectedCategory != null ? 1.6 : 1.0,
               ),
               boxShadow: [
                 BoxShadow(
@@ -437,12 +451,12 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
               children: [
                 Icon(
                   Icons.filter_list_rounded,
-                  color: _selectedCategory != null
+                  color: selectedCategory != null
                       ? const Color(0xFF1B64F2)
                       : secondaryTextColor,
                   size: 22,
                 ),
-                if (_selectedCategory != null)
+                if (selectedCategory != null)
                   Positioned(
                     top: 8,
                     right: 8,
@@ -473,7 +487,12 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
     );
   }
 
-  void _showFilterDialog(BuildContext context, List<String> categories) {
+  void _showFilterDialog(
+    BuildContext context,
+    List<String> categories,
+    String? selectedCategory,
+  ) {
+    final filterCubit = context.read<MissionsFilterCubit>();
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -498,10 +517,10 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
                       color: primaryTextColor,
                     ),
                   ),
-                  if (_selectedCategory != null)
+                  if (selectedCategory != null)
                     TextButton(
                       onPressed: () {
-                        setState(() => _selectedCategory = null);
+                        filterCubit.updateFilters(clearClassName: true);
                         Navigator.pop(ctx);
                       },
                       child: const Text('إلغاء التصفية'),
@@ -514,20 +533,22 @@ class _AllMissionsMobileState extends State<AllMissionsMobile> {
                   title: Text(
                     cat,
                     style: TextStyle(
-                      fontWeight: _selectedCategory == cat
+                      fontWeight: selectedCategory == cat
                           ? FontWeight.bold
                           : FontWeight.normal,
-                      color: _selectedCategory == cat
+                      color: selectedCategory == cat
                           ? const Color(0xFF1B64F2)
                           : primaryTextColor,
                     ),
                   ),
-                  trailing: _selectedCategory == cat
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: Color(0xFF1B64F2))
+                  trailing: selectedCategory == cat
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF1B64F2),
+                        )
                       : null,
                   onTap: () {
-                    setState(() => _selectedCategory = cat);
+                    filterCubit.updateFilters(className: cat);
                     Navigator.pop(ctx);
                   },
                 ),

@@ -6,6 +6,7 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add
 import 'package:incidents_managment/core/future/actions/logic/cubit/classes_cubit/all_incident_classes.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/all_incident_classes.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class SharedIncidentTypeForm extends StatelessWidget {
   final bool isWeb;
@@ -31,15 +32,8 @@ class SharedIncidentTypeForm extends StatelessWidget {
     final typeField = BlocBuilder<AllIncidentClasses, GetAllIncidentClassesState>(
       builder: (context, typeState) {
         return typeState.when(
-          initial: () => const SizedBox.shrink(),
-          loading: () => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLabel("تصنيف الأزمة *"),
-              const LinearProgressIndicator(minHeight: 2, color: appColor),
-              if (!isWeb) const SizedBox(height: 20),
-            ],
-          ),
+          initial: () => const ShimmerInput(height: 52, showLabel: true),
+          loading: () => const ShimmerInput(height: 52, showLabel: true),
           error: (e) => const Text('Error'),
           loaded: (types) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,

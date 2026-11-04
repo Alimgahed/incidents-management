@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/data/models/branch/branch_model.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
-import 'package:incidents_managment/core/future/actions/data/repos/add_incident/add_incdient_repo.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/add_incident_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_incident_type_states.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
-import 'package:incidents_managment/core/network/api_result.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/incident/add_incident_widget.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class SharedIncidentForm extends StatefulWidget {
   final TextEditingController descriptionController;
@@ -63,25 +61,13 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
   Future<void> _fetchBranchesFromApi() async {
     setState(() => _isLoadingBranches = true);
     try {
-      final res = await getIt<AddIncdientRepo>().getBranches();
-      res.when(
-        success: (data) {
-          if (mounted) {
-            setState(() {
-              _branches = data.isNotEmpty ? data : _fallbackBranches;
-              _isLoadingBranches = false;
-            });
-          }
-        },
-        error: (_) {
-          if (mounted) {
-            setState(() {
-              _branches = _fallbackBranches;
-              _isLoadingBranches = false;
-            });
-          }
-        },
-      );
+      final loaded = await context.read<AddIncidentCubit>().loadBranches();
+      if (mounted) {
+        setState(() {
+          _branches = loaded.isNotEmpty ? loaded : _fallbackBranches;
+          _isLoadingBranches = false;
+        });
+      }
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -142,25 +128,30 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
           },
         ),
         const SizedBox(height: 16),
-        CustomDropdownFormField<int>(
-          value: selectedBranchId,
-          hintText: _isLoadingBranches ? 'جاري تحميل الفروع...' : 'الفرع',
-          items: _branches
-              .map(
-                (branch) => DropdownMenuItem<int>(
-                  value: branch.branchId,
-                  child: Text(branch.branchName),
-                ),
-              )
-              .toList(),
-          onChanged: (v) {
-            setState(() {
-              selectedBranchId = v;
-              final match = _branches.where((b) => b.branchId == v);
-              selectedBranchName = match.isNotEmpty ? match.first.branchName : null;
-            });
-          },
-        ),
+        if (_isLoadingBranches)
+          const ShimmerInput(height: 52)
+        else
+          CustomDropdownFormField<int>(
+            value: selectedBranchId,
+            hintText: 'الفرع',
+            items: _branches
+                .map(
+                  (branch) => DropdownMenuItem<int>(
+                    value: branch.branchId,
+                    child: Text(branch.branchName),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) {
+              setState(() {
+                selectedBranchId = v;
+                final match = _branches.where((b) => b.branchId == v);
+                selectedBranchName = match.isNotEmpty
+                    ? match.first.branchName
+                    : null;
+              });
+            },
+          ),
         const SizedBox(height: 16),
         CustomTextFormField(
           controller: widget.descriptionController,

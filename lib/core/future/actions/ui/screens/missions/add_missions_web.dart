@@ -10,6 +10,7 @@ import 'package:incidents_managment/core/future/actions/logic/states/all_inciden
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class AddMissionsWeb extends StatefulWidget {
   const AddMissionsWeb({super.key});
@@ -116,14 +117,8 @@ class _AddMissionsWebState extends State<AddMissionsWeb> {
                 child: BlocBuilder<AllIncidentClasses, GetAllIncidentClassesState>(
                   builder: (context, typeState) {
                     return typeState.when(
-                      initial: () => const SizedBox.shrink(),
-                      loading: () => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          buildLabel("تصنيف المهمة *"),
-                          const LinearProgressIndicator(color: appColor),
-                        ],
-                      ),
+                      initial: () => const ShimmerInput(height: 52, showLabel: true),
+                      loading: () => const ShimmerInput(height: 52, showLabel: true),
                       error: (e) => const Text('Error'),
                       loaded: (types) => Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

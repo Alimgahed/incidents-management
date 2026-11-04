@@ -26,6 +26,7 @@ import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/security/authenticated_image.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class MobileIncidentDetailsScreen extends StatefulWidget {
   final int? incidentId;
@@ -179,6 +180,13 @@ class _MobileIncidentDetailsScreenState
                 if (dashIncident != null &&
                     dashIncident.currentIncidentId == targetId) {
                   liveIncident = liveIncident ?? dashIncident;
+                }
+
+                if (liveIncident == null &&
+                    widget.initialIncident == null &&
+                    (mapState is IncidentMapInitial ||
+                        mapState is IncidentMapLoading)) {
+                  return const MobileIncidentDetailsShimmer();
                 }
 
                 final incident =

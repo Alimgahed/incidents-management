@@ -14,6 +14,7 @@ import 'package:incidents_managment/core/future/home/ui/widgets/map/map_incident
 import 'package:incidents_managment/core/future/home/ui/widgets/map/map_incident_details_modal.dart';
 import 'package:incidents_managment/core/future/home/logic/map_filter_cubit.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dashboard_kpi_strip.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 import 'package:latlong2/latlong.dart';
 
 class IncidentsMapScreen extends StatefulWidget {
@@ -86,6 +87,11 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             });
           }
 
+          if ((state is IncidentMapInitial || state is IncidentMapLoading) &&
+              currentIncidents.isEmpty) {
+            return const IncidentsMapScreenShimmer();
+          }
+
           return Column(
             children: [
               DashboardKpiStrip(
@@ -128,40 +134,108 @@ class _IncidentsMapScreenState extends State<IncidentsMapScreen> {
             .read<MapFilterCubit>()
             .filterIncidents(incidents);
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            MapFiltersPanel(
-              rawIncidents: incidents,
-              filteredCount: filteredIncidents.length,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: _buildMap(filteredIncidents, state),
-              ),
-            ),
-            const SizedBox(width: 16),
-            MapIncidentsListPanel(
-              filteredIncidents: filteredIncidents,
-              onIncidentTap: (incident) {
-                final lat = incident.currentIncidentXAxis;
-                final lng = incident.currentIncidentYAxis;
-                if (lat != null && lng != null) {
-                  _mapController.move(LatLng(lat, lng), 17);
-                }
-                showDialog(
-                  context: context,
-                  barrierColor: Colors.black54,
-                  builder: (_) => MapIncidentDetailsModal(
-                    incident: incident,
-                    onClose: () => Navigator.of(context).pop(),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 1024;
+            void handleIncidentSelection(CurrentIncidentModel incident) {
+              final lat = incident.currentIncidentXAxis;
+              final lng = incident.currentIncidentYAxis;
+              if (lat != null && lng != null) {
+                _mapController.move(LatLng(lat, lng), 17);
+              }
+              showDialog(
+                context: context,
+                barrierColor: Colors.black54,
+                builder: (_) => MapIncidentDetailsModal(
+                  incident: incident,
+                  onClose: () => Navigator.of(context).pop(),
+                ),
+              );
+            }
+
+            if (!isDesktop) {
+              final filterCubit = context.read<MapFilterCubit>();
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _buildMap(filteredIncidents, state),
                   ),
-                );
-              },
-            ),
-          ],
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) => BlocProvider.value(
+                                value: filterCubit,
+                                child: FractionallySizedBox(
+                                  heightFactor: 0.8,
+                                  child: MapFiltersPanel(
+                                    rawIncidents: incidents,
+                                    filteredCount: filteredIncidents.length,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.tune_rounded, size: 18),
+                          label: const Text('الفلاتر'),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) => FractionallySizedBox(
+                                heightFactor: 0.8,
+                                child: MapIncidentsListPanel(
+                                  filteredIncidents: filteredIncidents,
+                                  onIncidentTap: (inc) {
+                                    Navigator.of(context).pop();
+                                    handleIncidentSelection(inc);
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.list_alt_rounded, size: 18),
+                          label: Text('الأزمات (${filteredIncidents.length})'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                MapFiltersPanel(
+                  rawIncidents: incidents,
+                  filteredCount: filteredIncidents.length,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _buildMap(filteredIncidents, state),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                MapIncidentsListPanel(
+                  filteredIncidents: filteredIncidents,
+                  onIncidentTap: handleIncidentSelection,
+                ),
+              ],
+            );
+          },
         );
       },
     );

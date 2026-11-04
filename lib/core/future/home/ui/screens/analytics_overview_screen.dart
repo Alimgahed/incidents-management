@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map.dart';
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 /// Operational summary derived only from [IncidentMapCubit] live data (no dummy rows).
 class AnalyticsOverviewScreen extends StatelessWidget {
@@ -22,7 +23,7 @@ class AnalyticsOverviewScreen extends StatelessWidget {
               );
             }
             if (state is IncidentMapLoading && context.read<IncidentMapCubit>().incidents.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
+              return const AnalyticsOverviewShimmer();
             }
             if (state is IncidentMapError && context.read<IncidentMapCubit>().incidents.isEmpty) {
               return _ErrorCard(

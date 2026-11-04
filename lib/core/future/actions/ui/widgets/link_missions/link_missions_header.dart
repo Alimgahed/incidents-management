@@ -4,6 +4,7 @@ import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_incident_type_states.dart';
 import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/link_missions/incident_type_selection_dialog.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class LinkMissionsHeader extends StatelessWidget {
   final int? selectedTypeId;
@@ -155,7 +156,7 @@ class LinkMissionsHeader extends StatelessWidget {
                     ),
                   );
                 },
-                orElse: () => const CircularProgressIndicator(),
+                orElse: () => const ShimmerInput(width: 250, height: 68),
               );
             },
           ),

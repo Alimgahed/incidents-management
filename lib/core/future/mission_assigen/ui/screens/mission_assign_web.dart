@@ -6,9 +6,11 @@ import 'package:incidents_managment/core/future/mission_assigen/data/model/missi
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/all_active_user_cubit.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/mission_assign_cubit.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/mission_selction_cubit.dart';
+import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/user_management_filter_cubit.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/all_active_user_state.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/mission_assign_states.dart';
-import 'package:incidents_managment/core/helpers/arabic_text_helper.dart';
+import 'package:incidents_managment/core/future/mission_assigen/logic/states/user_management_filter_state.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 import '../widgets/users_panel.dart' show ConfirmDialogDesktop;
 import '../widgets/web/web_bottom_action_bar.dart';
@@ -24,8 +26,11 @@ class MissionAssignWebScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => MissionSelectionCubit(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => MissionSelectionCubit()),
+        BlocProvider(create: (_) => UserManagementFilterCubit()),
+      ],
       child: Builder(
         builder: (context) => _MissionAssignWebView(incident: incident),
       ),
@@ -44,11 +49,6 @@ class _MissionAssignWebView extends StatefulWidget {
 
 class _MissionAssignWebViewState extends State<_MissionAssignWebView> {
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  String? _selectedAuthority;
-  String? _selectedSector;
-  String? _selectedGroup;
-  String? _selectedStatus;
 
   List<CurrentIncidentWithMissions> get _sortedMissions {
     final list = List<CurrentIncidentWithMissions>.from(
@@ -91,58 +91,8 @@ class _MissionAssignWebViewState extends State<_MissionAssignWebView> {
   }
 
   void _resetFilters() {
-    setState(() {
-      _searchController.clear();
-      _searchQuery = '';
-      _selectedAuthority = null;
-      _selectedSector = null;
-      _selectedGroup = null;
-      _selectedStatus = null;
-    });
-  }
-
-  List<ActiveUser> _filterUsers(List<ActiveUser> users) {
-    return users.where((user) {
-      // 1. Text Search (name, emp_code, username, authority)
-      if (_searchQuery.isNotEmpty) {
-        final matchesName = ArabicTextHelper.contains(user.empName, _searchQuery);
-        final matchesCode =
-            (user.empCode ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
-        final matchesUsername =
-            (user.username ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
-        final matchesAuthority =
-            ArabicTextHelper.contains(user.authorityName, _searchQuery);
-
-        if (!matchesName && !matchesCode && !matchesUsername && !matchesAuthority) {
-          return false;
-        }
-      }
-
-      // 2. Authority Filter
-      if (_selectedAuthority != null && user.authorityName != _selectedAuthority) {
-        return false;
-      }
-
-      // 3. Sector / Management Filter
-      if (_selectedSector != null &&
-          user.sectorManagementName != _selectedSector) {
-        return false;
-      }
-
-      // 4. Group Filter
-      if (_selectedGroup != null && user.groupName != _selectedGroup) {
-        return false;
-      }
-
-      // 5. Status / Availability Filter
-      if (_selectedStatus != null) {
-        final isAvailable = user.isActive != false;
-        if (_selectedStatus == 'متاح' && !isAvailable) return false;
-        if (_selectedStatus == 'غير متاح' && isAvailable) return false;
-      }
-
-      return true;
-    }).toList();
+    _searchController.clear();
+    context.read<UserManagementFilterCubit>().resetFilters();
   }
 
   List<MissionAssgienModel> _buildPayload(int missionId, Set<dynamic> users) {
@@ -353,68 +303,63 @@ class _MissionAssignWebViewState extends State<_MissionAssignWebView> {
         .toList()
       ..sort();
 
-    final filteredUsers = _filterUsers(rawUsers);
+    return BlocBuilder<UserManagementFilterCubit, UserManagementFilterState>(
+      builder: (context, filterState) {
+        final filterCubit = context.read<UserManagementFilterCubit>();
+        final filteredUsers = filterCubit.filterUsers(rawUsers);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Filter Card
-          WebUserFiltersBar(
-            searchController: _searchController,
-            onSearchChanged: (query) => setState(() => _searchQuery = query),
-            selectedAuthority: _selectedAuthority,
-            onAuthorityChanged: (val) => setState(() => _selectedAuthority = val),
-            authorities: authorities,
-            selectedSector: _selectedSector,
-            onSectorChanged: (val) => setState(() => _selectedSector = val),
-            sectors: sectors,
-            selectedGroup: _selectedGroup,
-            onGroupChanged: (val) => setState(() => _selectedGroup = val),
-            groups: groups,
-            selectedStatus: _selectedStatus,
-            onStatusChanged: (val) => setState(() => _selectedStatus = val),
-            onResetFilters: _resetFilters,
-          ),
-          const SizedBox(height: 16),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Filter Card
+              WebUserFiltersBar(
+                searchController: _searchController,
+                onSearchChanged: (query) =>
+                    filterCubit.updateFilters(name: query),
+                selectedAuthority: filterState.authorityName,
+                onAuthorityChanged: (val) => filterCubit.updateFilters(
+                  authorityName: val,
+                  clearAuthorityName: val == null,
+                ),
+                authorities: authorities,
+                selectedSector: filterState.sectorName,
+                onSectorChanged: (val) => filterCubit.updateFilters(
+                  sectorName: val,
+                  clearSectorName: val == null,
+                ),
+                sectors: sectors,
+                selectedGroup: filterState.groupName,
+                onGroupChanged: (val) => filterCubit.updateFilters(
+                  groupName: val,
+                  clearGroupName: val == null,
+                ),
+                groups: groups,
+                selectedStatus: filterState.status,
+                onStatusChanged: (val) => filterCubit.updateFilters(
+                  status: val,
+                  clearStatus: val == null,
+                ),
+                onResetFilters: _resetFilters,
+              ),
+              const SizedBox(height: 16),
 
-          // User Selection Toolbar + Grid
-          WebUsersSection(
-            filteredUsers: filteredUsers,
-            totalCount: filteredUsers.length,
-            onResetFilters: _resetFilters,
+              // User Selection Toolbar + Grid
+              WebUsersSection(
+                filteredUsers: filteredUsers,
+                totalCount: filteredUsers.length,
+                onResetFilters: _resetFilters,
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(
-            width: 44,
-            height: 44,
-            child: CircularProgressIndicator(
-              color: Color(0xFF2563EB),
-              strokeWidth: 3,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'جاري تحميل بيانات المستخدمين...',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
+    return const MissionAssignUsersShimmer(count: 6);
   }
 
   Widget _buildErrorState(BuildContext context, String message) {

@@ -8,6 +8,7 @@ import 'package:incidents_managment/core/future/auth/logic/state/registeration_p
 import 'package:incidents_managment/core/future/mission_assigen/data/model/all_active_user_model.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -84,8 +85,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           child: BlocBuilder<RegistrationGetCubit, RegistrationGetState>(
             builder: (context, getState) {
               return getState.when(
-                initial: () => const Loadding(),
-                loading: () => const Loadding(),
+                initial: () => const FormScreenShimmer(fieldCount: 7),
+                loading: () => const FormScreenShimmer(fieldCount: 7),
                 error: (message) => Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,

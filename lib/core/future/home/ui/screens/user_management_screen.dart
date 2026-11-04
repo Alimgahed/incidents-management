@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:incidents_managment/core/design_system/app_design_system.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/all_active_user_cubit.dart';
-import 'package:incidents_managment/core/future/mission_assigen/logic/states/all_active_user_state.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/user_management_filter_cubit.dart';
-import 'package:incidents_managment/core/future/mission_assigen/ui/widgets/users/user_stats_cards.dart';
-import 'package:incidents_managment/core/future/mission_assigen/ui/widgets/users/user_filters_panel.dart';
-import 'package:incidents_managment/core/future/mission_assigen/ui/widgets/users/user_data_table.dart';
+import 'package:incidents_managment/core/future/mission_assigen/logic/states/all_active_user_state.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/user_management_filter_state.dart';
+import 'package:incidents_managment/core/future/mission_assigen/ui/widgets/users/user_data_table.dart';
+import 'package:incidents_managment/core/future/mission_assigen/ui/widgets/users/user_filters_panel.dart';
+import 'package:incidents_managment/core/future/mission_assigen/ui/widgets/users/user_stats_cards.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class UserManagementScreen extends StatelessWidget {
   const UserManagementScreen({super.key});
@@ -23,9 +25,7 @@ class UserManagementScreen extends StatelessWidget {
             return cubit;
           },
         ),
-        BlocProvider(
-          create: (_) => UserManagementFilterCubit(),
-        ),
+        BlocProvider(create: (_) => UserManagementFilterCubit()),
       ],
       child: const _UserManagementBody(),
     );
@@ -39,70 +39,63 @@ class _UserManagementBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AllActiveUserCubit, AllActiveUserState>(
       builder: (context, state) {
+        final userCubit = context.read<AllActiveUserCubit>();
         return state.when(
-          initial: () => const Center(child: CircularProgressIndicator()),
-          loading: () => const Center(child: CircularProgressIndicator()),
+          initial: () => const UserManagementScreenShimmer(),
+          loading: () => const UserManagementScreenShimmer(),
           loaded: (users) {
             if (users.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.group_off, size: 64, color: Colors.grey),
-                    const SizedBox(height: 16),
-                    const Text('لا يوجد مستخدمين متاحين', style: TextStyle(fontSize: 18, color: Colors.grey)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => context.read<AllActiveUserCubit>().allActiveUsers(),
-                      child: const Text('إعادة تحميل'),
-                    ),
-                  ],
-                ),
+              return AppEmptyState(
+                icon: Icons.group_off_rounded,
+                title: 'لا يوجد مستخدمين متاحين',
+                subtitle: 'لم يتم العثور على مستخدمين مسجلين في النظام حالياً.',
+                actionLabel: 'إعادة تحميل',
+                onAction: () => userCubit.allActiveUsers(forceLoading: true),
               );
             }
 
-            return Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Stats Cards
-                    UserStatsCards(users: users),
-                    const SizedBox(height: 24),
-
-                    // Filters Panel
-                    UserFiltersPanel(rawUsers: users),
-                    const SizedBox(height: 24),
-
-                    // Data Table (Reactive to Filter Cubit)
-                    BlocBuilder<UserManagementFilterCubit, UserManagementFilterState>(
-                      builder: (context, filterState) {
-                        final filterCubit = context.read<UserManagementFilterCubit>();
-                        final filteredUsers = filterCubit.filterUsers(users);
-
-                        return UserDataTable(users: filteredUsers);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-          error: (message) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            return Column(
               children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text('حدث خطأ: $message', style: const TextStyle(fontSize: 16, color: Colors.red)),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => context.read<AllActiveUserCubit>().allActiveUsers(),
-                  child: const Text('إعادة المحاولة'),
+                AppInlineRefreshBanner(isRefreshing: userCubit.isRefreshing),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(
+                      AppBreakpoints.isMobile(context)
+                          ? AppSpacing.md
+                          : AppSpacing.xl,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        UserStatsCards(users: users),
+                        const SizedBox(height: AppSpacing.xl),
+                        UserFiltersPanel(rawUsers: users),
+                        const SizedBox(height: AppSpacing.xl),
+                        BlocBuilder<
+                          UserManagementFilterCubit,
+                          UserManagementFilterState
+                        >(
+                          builder: (context, filterState) {
+                            final filterCubit = context
+                                .read<UserManagementFilterCubit>();
+                            final filteredUsers = filterCubit.filterUsers(
+                              users,
+                            );
+
+                            return UserDataTable(users: filteredUsers);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
-            ),
+            );
+          },
+          error: (message) => AppErrorState(
+            title: 'حدث خطأ أثناء تحميل المستخدمين',
+            message: message,
+            onRetry: () => userCubit.allActiveUsers(forceLoading: true),
           ),
         );
       },

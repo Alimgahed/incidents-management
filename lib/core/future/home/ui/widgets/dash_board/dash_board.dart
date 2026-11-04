@@ -16,6 +16,7 @@ import 'package:incidents_managment/core/future/home/logic/incident_picker_bridg
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/dashboard_kpi_strip.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_details.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incient_list.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 /// Routes inside the home dashboard tab (not the app root navigator).
 abstract final class DashboardRoutes {
@@ -32,12 +33,25 @@ class DashboardView extends StatefulWidget {
 
 class _DashboardViewState extends State<DashboardView> {
   late final DashboardCubit _dashboardCubit;
+  bool _ownsDashboardCubit = false;
   final _navKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
-    _dashboardCubit = DashboardCubit();
+    DashboardCubit? existing;
+    try {
+      existing = context.read<DashboardCubit>();
+    } catch (_) {
+      existing = null;
+    }
+    if (existing != null) {
+      _dashboardCubit = existing;
+      _ownsDashboardCubit = false;
+    } else {
+      _dashboardCubit = DashboardCubit();
+      _ownsDashboardCubit = true;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       getIt<IncidentPickerBridge>().register(
@@ -51,7 +65,9 @@ class _DashboardViewState extends State<DashboardView> {
   @override
   void dispose() {
     getIt<IncidentPickerBridge>().unregister();
-    _dashboardCubit.close();
+    if (_ownsDashboardCubit) {
+      _dashboardCubit.close();
+    }
     super.dispose();
   }
 
@@ -312,6 +328,12 @@ class _DashboardIncidentsScreenState extends State<_DashboardIncidentsScreen> {
         final allIncidents = context.read<IncidentMapCubit>().incidents;
         final connected = context.read<IncidentMapCubit>().isConnected;
         final isMobile = MediaQuery.sizeOf(context).width <= 768;
+
+        if ((mapState is IncidentMapInitial ||
+                mapState is IncidentMapLoading) &&
+            allIncidents.isEmpty) {
+          return const DashboardScreenShimmer();
+        }
 
         // Mobile: Stack-based navigation
         if (isMobile) {

@@ -9,6 +9,7 @@ import 'package:incidents_managment/core/future/actions/logic/states/get_all_inc
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_cubit.dart';
 import 'package:incidents_managment/core/future/gloable_cubit/map/map_states.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 /// ================= TYPE DROPDOWN =================
 class IncidentTypeDropdown extends StatelessWidget {
@@ -26,8 +27,8 @@ class IncidentTypeDropdown extends StatelessWidget {
     return BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
       builder: (context, state) {
         return state.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          initial: () => const SizedBox.shrink(),
+          loading: () => const ShimmerInput(height: 52),
+          initial: () => const ShimmerInput(height: 52),
           error: (_) => const Text('خطأ في تحميل الأنواع'),
           loaded: (types) => CustomDropdownFormField<int>(
             value: selectedValue,

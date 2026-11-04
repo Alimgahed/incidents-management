@@ -9,6 +9,7 @@ import 'package:incidents_managment/core/future/mission_assigen/logic/cubit/all_
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/all_active_user_state.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/mission_assign_states.dart';
 import 'package:incidents_managment/core/future/mission_assigen/logic/states/mission_selection_state.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class MissionHorizontalTabs extends StatelessWidget {
   final List<CurrentIncidentWithMissions> missions;
@@ -186,31 +187,7 @@ class UsersPanel extends StatelessWidget {
   }
 
   Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 48,
-            height: 48,
-            child: CircularProgressIndicator(
-              color: appColor,
-              strokeWidth: 3,
-              backgroundColor: appColor.withAlpha(30),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            "جاري تحميل المستخدمين...",
-            style: TextStyle(
-              color: secondaryTextColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
+    return const MissionAssignUsersShimmer(count: 6);
   }
 }
 

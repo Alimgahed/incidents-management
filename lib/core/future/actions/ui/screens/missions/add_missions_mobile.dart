@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class AddMissionsMobile extends StatefulWidget {
   const AddMissionsMobile({super.key});
@@ -117,11 +118,8 @@ class _AddMissionsMobileState extends State<AddMissionsMobile> {
                         BlocBuilder<AllIncidentClasses, GetAllIncidentClassesState>(
                           builder: (context, typeState) {
                             return typeState.when(
-                              initial: () => const SizedBox.shrink(),
-                              loading: () => const LinearProgressIndicator(
-                                color: Color(0xFF1E56A0),
-                                minHeight: 3,
-                              ),
+                              initial: () => const ShimmerInput(height: 52),
+                              loading: () => const ShimmerInput(height: 52),
                               error: (e) => const Text('تعذر تحميل التصنيفات'),
                               loaded: (types) => CustomDropdownFormField<int>(
                                 hintText: 'اختر تصنيف المهمة',

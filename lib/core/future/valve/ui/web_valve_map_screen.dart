@@ -10,6 +10,7 @@ import 'package:incidents_managment/core/future/valve/logic/cubit/valve_filter_c
 import 'package:incidents_managment/core/future/valve/ui/widgets/map/valve_filters_panel.dart';
 import 'package:incidents_managment/core/future/valve/ui/widgets/map/valve_list_panel.dart';
 import 'package:incidents_managment/core/future/valve/ui/widgets/map/map_valve_details_modal.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 import 'package:latlong2/latlong.dart';
 
 class WebValveMapScreen extends StatefulWidget {
@@ -149,36 +150,115 @@ class _WebValveMapScreenState extends State<WebValveMapScreen> {
         final filteredValves =
             context.read<ValveFilterCubit>().filterValves(valves);
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ValveFiltersPanel(
-              filterOptions: filterOptions,
-              filteredCount: filteredValves.length,
-              totalCount: pagination.total,
-              onApply: () => _applyServerFilters(context),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: _buildMap(context, filteredValves, state),
-              ),
-            ),
-            const SizedBox(width: 16),
-            ValveListPanel(
-              filteredValves: filteredValves,
-              totalCount: pagination.total,
-              onValveTap: (valve) {
-                final lat = valve.lat;
-                final lng = valve.long;
-                if (lat != null && lng != null) {
-                  _mapController.move(LatLng(lat, lng), 17);
-                }
-                _showValveDetails(valve);
-              },
-            ),
-          ],
+        if ((state is WebValveMapInitial || state is WebValveMapLoading) &&
+            valves.isEmpty) {
+          return const ValveMapScreenShimmer();
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 1024;
+            void handleValveTap(ValveModel valve) {
+              final lat = valve.lat;
+              final lng = valve.long;
+              if (lat != null && lng != null) {
+                _mapController.move(LatLng(lat, lng), 17);
+              }
+              _showValveDetails(valve);
+            }
+
+            if (!isDesktop) {
+              final filterCubit = context.read<ValveFilterCubit>();
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _buildMap(context, filteredValves, state),
+                  ),
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) => BlocProvider.value(
+                                value: filterCubit,
+                                child: FractionallySizedBox(
+                                  heightFactor: 0.8,
+                                  child: ValveFiltersPanel(
+                                    filterOptions: filterOptions,
+                                    filteredCount: filteredValves.length,
+                                    totalCount: pagination.total,
+                                    onApply: () {
+                                      Navigator.of(context).pop();
+                                      _applyServerFilters(context);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.tune_rounded, size: 18),
+                          label: const Text('فلاتر المحابس'),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) => FractionallySizedBox(
+                                heightFactor: 0.8,
+                                child: ValveListPanel(
+                                  filteredValves: filteredValves,
+                                  totalCount: pagination.total,
+                                  onValveTap: (v) {
+                                    Navigator.of(context).pop();
+                                    handleValveTap(v);
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.list_alt_rounded, size: 18),
+                          label: Text('المحابس (${filteredValves.length})'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ValveFiltersPanel(
+                  filterOptions: filterOptions,
+                  filteredCount: filteredValves.length,
+                  totalCount: pagination.total,
+                  onApply: () => _applyServerFilters(context),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _buildMap(context, filteredValves, state),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ValveListPanel(
+                  filteredValves: filteredValves,
+                  totalCount: pagination.total,
+                  onValveTap: handleValveTap,
+                ),
+              ],
+            );
+          },
         );
       },
     );

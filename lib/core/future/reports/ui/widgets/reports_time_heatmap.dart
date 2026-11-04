@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:incidents_managment/core/future/reports/logic/reports_state.dart';
 
 enum HeatmapMetricMode {

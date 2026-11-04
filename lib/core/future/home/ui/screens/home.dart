@@ -136,26 +136,24 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                     });
 
                     if (index >= 0 && index < _tabs.length) {
-                      if (_tabs[index] == null || index == 5 || index == 6) {
-                        _tabs[index] = switch (index) {
-                          0 => const DashboardView(),
-                          1 => const IncidentsMapScreen(),
-                          2 => const UserManagementScreen(),
-                          3 => const IncidentReportsScreen(),
-                          4 => const AddIncidentScreen(),
-                          5 => AllIncidentType(key: UniqueKey()),
-                          6 => AllMissions(key: UniqueKey()),
-                          7 => const Addincidentmission(),
-                          8 => const WebValveMapScreen(),
-                          9 => BlocProvider(
-                              create: (_) => getIt<GisCubit>(),
-                              child: const GisMapScreen(),
-                            ),
-                          10 => const EtitFleetMapScreen(),
-                          11 => const EtitVehiclesListScreen(),
-                          _ => const SizedBox.shrink(),
-                        };
-                      }
+                      _tabs[index] ??= switch (index) {
+                        0 => const DashboardView(),
+                        1 => const IncidentsMapScreen(),
+                        2 => const UserManagementScreen(),
+                        3 => const IncidentReportsScreen(),
+                        4 => const AddIncidentScreen(),
+                        5 => const AllIncidentType(),
+                        6 => const AllMissions(),
+                        7 => const Addincidentmission(),
+                        8 => const WebValveMapScreen(),
+                        9 => BlocProvider(
+                            create: (_) => getIt<GisCubit>(),
+                            child: const GisMapScreen(),
+                          ),
+                        10 => const EtitFleetMapScreen(),
+                        11 => const EtitVehiclesListScreen(),
+                        _ => const SizedBox.shrink(),
+                      };
                     }
 
                     final children = List<Widget>.generate(_tabs.length, (i) {

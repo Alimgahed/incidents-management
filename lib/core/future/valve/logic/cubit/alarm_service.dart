@@ -11,10 +11,7 @@ class AlarmService {
   bool get isPlaying => _isPlaying;
 
   AudioPlayer _getOrCreatePlayer() {
-    if (_player == null) {
-      _player = AudioPlayer();
-    }
-    return _player!;
+    return _player ??= AudioPlayer();
   }
 
   Future<void> startAlarm() async {

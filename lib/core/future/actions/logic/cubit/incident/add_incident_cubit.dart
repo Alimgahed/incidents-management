@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/future/actions/data/models/branch/branch_model.dart';
 import 'package:incidents_managment/core/future/actions/data/models/current_incident.dart/current_incident_model.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/add_incident/add_incdient_repo.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/add_incident_states.dart';
@@ -10,8 +11,36 @@ class AddIncidentCubit extends Cubit<AddIncidentStates> {
   final AddIncdientRepo addIncdientRepo;
   bool lastSubmissionQueued = false;
 
+  static List<BranchModel> _cachedBranches = const [];
+  List<BranchModel> _branches = _cachedBranches;
+  bool _isLoadingBranches = false;
+
+  List<BranchModel> get branches => _branches;
+  bool get isLoadingBranches => _isLoadingBranches;
+
   AddIncidentCubit({required this.addIncdientRepo})
     : super(const AddIncidentStates.initial());
+
+  Future<List<BranchModel>> loadBranches({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedBranches.isNotEmpty) {
+      _branches = _cachedBranches;
+      _isLoadingBranches = false;
+      return _branches;
+    }
+
+    _isLoadingBranches = true;
+    final result = await addIncdientRepo.getBranches();
+    _isLoadingBranches = false;
+
+    result.when(
+      success: (data) {
+        _cachedBranches = List.unmodifiable(data);
+        _branches = _cachedBranches;
+      },
+      error: (_) {},
+    );
+    return _branches;
+  }
 
   Future<void> submitIncident({required CurrentIncidentModel model}) async {
     if (state.maybeWhen(loading: () => true, orElse: () => false)) return;

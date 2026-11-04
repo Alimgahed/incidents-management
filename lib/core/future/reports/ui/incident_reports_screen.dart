@@ -10,7 +10,6 @@ import 'package:incidents_managment/core/future/reports/ui/widgets/reports_branc
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_detailed_table_view.dart';
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_filter_bar.dart';
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_geo_distribution_map.dart';
-import 'package:incidents_managment/core/future/reports/ui/widgets/reports_header.dart';
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_kpi_cards.dart';
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_latest_incidents_table.dart';
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_missions_stats.dart';
@@ -21,6 +20,7 @@ import 'package:incidents_managment/core/future/reports/ui/widgets/reports_tab_b
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_trend_chart.dart';
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_time_heatmap.dart';
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_type_bars.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class IncidentReportsScreen extends StatelessWidget {
   const IncidentReportsScreen({super.key});
@@ -68,14 +68,8 @@ class _ReportsView extends StatelessWidget {
                     const SizedBox(height: 14),
 
                     // 4. Main Body Content
-                    if (state is ReportsLoading)
-                      Container(
-                        height: 500,
-                        alignment: Alignment.center,
-                        child: const CircularProgressIndicator(
-                          color: Color(0xFF1B72E8),
-                        ),
-                      )
+                    if (state is ReportsLoading || state is ReportsInitial)
+                      const ReportsScreenShimmer()
                     else if (state is ReportsError)
                       _buildErrorCard(context, state.message)
                     else if (state is ReportsLoaded)
@@ -155,6 +149,9 @@ class _ReportsView extends StatelessWidget {
 
   /// Tab 0: الملخص التنفيذي الشامل
   Widget _buildExecutiveSummaryTab(BuildContext context, ReportsLoaded state) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 960;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -163,94 +160,139 @@ class _ReportsView extends StatelessWidget {
 
         const SizedBox(height: 14),
 
-        // Row 1: Trend Chart (Left) + Status Donut (Middle) + Geo Map (Right)
-        SizedBox(
-          height: 330,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 4,
-                child: ReportsTrendChartCard(state: state),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                flex: 3,
-                child: ReportsStatusDonutChartCard(state: state),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                flex: 4,
-                child: ReportsGeoDistributionMapCard(
-                  state: state,
-                  onOpenFullMap: () {
-                    try {
-                      context.read<HomeCubit>().changeState(1);
-                    } catch (_) {}
-                  },
-                ),
-              ),
-            ],
+        if (isCompact) ...[
+          SizedBox(height: 300, child: ReportsTrendChartCard(state: state)),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 290,
+            child: ReportsStatusDonutChartCard(state: state),
           ),
-        ),
-
-        const SizedBox(height: 14),
-
-        // Row 2: Types (Left) + Branches + Severity + Missions (Right)
-        SizedBox(
-          height: 330,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 3,
-                child: ReportsTypeBarsCard(state: state),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                flex: 3,
-                child: ReportsBranchBarsCard(state: state),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                flex: 3,
-                child: ReportsSeverityDonutCard(state: state),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                flex: 2,
-                child: ReportsMissionsStatsCard(state: state),
-              ),
-            ],
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 300,
+            child: ReportsGeoDistributionMapCard(
+              state: state,
+              onOpenFullMap: () {
+                try {
+                  context.read<HomeCubit>().changeState(1);
+                } catch (_) {}
+              },
+            ),
           ),
-        ),
-
-        const SizedBox(height: 14),
-
-        // Row 3: Latest Incidents (Left) + Stale Incidents (Right)
-        SizedBox(
-          height: 310,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 6,
-                child: ReportsLatestIncidentsTableCard(
-                  incidents: state.latestIncidents,
-                  onViewAll: () => context.read<ReportsCubit>().selectTab(7),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                flex: 5,
-                child: ReportsStaleIncidentsTableCard(
-                  incidents: state.staleIncidents,
-                  onViewAll: () => context.read<ReportsCubit>().selectTab(7),
-                ),
-              ),
-            ],
+          const SizedBox(height: 14),
+          SizedBox(height: 290, child: ReportsTypeBarsCard(state: state)),
+          const SizedBox(height: 14),
+          SizedBox(height: 290, child: ReportsBranchBarsCard(state: state)),
+          const SizedBox(height: 14),
+          SizedBox(height: 290, child: ReportsSeverityDonutCard(state: state)),
+          const SizedBox(height: 14),
+          SizedBox(height: 260, child: ReportsMissionsStatsCard(state: state)),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 310,
+            child: ReportsLatestIncidentsTableCard(
+              incidents: state.latestIncidents,
+              onViewAll: () => context.read<ReportsCubit>().selectTab(7),
+            ),
           ),
-        ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 310,
+            child: ReportsStaleIncidentsTableCard(
+              incidents: state.staleIncidents,
+              onViewAll: () => context.read<ReportsCubit>().selectTab(7),
+            ),
+          ),
+        ] else ...[
+          // Row 1: Trend Chart (Left) + Status Donut (Middle) + Geo Map (Right)
+          SizedBox(
+            height: 330,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 4,
+                  child: ReportsTrendChartCard(state: state),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  flex: 3,
+                  child: ReportsStatusDonutChartCard(state: state),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  flex: 4,
+                  child: ReportsGeoDistributionMapCard(
+                    state: state,
+                    onOpenFullMap: () {
+                      try {
+                        context.read<HomeCubit>().changeState(1);
+                      } catch (_) {}
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Row 2: Types (Left) + Branches + Severity + Missions (Right)
+          SizedBox(
+            height: 330,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: ReportsTypeBarsCard(state: state),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  flex: 3,
+                  child: ReportsBranchBarsCard(state: state),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  flex: 3,
+                  child: ReportsSeverityDonutCard(state: state),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  flex: 2,
+                  child: ReportsMissionsStatsCard(state: state),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Row 3: Latest Incidents (Left) + Stale Incidents (Right)
+          SizedBox(
+            height: 310,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 6,
+                  child: ReportsLatestIncidentsTableCard(
+                    incidents: state.latestIncidents,
+                    onViewAll: () => context.read<ReportsCubit>().selectTab(7),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  flex: 5,
+                  child: ReportsStaleIncidentsTableCard(
+                    incidents: state.staleIncidents,
+                    onViewAll: () => context.read<ReportsCubit>().selectTab(7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

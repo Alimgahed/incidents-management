@@ -15,6 +15,7 @@ import 'package:incidents_managment/core/future/actions/ui/widgets/link_missions
 import 'package:incidents_managment/core/future/actions/ui/widgets/link_missions/selected_missions_list.dart';
 import 'package:incidents_managment/core/future/actions/ui/widgets/link_missions/available_missions_grid.dart';
 import 'package:incidents_managment/core/widget/fields.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 // Model for selected mission with order
 class SelectedMission {
@@ -302,13 +303,8 @@ class _AddIncidentMissionBodyState extends State<Addincidentmission> {
                     BlocBuilder<AllMissionsCubit, GetAllMissionState>(
                       builder: (context, missionState) {
                         return missionState.when(
-                          initial: () => const SizedBox.shrink(),
-                          loading: () => const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(32.0),
-                              child: CircularProgressIndicator(),
-                            ),
-                          ),
+                          initial: () => const LinkMissionsScreenShimmer(),
+                          loading: () => const LinkMissionsScreenShimmer(),
                           error: (e) => const Center(child: Text('حدث خطأ أثناء جلب المهام')),
                           loaded: (missions) {
                             return AvailableMissionsGrid(

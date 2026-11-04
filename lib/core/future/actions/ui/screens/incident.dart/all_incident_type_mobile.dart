@@ -4,12 +4,15 @@ import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/actions/data/models/incident_type/all_incident_type.dart';
 import 'package:incidents_managment/core/future/actions/logic/cubit/incident/all_incident_type.dart';
+import 'package:incidents_managment/core/future/actions/logic/cubit/incident/incident_type_filter_cubit.dart';
 import 'package:incidents_managment/core/future/actions/logic/states/get_all_incident_type_states.dart';
+import 'package:incidents_managment/core/future/actions/logic/states/incident_type_filter_state.dart';
 import 'package:flutter/services.dart';
 import 'package:incidents_managment/core/future/mobile/ui/theme/mobile_system_bars.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/gloable_widget.dart';
+import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class AllIncidentTypeMobileScreen extends StatefulWidget {
   const AllIncidentTypeMobileScreen({super.key});
@@ -22,8 +25,6 @@ class AllIncidentTypeMobileScreen extends StatefulWidget {
 class _AllIncidentTypeMobileScreenState
     extends State<AllIncidentTypeMobileScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  String? _selectedCategory;
 
   @override
   void dispose() {
@@ -33,8 +34,14 @@ class _AllIncidentTypeMobileScreenState
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) =>
+              getIt<AllIncidentTypeCubit>()..getAllIncidentTypes(),
+        ),
+        BlocProvider(create: (_) => IncidentTypeFilterCubit()),
+      ],
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: MobileSystemBars.standard,
         child: Directionality(
@@ -44,9 +51,10 @@ class _AllIncidentTypeMobileScreenState
             body: BlocBuilder<AllIncidentTypeCubit, GetAllIncidentTypeState>(
               builder: (context, state) {
                 return state.when(
-                  initial: () => const SizedBox.shrink(),
-                  loading: () => const Loadding(),
-                  loaded: (incidentTypes) => _buildBody(context, incidentTypes),
+                  initial: () => const IncidentTypesScreenShimmer(),
+                  loading: () => const IncidentTypesScreenShimmer(),
+                  loaded: (incidentTypes) =>
+                      _buildBody(context, incidentTypes),
                   error: (message) => const Error(),
                 );
               },
@@ -61,25 +69,6 @@ class _AllIncidentTypeMobileScreenState
   }
 
   Widget _buildBody(BuildContext context, List<IncidentType> allTypes) {
-    // Filtered list
-    final filteredTypes = allTypes.where((type) {
-      final matchesSearch =
-          _searchQuery.isEmpty ||
-          type.incidentTypeName.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ) ||
-          (type.className != null &&
-              type.className!.toLowerCase().contains(
-                _searchQuery.toLowerCase(),
-              ));
-
-      final matchesCategory =
-          _selectedCategory == null || type.className == _selectedCategory;
-
-      return matchesSearch && matchesCategory;
-    }).toList();
-
-    // Get unique categories for filtering
     final categories = allTypes
         .map((e) => e.className)
         .where((e) => e != null && e.isNotEmpty)
@@ -87,60 +76,74 @@ class _AllIncidentTypeMobileScreenState
         .toSet()
         .toList();
 
-    return RefreshIndicator(
-      color: appColor,
-      backgroundColor: Colors.white,
-      onRefresh: () async {
-        await context.read<AllIncidentTypeCubit>().getAllIncidentTypes();
-      },
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          // Top Header Banner
-          SliverToBoxAdapter(child: _buildHeaderBanner(context)),
+    return BlocBuilder<IncidentTypeFilterCubit, IncidentTypeFilterState>(
+      builder: (context, filterState) {
+        final filterCubit = context.read<IncidentTypeFilterCubit>();
+        final filteredTypes = filterCubit.filterIncidentTypes(allTypes);
 
-          // Summary Hero Card & Search/Filter
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 14),
-                  // Executive Hero Card
-                  _buildSummaryHeroCard(allTypes.length),
-                  const SizedBox(height: 14),
-                  // Search Bar & Filter Button
-                  _buildSearchBarAndFilter(context, categories),
-                  const SizedBox(height: 16),
-                ],
+        return RefreshIndicator(
+          color: appColor,
+          backgroundColor: Colors.white,
+          onRefresh: () async {
+            await context.read<AllIncidentTypeCubit>().getAllIncidentTypes();
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // Top Header Banner
+              SliverToBoxAdapter(child: _buildHeaderBanner(context)),
+
+              // Summary Hero Card & Search/Filter
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 14),
+                      // Executive Hero Card
+                      _buildSummaryHeroCard(allTypes.length),
+                      const SizedBox(height: 14),
+                      // Search Bar & Filter Button
+                      _buildSearchBarAndFilter(
+                        context,
+                        categories,
+                        filterState,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
               ),
-            ),
+
+              // Incident Types List
+              if (filteredTypes.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _buildEmptyState(),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final item = filteredTypes[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _IncidentTypeItemCard(
+                          incidentType: item,
+                          onTap: () {
+                            _showIncidentMissionsBottomSheet(context, item);
+                          },
+                        ),
+                      );
+                    }, childCount: filteredTypes.length),
+                  ),
+                ),
+            ],
           ),
-
-          // Incident Types List
-          if (filteredTypes.isEmpty)
-            SliverFillRemaining(hasScrollBody: false, child: _buildEmptyState())
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final item = filteredTypes[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _IncidentTypeItemCard(
-                      incidentType: item,
-                      onTap: () {
-                        _showIncidentMissionsBottomSheet(context, item);
-                      },
-                    ),
-                  );
-                }, childCount: filteredTypes.length),
-              ),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -382,7 +385,9 @@ class _AllIncidentTypeMobileScreenState
   Widget _buildSearchBarAndFilter(
     BuildContext context,
     List<String> categories,
+    IncidentTypeFilterState filterState,
   ) {
+    final selectedCategory = filterState.className;
     return Row(
       children: [
         // Search Input Field (Right in RTL)
@@ -405,7 +410,9 @@ class _AllIncidentTypeMobileScreenState
               controller: _searchController,
               textAlign: TextAlign.right,
               onChanged: (val) {
-                setState(() => _searchQuery = val);
+                context.read<IncidentTypeFilterCubit>().updateFilters(
+                  searchName: val,
+                );
               },
               style: const TextStyle(fontSize: 13, color: primaryTextColor),
               decoration: InputDecoration(
@@ -424,7 +431,7 @@ class _AllIncidentTypeMobileScreenState
                   color: secondaryTextColor,
                   size: 20,
                 ),
-                suffixIcon: _searchController.text.isNotEmpty
+                suffixIcon: filterState.searchName.isNotEmpty
                     ? IconButton(
                         icon: const Icon(
                           Icons.close_rounded,
@@ -433,7 +440,9 @@ class _AllIncidentTypeMobileScreenState
                         ),
                         onPressed: () {
                           _searchController.clear();
-                          setState(() => _searchQuery = '');
+                          context.read<IncidentTypeFilterCubit>().updateFilters(
+                            searchName: '',
+                          );
                         },
                       )
                     : null,
@@ -445,7 +454,8 @@ class _AllIncidentTypeMobileScreenState
 
         // Filter Icon Button with badge if filtered (Left in RTL)
         GestureDetector(
-          onTap: () => _showCategoryFilterSheet(context, categories),
+          onTap: () =>
+              _showCategoryFilterSheet(context, categories, selectedCategory),
           child: Container(
             width: 48,
             height: 48,
@@ -453,10 +463,10 @@ class _AllIncidentTypeMobileScreenState
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _selectedCategory != null
+                color: selectedCategory != null
                     ? const Color(0xFF1B64F2)
                     : const Color(0xFFE2E8F0),
-                width: _selectedCategory != null ? 1.6 : 1.0,
+                width: selectedCategory != null ? 1.6 : 1.0,
               ),
               boxShadow: [
                 BoxShadow(
@@ -471,12 +481,12 @@ class _AllIncidentTypeMobileScreenState
               children: [
                 Icon(
                   Icons.filter_list_rounded,
-                  color: _selectedCategory != null
+                  color: selectedCategory != null
                       ? const Color(0xFF1B64F2)
                       : secondaryTextColor,
                   size: 22,
                 ),
-                if (_selectedCategory != null)
+                if (selectedCategory != null)
                   Positioned(
                     top: 8,
                     right: 8,
@@ -571,7 +581,12 @@ class _AllIncidentTypeMobileScreenState
   }
 
   // --- CATEGORY FILTER MODAL ---
-  void _showCategoryFilterSheet(BuildContext context, List<String> categories) {
+  void _showCategoryFilterSheet(
+    BuildContext context,
+    List<String> categories,
+    String? selectedCategory,
+  ) {
+    final filterCubit = context.read<IncidentTypeFilterCubit>();
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -597,10 +612,10 @@ class _AllIncidentTypeMobileScreenState
                         color: primaryTextColor,
                       ),
                     ),
-                    if (_selectedCategory != null)
+                    if (selectedCategory != null)
                       TextButton(
                         onPressed: () {
-                          setState(() => _selectedCategory = null);
+                          filterCubit.updateFilters(clearClassName: true);
                           Navigator.pop(ctx);
                         },
                         child: const Text('إلغاء التصفية'),
@@ -613,22 +628,22 @@ class _AllIncidentTypeMobileScreenState
                     title: Text(
                       category,
                       style: TextStyle(
-                        fontWeight: _selectedCategory == category
+                        fontWeight: selectedCategory == category
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        color: _selectedCategory == category
+                        color: selectedCategory == category
                             ? const Color(0xFF1B64F2)
                             : primaryTextColor,
                       ),
                     ),
-                    trailing: _selectedCategory == category
+                    trailing: selectedCategory == category
                         ? const Icon(
                             Icons.check_circle_rounded,
                             color: Color(0xFF1B64F2),
                           )
                         : null,
                     onTap: () {
-                      setState(() => _selectedCategory = category);
+                      filterCubit.updateFilters(className: category);
                       Navigator.pop(ctx);
                     },
                   ),
