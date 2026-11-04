@@ -26,7 +26,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
 
   bool _isLoading = true;
   bool _isRefreshing = false;
-  bool _isSidePanelExpanded = true;
+  bool _isSidePanelExpanded = false;
   bool _isFollowingSelected = false;
 
   // Filters (All dynamic from ETIT model data)
@@ -50,18 +50,10 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
       'label': 'خريطة قياسية',
       'url': 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     },
-    'carto': {
-      'label': 'خريطة تفصيلية',
-      'url': 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-    },
     'satellite': {
       'label': 'قمر صناعي',
       'url':
           'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    },
-    'dark': {
-      'label': 'خريطة داكنة',
-      'url': 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
     },
   };
 
@@ -235,7 +227,6 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
   List<String> get _vehicleTypes => _extractUniqueOptions((v) => v.vehicleType);
   List<String> get _vendors => _extractUniqueOptions((v) => v.vendorName);
   List<String> get _providers => _extractUniqueOptions((v) => v.providerName);
-  List<String> get _systemStatuses => _extractUniqueOptions((v) => v.statusName);
 
   int get _totalCount => _allVehicles.length;
   int get _movingCount => _allVehicles.where((v) => v.isMoving).length;
@@ -264,9 +255,12 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
     );
   }
 
-  void _selectAndFocusVehicle(EtitVehicleModel v) {
+  void _selectAndFocusVehicle(EtitVehicleModel v, {bool fromPanel = false}) {
     setState(() {
       _selectedVehicle = v;
+      if (fromPanel) {
+        _isSidePanelExpanded = false;
+      }
     });
     if (v.hasValidLocation) {
       _mapController.move(LatLng(v.latitude!, v.longitude!), 15.5);
@@ -274,7 +268,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'المركبة (${v.plateNumber.isNotEmpty ? v.plateNumber : v.code}) ليس لها إحداثيات GPS متصلة حالياً — تم عرض كافة بياناتها.',
+            'المركبة (${v.plateNumber.isNotEmpty ? v.plateNumber : v.code}) ليس لها إحداثيات GPS متصلة حالياً — تم عرض كافة بياناتها بالأسفل.',
           ),
           backgroundColor: const Color(0xFFB91C1C),
           behavior: SnackBarBehavior.floating,
@@ -396,7 +390,8 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate: _mapLayers[_mapLayerKey]!['url']!,
+                urlTemplate:
+                    (_mapLayers[_mapLayerKey] ?? _mapLayers['osm']!)['url']!,
                 userAgentPackageName: 'incidents_managment',
               ),
               MarkerLayer(
@@ -405,37 +400,200 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
             ],
           ),
 
-          // ── 2. Top Floating Control & Filter Bar ──────────────────────────
-          Positioned(
-            top: 12,
-            left: 12,
-            right: 12,
-            child: _buildTopFloatingBar(canPop: canPop),
-          ),
-
-          // ── 3. Left-Side Map Zoom & Tools Strip ───────────────────────────
+          // ── 2. Left-Side Map Zoom & Tools Strip ───────────────────────────
           Positioned(
             left: 14,
             top: 135,
             child: _buildLeftMapToolsStrip(),
           ),
 
-          // ── 4. Bottom-Left Status Legend Card (دليل الحالات) ───────────────
+          // ── 3. Bottom-Left Status Legend Card (دليل الحالات) ───────────────
           Positioned(
             left: 14,
             bottom: 16,
             child: _buildStatusLegendCard(),
           ),
 
-          // ── 5. Right-Side Collapsible Vehicles List Panel ─────────────────
+          // ── 4. Top Floating Filter Row + Right Stacked Controls & List ───
           Positioned(
-            top: 84,
-            right: 14,
-            bottom: 16,
-            child: _buildRightVehiclesPanel(),
+            top: 12,
+            left: 12,
+            right: 12,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTopFloatingBar(canPop: canPop),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: AlignmentDirectional.topStart,
+                  child: SizedBox(
+                    width: 322,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 1. تحديد الكل + تحديث الآن
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTopActionButton(
+                                label: 'تحديد الكل',
+                                icon: Icons.fit_screen_outlined,
+                                onTap: _fitAllMarkers,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildTopActionButton(
+                                label: 'تحديث الآن',
+                                icon: Icons.refresh_rounded,
+                                isSpinning: _isRefreshing,
+                                onTap: () => _loadLiveFleet(),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // 2. البحث بالرقم
+                        Container(
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (val) {
+                              setState(() {
+                                _searchQuery = val;
+                                _applyFilters();
+                              });
+                            },
+                            style: const TextStyle(fontSize: 12),
+                            decoration: InputDecoration(
+                              hintText: 'ابحث برقم اللوحة، كود السيارة أو IMEI...',
+                              hintStyle: const TextStyle(
+                                fontSize: 11.5,
+                                color: Color(0xFF94A3B8),
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.search_rounded,
+                                size: 18,
+                                color: Color(0xFF64748B),
+                              ),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(
+                                        Icons.clear_rounded,
+                                        size: 15,
+                                      ),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() {
+                                          _searchQuery = '';
+                                          _applyFilters();
+                                        });
+                                      },
+                                    )
+                                  : null,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // 3. زر قائمة المركبات
+                        Material(
+                          color: _isSidePanelExpanded
+                              ? const Color(0xFF0F3B6C)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          elevation: 3,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: () => setState(
+                              () => _isSidePanelExpanded = !_isSidePanelExpanded,
+                            ),
+                            child: Container(
+                              height: 40,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: _isSidePanelExpanded
+                                      ? const Color(0xFF0F3B6C)
+                                      : const Color(0xFFCBD5E1),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.directions_car_filled_rounded,
+                                    size: 18,
+                                    color: _isSidePanelExpanded
+                                        ? Colors.white
+                                        : const Color(0xFF0F3B6C),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'قائمة المركبات (${_filteredVehicles.length})',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: _isSidePanelExpanded
+                                            ? Colors.white
+                                            : const Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    _isSidePanelExpanded
+                                        ? Icons.keyboard_arrow_up_rounded
+                                        : Icons.keyboard_arrow_down_rounded,
+                                    size: 20,
+                                    color: _isSidePanelExpanded
+                                        ? Colors.white
+                                        : const Color(0xFF475569),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 4. القائمة المنسدلة للمركبات (تظهر عند الضغط)
+                        if (_isSidePanelExpanded)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: SizedBox(
+                              height: 360,
+                              child: _buildRightVehiclesPanel(),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
 
-          // ── 6. Selected Vehicle Floating Details Card ─────────────────────
+          // ── 5. Selected Vehicle Floating Details Card ─────────────────────
           if (_selectedVehicle != null)
             Positioned(
               bottom: 16,
@@ -444,7 +602,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
               child: Align(
                 alignment: Alignment.bottomCenter,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 620),
+                  constraints: const BoxConstraints(maxWidth: 640),
                   child: _buildSelectedVehicleCard(_selectedVehicle!),
                 ),
               ),
@@ -783,75 +941,6 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
               },
             ),
 
-            // System Status Dropdown
-            _buildTopDropdownPill(
-              prefixLabel: 'حالة المنظومة',
-              icon: Icons.verified_outlined,
-              value: _selectedSystemStatus,
-              items: _systemStatuses,
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _selectedSystemStatus = val;
-                    _applyFilters();
-                  });
-                }
-              },
-            ),
-
-            // Search Box
-            Container(
-              width: 245,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) {
-                  setState(() {
-                    _searchQuery = val;
-                    _applyFilters();
-                  });
-                },
-                style: const TextStyle(fontSize: 12),
-                decoration: InputDecoration(
-                  hintText: 'ابحث برقم اللوحة، كود السيارة أو IMEI...',
-                  hintStyle: const TextStyle(
-                    fontSize: 11.5,
-                    color: Color(0xFF94A3B8),
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    size: 18,
-                    color: Color(0xFF64748B),
-                  ),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 15),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {
-                              _searchQuery = '';
-                              _applyFilters();
-                            });
-                          },
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                ),
-              ),
-            ),
-
             if (_hasActiveFilters)
               Material(
                 color: const Color(0xFFFEE2E2),
@@ -883,7 +972,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
           ],
         ),
 
-        // Left Group: Map Style + Fit All + Refresh + Live Status Badge
+        // Left Group: Map Style + Live Status Badge (البث المباشر)
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -906,7 +995,9 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: _mapLayerKey,
+                  value: _mapLayers.containsKey(_mapLayerKey)
+                      ? _mapLayerKey
+                      : 'osm',
                   icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16),
                   style: const TextStyle(
                     fontSize: 12,
@@ -941,22 +1032,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
               ),
             ),
 
-            // Fit All Button (تحديد الكل)
-            _buildTopActionButton(
-              label: 'تحديد الكل',
-              icon: Icons.fit_screen_outlined,
-              onTap: _fitAllMarkers,
-            ),
-
-            // Refresh Now Button (تحديث الآن)
-            _buildTopActionButton(
-              label: 'تحديث الآن',
-              icon: Icons.refresh_rounded,
-              isSpinning: _isRefreshing,
-              onTap: () => _loadLiveFleet(),
-            ),
-
-            // Live Stream Status Pill (بث مباشر · تحديث كل 10 ث)
+            // Live Stream Status Pill (البث المباشر فقط)
             Container(
               height: 36,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -985,7 +1061,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                   ),
                   const SizedBox(width: 6),
                   const Text(
-                    'بث مباشر · تحديث كل 10 ث',
+                    'البث المباشر',
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
@@ -1280,7 +1356,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
           _buildLegendItem('متوقفة ($_stoppedCount)', const Color(0xFFD97706)),
           const SizedBox(height: 5),
           _buildLegendItem(
-            'GPS غير متصل ($_offlineCount)',
+            'غير متصل ($_offlineCount)',
             const Color(0xFFDC2626),
           ),
         ],
@@ -1544,7 +1620,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
 
     return InkWell(
       borderRadius: BorderRadius.circular(10),
-      onTap: () => _selectAndFocusVehicle(v),
+      onTap: () => _selectAndFocusVehicle(v, fromPanel: true),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         decoration: BoxDecoration(

@@ -45,8 +45,8 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
     'ربط مهام بالأزمة',
     'خريطة المحابس',
     'خريطة نظم المعلومات (GIS)',
-    'تتبع سيارات المياه (ETIT GPS)',
-    'قائمة سيارات الأسطول (ETIT)',
+    'تتبع سيارات المياه',
+    'قائمة سيارات الأسطول',
   ];
 
   @override
