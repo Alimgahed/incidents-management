@@ -498,7 +498,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.arrow_back_rounded,
+                              Icons.arrow_forward_rounded,
                               size: 16,
                               color: Colors.white,
                             ),

@@ -31,6 +31,7 @@ class SharedIncidentForm extends StatefulWidget {
 }
 
 class _SharedIncidentFormState extends State<SharedIncidentForm> {
+  final _formKey = GlobalKey<FormState>();
   int? selectedTypeId;
   int? selectedSeverity;
   int? selectedBranchId;
@@ -100,122 +101,123 @@ class _SharedIncidentFormState extends State<SharedIncidentForm> {
           },
         );
       },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          IncidentTypeDropdown(
-            selectedValue: selectedTypeId,
-            onChanged: (v) {
-              setState(() {
-                selectedTypeId = v;
-            });
-          },
-        ),
-        const SizedBox(height: 16),
-        CustomDropdownFormField(
-          value: selectedSeverity,
-          hintText: 'درجة الخطورة',
-          items: const [
-            DropdownMenuItem(value: 1, child: Text('منخفض')),
-            DropdownMenuItem(value: 2, child: Text('متوسطة')),
-            DropdownMenuItem(value: 3, child: Text('مرتفعة')),
-            DropdownMenuItem(value: 4, child: Text('حرجة')),
-          ],
-          onChanged: (v) {
-            setState(() {
-              selectedSeverity = v;
-            });
-          },
-        ),
-        const SizedBox(height: 16),
-        if (_isLoadingBranches)
-          const ShimmerInput(height: 52)
-        else
-          CustomDropdownFormField<int>(
-            value: selectedBranchId,
-            hintText: 'الفرع',
-            items: _branches
-                .map(
-                  (branch) => DropdownMenuItem<int>(
-                    value: branch.branchId,
-                    child: Text(branch.branchName),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            IncidentTypeDropdown(
+              selectedValue: selectedTypeId,
+              onChanged: (v) {
+                setState(() {
+                  selectedTypeId = v;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            CustomDropdownFormField<int>(
+              value: selectedSeverity,
+              hintText: 'درجة الخطورة *',
+              iconData: Icons.warning_amber_rounded,
+              items: const [
+                DropdownMenuItem(value: 1, child: Text('منخفض')),
+                DropdownMenuItem(value: 2, child: Text('متوسطة')),
+                DropdownMenuItem(value: 3, child: Text('مرتفعة')),
+                DropdownMenuItem(value: 4, child: Text('حرجة')),
+              ],
+              onChanged: (v) {
+                setState(() {
+                  selectedSeverity = v;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            if (_isLoadingBranches)
+              const ShimmerInput(height: 52)
+            else
+              CustomDropdownFormField<int>(
+                value: selectedBranchId,
+                hintText: 'الفرع *',
+                iconData: Icons.account_tree_outlined,
+                items: _branches
+                    .map(
+                      (branch) => DropdownMenuItem<int>(
+                        value: branch.branchId,
+                        child: Text(branch.branchName),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) {
+                  setState(() {
+                    selectedBranchId = v;
+                    final match = _branches.where((b) => b.branchId == v);
+                    selectedBranchName = match.isNotEmpty
+                        ? match.first.branchName
+                        : null;
+                  });
+                },
+              ),
+            const SizedBox(height: 16),
+            CustomTextFormField(
+              controller: widget.descriptionController,
+              hintText: "اشرح الحالة بالتفصيل... *",
+              maxLines: widget.isWeb ? 6 : 4,
+            ),
+            const SizedBox(height: 16),
+            BlocListener<MapCubit, MapState>(
+              listenWhen: (previous, current) =>
+                  previous.address != current.address,
+              listener: (context, state) {
+                if (state.address != null) {
+                  widget.addressController.text = state.address!;
+                }
+              },
+              child: CustomTextFormField(
+                controller: widget.addressController,
+                hintText: "العنوان بالتفصيل",
+                useValidator: false,
+                maxLines: 2,
+              ),
+            ),
+            const SizedBox(height: 16),
+            CustomTextFormField(
+              controller: widget.notesController,
+              hintText: "ملاحظات إضافية (اختياري)",
+              useValidator: false,
+              maxLines: widget.isWeb ? 4 : 3,
+            ),
+            const SizedBox(height: 30),
+            BlocBuilder<AddIncidentCubit, AddIncidentStates>(
+              builder: (context, state) {
+                return CustomButton(
+                  text: state.maybeWhen(
+                    loading: () => 'جاري الإرسال...',
+                    orElse: () => 'إرسال البلاغ',
                   ),
-                )
-                .toList(),
-            onChanged: (v) {
-              setState(() {
-                selectedBranchId = v;
-                final match = _branches.where((b) => b.branchId == v);
-                selectedBranchName = match.isNotEmpty
-                    ? match.first.branchName
-                    : null;
-              });
-            },
-          ),
-        const SizedBox(height: 16),
-        CustomTextFormField(
-          controller: widget.descriptionController,
-          hintText: "اشرح الحالة بالتفصيل...",
-          maxLines: widget.isWeb ? 6 : 4,
+                  onPressed: () => _submit(context),
+                  isLoading: state.maybeWhen(
+                    loading: () => true,
+                    orElse: () => false,
+                  ),
+                );
+              },
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
-        BlocListener<MapCubit, MapState>(
-          listenWhen: (previous, current) =>
-              previous.address != current.address,
-          listener: (context, state) {
-            if (state.address != null) {
-              widget.addressController.text = state.address!;
-            }
-          },
-          child: CustomTextFormField(
-            controller: widget.addressController,
-            hintText: "العنوان بالتفصيل",
-            useValidator: false,
-            maxLines: 2,
-          ),
-        ),
-        const SizedBox(height: 16),
-        CustomTextFormField(
-          controller: widget.notesController,
-          hintText: "ملاحظات إضافية (اختياري)",
-          useValidator: false,
-          maxLines: widget.isWeb ? 4 : 3,
-        ),
-        const SizedBox(height: 30),
-        BlocBuilder<AddIncidentCubit, AddIncidentStates>(
-          builder: (context, state) {
-            return CustomButton(
-              text: state.maybeWhen(
-                loading: () => 'جاري الإرسال...',
-                orElse: () => 'إرسال البلاغ',
-              ),
-              onPressed: () => _submit(context),
-              isLoading: state.maybeWhen(
-                loading: () => true,
-                orElse: () => false,
-              ),
-            );
-          },
-        ),
-      ],
-    ),
-  );
-}
+      ),
+    );
+  }
 
   void _submit(BuildContext context) {
-    if (selectedTypeId == null ||
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid ||
+        selectedTypeId == null ||
         selectedSeverity == null ||
-        selectedBranchId == null) {
+        selectedBranchId == null ||
+        widget.descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى تعبئة جميع الحقول المطلوبة')),
+        const SnackBar(content: Text('يرجى تعبئة جميع الحقول المطلوبة المحددة')),
       );
-      return;
-    }
-
-    if (widget.descriptionController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('برجاء كتابة وصف الأزمة')));
       return;
     }
 

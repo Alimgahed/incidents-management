@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:incidents_managment/core/design_system/app_design_system.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
 import 'package:incidents_managment/core/future/home/logic/home_cubit.dart/home_cubit.dart';
 import 'package:incidents_managment/core/future/reports/data/repo/reports_repo.dart';
@@ -41,15 +42,46 @@ class _ReportsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canPop = Navigator.of(context).canPop();
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF1F5F9), // Light modern dashboard background
+        backgroundColor: AppColors.background,
+        appBar: canPop
+            ? AppBar(
+                automaticallyImplyLeading: false,
+                backgroundColor: AppColors.primaryDark,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                centerTitle: true,
+                leading: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                  ),
+                  tooltip: 'رجوع',
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
+                title: const Text(
+                  'التقارير والإحصائيات التنفيذية',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            : null,
         body: SafeArea(
           child: BlocBuilder<ReportsCubit, ReportsState>(
             builder: (context, state) {
               return SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppBreakpoints.isMobile(context) ? 12 : 20,
+                  vertical: 14,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -58,20 +90,25 @@ class _ReportsView extends StatelessWidget {
                       onExport: () => _handleExport(context, state),
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
 
                     // 2. Tabs Navigation & Export Row
                     ReportsTabBar(
                       onExport: () => _handleExport(context, state),
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
 
-                    // 4. Main Body Content
+                    // 3. Main Body Content
                     if (state is ReportsLoading || state is ReportsInitial)
                       const ReportsScreenShimmer()
                     else if (state is ReportsError)
-                      _buildErrorCard(context, state.message)
+                      AppErrorState(
+                        title: 'تعذر تحميل بيانات التقارير',
+                        message: state.message,
+                        onRetry: () =>
+                            context.read<ReportsCubit>().loadReports(),
+                      )
                     else if (state is ReportsLoaded)
                       _buildActiveTabContent(context, state),
                   ],
@@ -84,43 +121,11 @@ class _ReportsView extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorCard(BuildContext context, String message) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1E293B),
-              fontFamily: 'Cairo',
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => context.read<ReportsCubit>().loadReports(),
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('إعادة المحاولة'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1B72E8),
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildActiveTabContent(BuildContext context, ReportsLoaded state) {
+    final tableHeight = (MediaQuery.sizeOf(context).height - 230).clamp(
+      520.0,
+      900.0,
+    );
     switch (state.activeTabIndex) {
       case 1:
         return _buildSummaryAndRegionsTab(context, state);
@@ -136,7 +141,7 @@ class _ReportsView extends StatelessWidget {
         return _buildGeographicAnalysisTab(context, state);
       case 7:
         return SizedBox(
-          height: 750,
+          height: tableHeight,
           child: ReportsDetailedTableView(
             incidents: state.filteredIncidents,
           ),

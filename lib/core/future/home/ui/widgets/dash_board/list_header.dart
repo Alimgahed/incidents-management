@@ -11,10 +11,14 @@ class DashboardListHeader extends StatelessWidget {
     super.key,
     required this.count,
     this.compact = false,
+    this.isFullWidthGrid = false,
+    this.onToggleViewMode,
   });
 
   final int count;
   final bool compact;
+  final bool isFullWidthGrid;
+  final VoidCallback? onToggleViewMode;
 
   static const List<String> _filters = [
     'الكل',
@@ -54,7 +58,7 @@ class DashboardListHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '$count',
+                    '$count أزمة',
                     style: TextStyles.size11(
                       fontWeight: FontWeight.w700,
                       color: appColor,
@@ -63,13 +67,13 @@ class DashboardListHeader extends StatelessWidget {
                 ),
                 const Spacer(),
                 SizedBox(
-                  width: 220,
+                  width: 240,
                   height: 36,
                   child: TextField(
                     onChanged: cubit.updateSearchQuery,
                     style: TextStyles.size12(color: AppTheme.textPrimary),
                     decoration: InputDecoration(
-                      hintText: 'بحث…',
+                      hintText: 'بحث في الأزمات…',
                       hintStyle: TextStyles.size11(
                         color: AppTheme.textTertiary,
                       ),
@@ -89,6 +93,31 @@ class DashboardListHeader extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onToggleViewMode != null) ...[
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: isFullWidthGrid
+                        ? 'عرض تقسيم الشاشة (القائمة والتفاصيل)'
+                        : 'عرض الشبكة الكاملة',
+                    child: IconButton(
+                      onPressed: onToggleViewMode,
+                      style: IconButton.styleFrom(
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        ),
+                      ),
+                      icon: Icon(
+                        isFullWidthGrid
+                            ? Icons.vertical_split_rounded
+                            : Icons.grid_view_rounded,
+                        size: 18,
+                        color: appColor,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 8),
@@ -154,8 +183,49 @@ class DashboardListHeader extends StatelessWidget {
           Row(
             children: [
               Text('الأزمات النشطة', style: TextStyles.size16()),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: appColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '$count أزمة',
+                  style: TextStyles.size11(
+                    fontWeight: FontWeight.w700,
+                    color: appColor,
+                  ),
+                ),
+              ),
               const Spacer(),
-              Text('$count أزمة', style: TextStyles.size12()),
+              if (onToggleViewMode != null)
+                Tooltip(
+                  message: isFullWidthGrid
+                      ? 'عرض تقسيم الشاشة (القائمة والتفاصيل)'
+                      : 'عرض الشبكة الكاملة',
+                  child: IconButton(
+                    onPressed: onToggleViewMode,
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFFF1F5F9),
+                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                    ),
+                    icon: Icon(
+                      isFullWidthGrid
+                          ? Icons.vertical_split_rounded
+                          : Icons.grid_view_rounded,
+                      size: 18,
+                      color: appColor,
+                    ),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 12),

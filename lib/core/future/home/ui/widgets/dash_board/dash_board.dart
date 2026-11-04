@@ -318,6 +318,14 @@ class _DashboardIncidentsScreen extends StatefulWidget {
 }
 
 class _DashboardIncidentsScreenState extends State<_DashboardIncidentsScreen> {
+  bool _useFullWidthGrid = false;
+
+  void _toggleViewMode() {
+    setState(() {
+      _useFullWidthGrid = !_useFullWidthGrid;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<IncidentMapCubit, IncidentMapState>(
@@ -327,7 +335,6 @@ class _DashboardIncidentsScreenState extends State<_DashboardIncidentsScreen> {
       builder: (context, mapState) {
         final allIncidents = context.read<IncidentMapCubit>().incidents;
         final connected = context.read<IncidentMapCubit>().isConnected;
-        final isMobile = MediaQuery.sizeOf(context).width <= 768;
 
         if ((mapState is IncidentMapInitial ||
                 mapState is IncidentMapLoading) &&
@@ -335,53 +342,53 @@ class _DashboardIncidentsScreenState extends State<_DashboardIncidentsScreen> {
           return const DashboardScreenShimmer();
         }
 
-        // Mobile: Stack-based navigation
-        if (isMobile) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-                child: DashboardKpiStrip(
-                  incidents: allIncidents,
-                  connected: connected,
-                  compact: true,
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                  child: IncidentsList(
-                    allIncidents: allIncidents,
-                    useWebGrid: false,
-                    onIncidentTap: widget.onIncidentTap,
-                  ),
-                ),
-              ),
-            ],
-          );
-        }
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isSplitCapable = constraints.maxWidth >= 900;
 
-        // Desktop: Two-panel layout (List + Details side by side) with KPIs at the top
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-              child: DashboardKpiStrip(
-                incidents: allIncidents,
-                connected: connected,
-                compact: false,
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-                child: Row(
-                  children: [
-                    // LEFT PANEL: Incident List
-                    Expanded(
-                      flex: 28,
+            // Mobile / Narrow Tablet: Stack-based navigation
+            if (!isSplitCapable) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                    child: DashboardKpiStrip(
+                      incidents: allIncidents,
+                      connected: connected,
+                      compact: true,
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                      child: IncidentsList(
+                        allIncidents: allIncidents,
+                        useWebGrid: false,
+                        onIncidentTap: widget.onIncidentTap,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            // Desktop Full-Width Grid Mode (when toggled by operator)
+            if (_useFullWidthGrid) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                    child: DashboardKpiStrip(
+                      incidents: allIncidents,
+                      connected: connected,
+                      compact: false,
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
@@ -397,41 +404,95 @@ class _DashboardIncidentsScreenState extends State<_DashboardIncidentsScreen> {
                           borderRadius: BorderRadius.circular(16),
                           child: IncidentsList(
                             allIncidents: allIncidents,
-                            useWebGrid: false,
+                            useWebGrid: true,
                             onIncidentTap: widget.onIncidentTap,
+                            onToggleViewMode: _toggleViewMode,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    // RIGHT PANEL: Incident Details
-                    Expanded(
-                      flex: 72,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 12,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: IncidentDetailsPanel(
-                            contentPadding: const EdgeInsets.all(16),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
+                ],
+              );
+            }
+
+            // Desktop Split-Pane Mode (35:65 Master-Detail with min 340px / max 440px on Master list)
+            final targetListWidth = (constraints.maxWidth * 0.35).clamp(
+              340.0,
+              440.0,
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                  child: DashboardKpiStrip(
+                    incidents: allIncidents,
+                    connected: connected,
+                    compact: false,
+                  ),
                 ),
-              ),
-            ),
-          ],
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                    child: Row(
+                      children: [
+                        // MASTER PANEL (Right in RTL): Incident List (35% clamped 340..440px)
+                        SizedBox(
+                          width: targetListWidth,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: IncidentsList(
+                                allIncidents: allIncidents,
+                                useWebGrid: false,
+                                onIncidentTap: widget.onIncidentTap,
+                                onToggleViewMode: _toggleViewMode,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // DETAIL PANEL (Left in RTL): Incident Details (65% Expanded)
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: const IncidentDetailsPanel(
+                                contentPadding: EdgeInsets.all(16),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );

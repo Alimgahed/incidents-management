@@ -264,54 +264,78 @@ class _GisMapScreenState extends State<GisMapScreen> {
           }
         }
 
+        final isStandalone =
+            Navigator.of(context).canPop() || widget.onAssetSelected != null;
+
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Scaffold(
             key: _scaffoldKey,
             endDrawer: const GisLayerControlDrawer(),
             backgroundColor: const Color(0xFFF3F1EC),
-            appBar: AppBar(
-              title: const Text(
-                'خريطة شبكات ونظم المعلومات (GIS)',
-                style: TextStyle(
-                  fontSize: 16.5,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Cairo',
-                  color: Colors.white,
-                ),
-              ),
-              centerTitle: true,
-              backgroundColor: const Color(0xFF0F3B6C),
-              foregroundColor: Colors.white,
-              elevation: 2,
-              actions: [
-                // Quick OSM Toggle
-                IconButton(
-                  icon: Icon(
-                    state.useOsm ? Icons.layers_clear : Icons.map_outlined,
-                    color: Colors.white,
-                  ),
-                  tooltip: state.useOsm
-                      ? 'إخفاء خريطة الأساس'
-                      : 'إظهار خريطة الأساس (OSM)',
-                  onPressed: () => cubit.toggleOsm(),
-                ),
-                // Layer drawer toggle
-                IconButton(
-                  icon: const Icon(Icons.layers_rounded, color: Colors.white),
-                  tooltip: 'إدارة الطبقات',
-                  onPressed: () {
-                    _scaffoldKey.currentState?.openEndDrawer();
-                  },
-                ),
-                // Refresh
-                IconButton(
-                  icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                  tooltip: 'تحديث البيانات',
-                  onPressed: () => cubit.reload(),
-                ),
-              ],
-            ),
+            appBar: isStandalone
+                ? AppBar(
+                    automaticallyImplyLeading: false,
+                    leading: Navigator.of(context).canPop()
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                            ),
+                            tooltip: 'رجوع',
+                            onPressed: () => Navigator.of(context).maybePop(),
+                          )
+                        : null,
+                    title: const Text(
+                      'خريطة شبكات ونظم المعلومات (GIS)',
+                      style: TextStyle(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Cairo',
+                        color: Colors.white,
+                      ),
+                    ),
+                    centerTitle: true,
+                    backgroundColor: const Color(0xFF0F3B6C),
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    actions: [
+                      // Quick OSM Toggle
+                      IconButton(
+                        icon: Icon(
+                          state.useOsm
+                              ? Icons.layers_clear
+                              : Icons.map_outlined,
+                          color: Colors.white,
+                        ),
+                        tooltip: state.useOsm
+                            ? 'إخفاء خريطة الأساس'
+                            : 'إظهار خريطة الأساس (OSM)',
+                        onPressed: () => cubit.toggleOsm(),
+                      ),
+                      // Layer drawer toggle
+                      IconButton(
+                        icon: const Icon(
+                          Icons.layers_rounded,
+                          color: Colors.white,
+                        ),
+                        tooltip: 'إدارة الطبقات',
+                        onPressed: () {
+                          _scaffoldKey.currentState?.openEndDrawer();
+                        },
+                      ),
+                      // Refresh
+                      IconButton(
+                        icon: const Icon(
+                          Icons.refresh_rounded,
+                          color: Colors.white,
+                        ),
+                        tooltip: 'تحديث البيانات',
+                        onPressed: () => cubit.reload(),
+                      ),
+                    ],
+                  )
+                : null,
             body: Stack(
               children: [
                 // 1. The Interactive GIS Map
@@ -330,6 +354,62 @@ class _GisMapScreenState extends State<GisMapScreen> {
                   ),
                   children: layerWidgets,
                 ),
+
+                // Floating GIS Toolbar when embedded inside CrisisDashboard
+                if (!isStandalone)
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Material(
+                      color: const Color(0xFF0F3B6C).withValues(alpha: 0.94),
+                      borderRadius: BorderRadius.circular(14),
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                state.useOsm
+                                    ? Icons.layers_clear
+                                    : Icons.map_outlined,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              tooltip: state.useOsm
+                                  ? 'إخفاء خريطة الأساس'
+                                  : 'إظهار خريطة الأساس (OSM)',
+                              onPressed: () => cubit.toggleOsm(),
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.layers_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              tooltip: 'إدارة الطبقات الجغرافية',
+                              onPressed: () {
+                                _scaffoldKey.currentState?.openEndDrawer();
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.refresh_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              tooltip: 'تحديث البيانات',
+                              onPressed: () => cubit.reload(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
 
                 // 2. Truncated data warning badge (Per documentation specification)
                 if (state.truncatedLayers.isNotEmpty)

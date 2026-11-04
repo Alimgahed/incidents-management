@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
+import 'package:incidents_managment/core/design_system/app_design_system.dart';
 import 'package:incidents_managment/core/future/auth/logic/cubit/login_cubit.dart';
 import 'package:incidents_managment/core/future/auth/logic/state/login_state.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
@@ -44,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
       listener: (context, state) {
         state.whenOrNull(
           loaded: (data) {
-            final isMobile = MediaQuery.sizeOf(context).width < 600;
+            final isMobile = !kIsWeb && AppBreakpoints.isMobile(context);
             if (isMobile) {
               context.pushNamedAndRemoveUntil(Routes.mobileHome);
             } else {
@@ -190,6 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     labelText: 'اسم المستخدم',
                                     hintText: 'أدخل اسم المستخدم',
                                     iconData: Icons.person_outline,
+                                    textInputAction: TextInputAction.next,
                                   ),
                                   const SizedBox(height: 20),
                                   CustomTextFormField(
@@ -199,6 +202,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     iconData: Icons.lock_outline,
                                     obscureText: true,
                                     enableTogglePassword: true,
+                                    textInputAction: TextInputAction.done,
+                                    onFieldSubmitted: (_) => _submitForm(),
                                   ),
                                   const SizedBox(height: 40),
                                   BlocBuilder<LoginCubit, LoginState>(

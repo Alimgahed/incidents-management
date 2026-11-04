@@ -9,6 +9,7 @@ import 'package:incidents_managment/core/future/mission_assigen/logic/states/use
 import 'package:incidents_managment/core/future/mission_assigen/ui/widgets/users/user_data_table.dart';
 import 'package:incidents_managment/core/future/mission_assigen/ui/widgets/users/user_filters_panel.dart';
 import 'package:incidents_managment/core/future/mission_assigen/ui/widgets/users/user_stats_cards.dart';
+import 'package:incidents_managment/core/routing/routes.dart';
 import 'package:incidents_managment/core/widget/shimmer/screen_shimmers.dart';
 
 class UserManagementScreen extends StatelessWidget {
@@ -67,6 +68,55 @@ class _UserManagementBody extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'دليل المستخدمين والصلاحيات',
+                                    style: AppTextStyles.headingMd,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'إجمالي المسجلين بالمنظومة: ${users.length} مستخدم نشط',
+                                    style: AppTextStyles.bodySm,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Wrap(
+                              spacing: AppSpacing.xs,
+                              runSpacing: AppSpacing.xs,
+                              children: [
+                                AppActionButton(
+                                  label: 'تحديث',
+                                  icon: Icons.refresh_rounded,
+                                  isOutlined: true,
+                                  onPressed: () =>
+                                      userCubit.allActiveUsers(forceLoading: true),
+                                ),
+                                AppActionButton(
+                                  label: 'تسجيل مستخدم جديد',
+                                  icon: Icons.person_add_alt_1_rounded,
+                                  onPressed: () async {
+                                    await Navigator.of(
+                                      context,
+                                    ).pushNamed(Routes.registration);
+                                    if (context.mounted) {
+                                      userCubit.allActiveUsers(
+                                        forceLoading: true,
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
                         UserStatsCards(users: users),
                         const SizedBox(height: AppSpacing.xl),
                         UserFiltersPanel(rawUsers: users),

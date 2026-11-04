@@ -96,7 +96,12 @@ class _FileUploadScreenState extends State<FileUploadScreen> {
                       _buildHeaderBanner(context),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
-                        child: _buildMainContent(context, state),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 680),
+                            child: _buildMainContent(context, state),
+                          ),
+                        ),
                       ),
                     ],
                   ),

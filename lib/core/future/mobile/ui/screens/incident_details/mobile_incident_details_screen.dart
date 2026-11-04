@@ -45,6 +45,8 @@ class MobileIncidentDetailsScreen extends StatefulWidget {
 
 class _MobileIncidentDetailsScreenState
     extends State<MobileIncidentDetailsScreen> {
+  int _selectedTabIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -223,40 +225,42 @@ class _MobileIncidentDetailsScreenState
                                 delegate: SliverChildListDelegate([
                                   // 1. Overview Card (Title, #ID, Headline, Branch, Status, Severity)
                                   _buildIncidentHeaderCard(context, incident),
+                                  const SizedBox(height: 10),
+
+                                  // 2. Quick-Action Strip
+                                  _buildQuickActionStrip(context, incident),
                                   const SizedBox(height: 12),
 
-                                  // 2. 2x3 Details Grid
-                                  _buildDetailsGrid(context, incident),
+                                  // 3. 3-Tab Segmented Switcher
+                                  _buildSegmentedTabSwitcher(context, incident),
                                   const SizedBox(height: 12),
 
-                                  // 3. Location Section with Mini Map
-                                  _buildLocationSection(context, incident),
-                                  const SizedBox(height: 12),
-
-                                  // 4. Incident Notes Card (Only when real notes exist)
-                                  if (incident.currentIncidentNotes != null &&
-                                      incident.currentIncidentNotes!
-                                          .trim()
-                                          .isNotEmpty) ...[
-                                    _buildNotesSection(context, incident),
+                                  // 4. Tab-Scoped Content
+                                  if (_selectedTabIndex == 0) ...[
+                                    _buildDetailsGrid(context, incident),
                                     const SizedBox(height: 12),
-                                  ],
-
-                                  // 5. Missions Section
-                                  _buildMissionsSection(context, incident),
-                                  const SizedBox(height: 12),
-
-                                  // 5.1 Status & Severity History Section (Live)
-                                  _buildTimelineHistorySection(
-                                    context,
-                                    incident,
-                                  ),
-                                  const SizedBox(height: 12),
-
-                                  // 6. Photos Section (Only when real photos exist)
-                                  if (incident.photos != null &&
-                                      incident.photos!.isNotEmpty) ...[
+                                    _buildLocationSection(context, incident),
+                                    if (incident.currentIncidentNotes != null &&
+                                        incident.currentIncidentNotes!
+                                            .trim()
+                                            .isNotEmpty) ...[
+                                      const SizedBox(height: 12),
+                                      _buildNotesSection(context, incident),
+                                    ],
+                                  ] else if (_selectedTabIndex == 1) ...[
+                                    _buildMissionsSection(context, incident),
+                                    const SizedBox(height: 12),
+                                    _buildInlineMissionsListCard(
+                                      context,
+                                      incident,
+                                    ),
+                                  ] else ...[
                                     _buildPhotosSection(context, incident),
+                                    const SizedBox(height: 12),
+                                    _buildTimelineHistorySection(
+                                      context,
+                                      incident,
+                                    ),
                                   ],
                                 ]),
                               ),
@@ -271,6 +275,391 @@ class _MobileIncidentDetailsScreenState
             );
           },
         ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // QUICK ACTION STRIP & 3-TAB SWITCHER
+  // ==========================================
+  Widget _buildQuickActionStrip(
+    BuildContext context,
+    CurrentIncidentModel incident,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildQuickActionChip(
+              icon: Icons.sync_alt_rounded,
+              fallbackIcon: Icons.sync_alt_rounded,
+              label: 'تحديث الحالة',
+              color: const Color(0xFF1B64F2),
+              bgColor: const Color(0xFFEFF6FF),
+              onTap: () => showEditDialog(
+                context,
+                incident,
+                context.read<EditIncidentCubit>(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildQuickActionChip(
+              icon: Icons.person_add_alt_1_rounded,
+              fallbackIcon: Icons.person_add_alt_1_rounded,
+              label: 'تعيين مهام',
+              color: const Color(0xFF7C3AED),
+              bgColor: const Color(0xFFF5F3FF),
+              onTap: () =>
+                  context.pushNamed(Routes.missionAssign, arguments: incident),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildQuickActionChip(
+              icon: Icons.add_a_photo_rounded,
+              fallbackIcon: Icons.add_a_photo_rounded,
+              label: 'إرفاق صورة',
+              color: const Color(0xFF10B981),
+              bgColor: const Color(0xFFECFDF5),
+              onTap: () {
+                final currentUserId =
+                    getIt<SessionManager>().getCurrentUser()?.userId ?? 1;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FileUploadScreen(
+                      incidentId: incident.currentIncidentId ?? 0,
+                      userId: currentUserId,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionChip({
+    required IconData icon,
+    required IconData fallbackIcon,
+    required String label,
+    required Color color,
+    required Color bgColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: bgColor,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(fallbackIcon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegmentedTabSwitcher(
+    BuildContext context,
+    CurrentIncidentModel incident,
+  ) {
+    final missionsCount = (incident.currentIncidentWithMissions ?? []).length;
+    final photosCount = (incident.photos ?? []).length;
+
+    final tabs = [
+      (
+        index: 0,
+        icon: Icons.info_outline_rounded,
+        label: 'نظرة عامة والموقع',
+      ),
+      (
+        index: 1,
+        icon: Icons.assignment_outlined,
+        label: 'المهام ($missionsCount)',
+      ),
+      (
+        index: 2,
+        icon: Icons.photo_library_outlined,
+        label: 'الصور والسجل ($photosCount)',
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE2E8F0).withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: tabs.map((tab) {
+          final isSelected = _selectedTabIndex == tab.index;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTabIndex = tab.index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF0F3B6C)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      tab.icon,
+                      size: 15,
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFF475569),
+                    ),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        tab.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: isSelected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF475569),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildInlineMissionsListCard(
+    BuildContext context,
+    CurrentIncidentModel incident,
+  ) {
+    final missions = [...(incident.currentIncidentWithMissions ?? [])]
+      ..sort(
+        (a, b) => (a.currentIncidentMissionOrder ?? 0).compareTo(
+          b.currentIncidentMissionOrder ?? 0,
+        ),
+      );
+
+    if (missions.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFEAEEF4)),
+        ),
+        child: Column(
+          children: [
+            const Icon(
+              Icons.playlist_add_check_circle_outlined,
+              size: 44,
+              color: Color(0xFF94A3B8),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'لا توجد مهام مسندة لهذه الأزمة بعد',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF334155),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  context.pushNamed(Routes.missionAssign, arguments: incident),
+              icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+              label: const Text('تعيين مهام ومسؤولين'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1B64F2),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEAEEF4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (int i = 0; i < missions.length; i++) ...[
+            if (i > 0) const Divider(height: 16),
+            Builder(
+              builder: (context) {
+                final m = missions[i];
+                final statusColor = getStatusColor(
+                  m.currentIncidentMissionStatus ?? 1,
+                );
+                return Row(
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${m.currentIncidentMissionOrder ?? (i + 1)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            m.missionName ??
+                                'مهمة #${m.currentIncidentMissionId}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  getStatusArabicLabel(
+                                    m.currentIncidentMissionStatus ?? 1,
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: statusColor,
+                                  ),
+                                ),
+                              ),
+                              if (m.assignedEmployees != null)
+                                ...m.assignedEmployees!.map(
+                                  (emp) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEFF6FF),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      emp.empName ?? 'مسؤول',
+                                      style: const TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF1B64F2),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'تحديث حالة المهمة',
+                      icon: const Icon(
+                        Icons.edit_note_rounded,
+                        color: Color(0xFF1B64F2),
+                      ),
+                      onPressed: () => showStatusSelector(
+                        context,
+                        m,
+                        incident.currentIncidentId ?? 0,
+                        context.read<UpdateStatuesCubit>(),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -1941,7 +2330,50 @@ class _MobileIncidentDetailsScreenState
   ) {
     final photos = incident.photos ?? [];
     if (photos.isEmpty) {
-      return const SizedBox.shrink();
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFEAEEF4)),
+        ),
+        child: Column(
+          children: [
+            const Icon(
+              Icons.add_photo_alternate_outlined,
+              size: 40,
+              color: Color(0xFF94A3B8),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'لا توجد صور ميدانية مرفقة حتى الآن',
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF334155),
+              ),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () {
+                final currentUserId =
+                    getIt<SessionManager>().getCurrentUser()?.userId ?? 1;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FileUploadScreen(
+                      incidentId: incident.currentIncidentId ?? 0,
+                      userId: currentUserId,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.camera_alt_rounded, size: 16),
+              label: const Text('توثيق وإرفاق صورة للأزمة'),
+            ),
+          ],
+        ),
+      );
     }
     final totalPhotos = photos.length;
 

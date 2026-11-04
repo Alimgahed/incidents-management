@@ -33,11 +33,12 @@ class CrisisDashboard extends StatefulWidget {
 
 class _CrisisDashboardState extends State<CrisisDashboard> {
   final List<Widget?> _tabs = List<Widget?>.filled(12, null);
+  bool _isSidebarCollapsed = false;
 
   static const _titles = <String>[
     'لوحة التحكم',
     'الخريطة',
-    'المستخدمين',
+    'إدارة المستخدمين',
     'تقارير الأزمات',
     'إضافة أزمة',
     'أنواع الأزمات',
@@ -49,6 +50,12 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
     'قائمة سيارات الأسطول',
   ];
 
+  void _toggleSidebar() {
+    setState(() {
+      _isSidebarCollapsed = !_isSidebarCollapsed;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -57,7 +64,7 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
         child: Builder(
           builder: (context) {
             final width = MediaQuery.sizeOf(context).width;
-            final isMobile = width <= 720;
+            final isMobile = width <= 767;
             final drawerWidth = (width * 0.82).clamp(280.0, 340.0);
 
             return Scaffold(
@@ -114,103 +121,133 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                       ),
                     )
                   : null,
-              drawer: Drawer(
-                width: drawerWidth,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                child: SafeArea(child: buildSidebar(context, isDrawer: true)),
-              ),
+              drawer: isMobile
+                  ? Drawer(
+                      width: drawerWidth,
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      child: SafeArea(
+                        child: buildSidebar(context, isDrawer: true),
+                      ),
+                    )
+                  : null,
               body: SafeArea(
-                child: BlocBuilder<HomeCubit, HomeStates>(
-                  buildWhen: (p, c) => c is HomeChanged,
-                  builder: (context, state) {
-                    final index = context.select(
-                      (HomeCubit c) => c.selectedIndex,
-                    );
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (!isMobile)
+                      buildSidebar(
+                        context,
+                        isDrawer: false,
+                        isCollapsed: _isSidebarCollapsed,
+                        onToggleCollapse: _toggleSidebar,
+                      ),
+                    Expanded(
+                      child: BlocBuilder<HomeCubit, HomeStates>(
+                        buildWhen: (p, c) => c is HomeChanged,
+                        builder: (context, state) {
+                          final index = context.select(
+                            (HomeCubit c) => c.selectedIndex,
+                          );
 
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (context.mounted &&
-                          Scaffold.maybeOf(context)?.isDrawerOpen == true) {
-                        Scaffold.of(context).closeDrawer();
-                      }
-                    });
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (context.mounted &&
+                                Scaffold.maybeOf(context)?.isDrawerOpen ==
+                                    true) {
+                              Scaffold.of(context).closeDrawer();
+                            }
+                          });
 
-                    if (index >= 0 && index < _tabs.length) {
-                      _tabs[index] ??= switch (index) {
-                        0 => const DashboardView(),
-                        1 => const IncidentsMapScreen(),
-                        2 => const UserManagementScreen(),
-                        3 => const IncidentReportsScreen(),
-                        4 => const AddIncidentScreen(),
-                        5 => const AllIncidentType(),
-                        6 => const AllMissions(),
-                        7 => const Addincidentmission(),
-                        8 => const WebValveMapScreen(),
-                        9 => BlocProvider(
-                            create: (_) => getIt<GisCubit>(),
-                            child: const GisMapScreen(),
-                          ),
-                        10 => const EtitFleetMapScreen(),
-                        11 => const EtitVehiclesListScreen(),
-                        _ => const SizedBox.shrink(),
-                      };
-                    }
-
-                    final children = List<Widget>.generate(_tabs.length, (i) {
-                      final content = _tabs[i];
-                      if (content == null) return const SizedBox.shrink();
-                      if (isMobile) {
-                        return ColoredBox(
-                          color: AppTheme.backgroundColor,
-                          child: content,
-                        );
-                      }
-                      final dashboardTab = i == 0;
-                      final unboxedTab = i == 0 || i == 11;
-                      return Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          dashboardTab ? 10 : 16,
-                          dashboardTab ? 8 : 14,
-                          dashboardTab ? 10 : 20,
-                          dashboardTab ? 8 : 16,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _DesktopSectionHeader(
-                              title: i < _titles.length ? _titles[i] : '',
-                            ),
-                            SizedBox(height: dashboardTab ? 6 : 12),
-                            Expanded(
-                              child: Material(
-                                color: unboxedTab
-                                    ? Colors.transparent
-                                    : AppTheme.surfaceColor,
-                                surfaceTintColor: Colors.transparent,
-                                shape: unboxedTab
-                                    ? null
-                                    : RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(16),
-                                        side: BorderSide(
-                                          color: AppTheme.borderColor
-                                              .withValues(alpha: 0.65),
-                                        ),
-                                      ),
-                                clipBehavior: unboxedTab
-                                    ? Clip.none
-                                    : Clip.antiAlias,
-                                child: content,
+                          if (index >= 0 && index < _tabs.length) {
+                            _tabs[index] ??= switch (index) {
+                              0 => const DashboardView(),
+                              1 => const IncidentsMapScreen(),
+                              2 => const UserManagementScreen(),
+                              3 => const IncidentReportsScreen(),
+                              4 => const AddIncidentScreen(),
+                              5 => const AllIncidentType(),
+                              6 => const AllMissions(),
+                              7 => const Addincidentmission(),
+                              8 => const WebValveMapScreen(),
+                              9 => BlocProvider(
+                                create: (_) => getIt<GisCubit>(),
+                                child: const GisMapScreen(),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    });
-                    return IndexedStack(
-                      index: index.clamp(0, children.length - 1),
-                      children: children,
-                    );
-                  },
+                              10 => const EtitFleetMapScreen(),
+                              11 => const EtitVehiclesListScreen(),
+                              _ => const SizedBox.shrink(),
+                            };
+                          }
+
+                          final children = List<Widget>.generate(
+                            _tabs.length,
+                            (i) {
+                              final content = _tabs[i];
+                              if (content == null) {
+                                return const SizedBox.shrink();
+                              }
+                              if (isMobile) {
+                                return ColoredBox(
+                                  color: AppTheme.backgroundColor,
+                                  child: content,
+                                );
+                              }
+                              final dashboardTab = i == 0;
+                              final unboxedTab = i == 0 || i == 11;
+                              return Padding(
+                                padding: EdgeInsets.fromLTRB(
+                                  dashboardTab ? 10 : 16,
+                                  dashboardTab ? 8 : 14,
+                                  dashboardTab ? 10 : 20,
+                                  dashboardTab ? 8 : 16,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    _DesktopSectionHeader(
+                                      title: i < _titles.length
+                                          ? _titles[i]
+                                          : '',
+                                      isSidebarCollapsed: _isSidebarCollapsed,
+                                      onToggleSidebar: _toggleSidebar,
+                                    ),
+                                    SizedBox(height: dashboardTab ? 6 : 12),
+                                    Expanded(
+                                      child: Material(
+                                        color: unboxedTab
+                                            ? Colors.transparent
+                                            : AppTheme.surfaceColor,
+                                        surfaceTintColor: Colors.transparent,
+                                        shape: unboxedTab
+                                            ? null
+                                            : RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                side: BorderSide(
+                                                  color: AppTheme.borderColor
+                                                      .withValues(alpha: 0.65),
+                                                ),
+                                              ),
+                                        clipBehavior: unboxedTab
+                                            ? Clip.none
+                                            : Clip.antiAlias,
+                                        child: content,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                          return IndexedStack(
+                            index: index.clamp(0, children.length - 1),
+                            children: children,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             );
@@ -223,8 +260,14 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
 
 class _DesktopSectionHeader extends StatelessWidget {
   final String title;
+  final bool isSidebarCollapsed;
+  final VoidCallback onToggleSidebar;
 
-  const _DesktopSectionHeader({required this.title});
+  const _DesktopSectionHeader({
+    required this.title,
+    required this.isSidebarCollapsed,
+    required this.onToggleSidebar,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -233,7 +276,7 @@ class _DesktopSectionHeader extends StatelessWidget {
     final userRole = user?.authorityName ?? 'غير محدد';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -248,11 +291,19 @@ class _DesktopSectionHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Hamburger Menu (First in RTL = Right)
+          // Sidebar Toggle (First in RTL = Right)
           IconButton(
-            tooltip: 'القائمة',
-            onPressed: () => Scaffold.of(context).openDrawer(),
-            icon: const Icon(Icons.menu_rounded, color: Color(0xFF1B4F8A), size: 28),
+            tooltip: isSidebarCollapsed
+                ? 'توسيع القائمة الجانبية'
+                : 'طي القائمة الجانبية',
+            onPressed: onToggleSidebar,
+            icon: Icon(
+              isSidebarCollapsed
+                  ? Icons.menu_open_rounded
+                  : Icons.menu_rounded,
+              color: const Color(0xFF0F3B6C),
+              size: 26,
+            ),
           ),
           
           const SizedBox(width: 16),

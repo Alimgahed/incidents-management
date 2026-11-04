@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
+import 'package:incidents_managment/core/design_system/app_design_system.dart';
 import 'package:incidents_managment/core/future/auth/logic/cubit/registration_get_cubit.dart';
 import 'package:incidents_managment/core/future/auth/logic/cubit/registraion_post_cubit.dart';
 import 'package:incidents_managment/core/future/auth/logic/state/registeration_get_state.dart';
@@ -64,8 +65,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               title: 'تم بنجاح',
               message: 'تم تسجيل المستخدم الجديد بنجاح',
               onPressed: () {
-                Navigator.pop(context); // close dialog
-                Navigator.pop(context); // go back
+                Navigator.of(context, rootNavigator: true).pop(); // close dialog
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop(true); // go back with result
+                }
               },
             );
           },
@@ -78,175 +81,174 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           },
         );
       },
-      child: Scaffold(
-        backgroundColor: scaffoldColor,
-        appBar: const GlobalAppBar(title: 'تسجيل مستخدم جديد'),
-        body: SafeArea(
-          child: BlocBuilder<RegistrationGetCubit, RegistrationGetState>(
-            builder: (context, getState) {
-              return getState.when(
-                initial: () => const FormScreenShimmer(fieldCount: 7),
-                loading: () => const FormScreenShimmer(fieldCount: 7),
-                error: (message) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 60,
-                        color: errorColor,
-                      ),
-                      const SizedBox(height: 16),
-                      Text("حدث خطأ أثناء تحميل البيانات: $message"),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: 200,
-                        child: CustomButton(
-                          text: "إعادة المحاولة",
-                          onPressed: () {
-                            context.read<RegistrationGetCubit>().getregister();
-                          },
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: const GlobalAppBar(title: 'تسجيل مستخدم جديد'),
+          body: SafeArea(
+            child: BlocBuilder<RegistrationGetCubit, RegistrationGetState>(
+              builder: (context, getState) {
+                return getState.when(
+                  initial: () => const FormScreenShimmer(fieldCount: 7),
+                  loading: () => const FormScreenShimmer(fieldCount: 7),
+                  error: (message) => AppErrorState(
+                    title: 'تعذر تحميل بيانات الصلاحيات والإدارات',
+                    message: message,
+                    onRetry: () =>
+                        context.read<RegistrationGetCubit>().getregister(),
+                  ),
+                  loaded: (data) {
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 680),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 28,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.all(28),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: AppRadius.borderLg,
+                              border: Border.all(color: AppColors.border),
+                              boxShadow: AppShadows.subtle,
+                            ),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSectionTitle('البيانات الأساسية'),
+                                  const SizedBox(height: 20),
+
+                                  CustomTextFormField(
+                                    controller: _empNameController,
+                                    labelText: 'الاسم الكامل *',
+                                    hintText: 'أدخل الاسم الكامل للموظف',
+                                    iconData: Icons.person_outline,
+                                    textInputAction: TextInputAction.next,
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  CustomTextFormField(
+                                    controller: _usernameController,
+                                    labelText: 'اسم المستخدم *',
+                                    hintText: 'أدخل اسم المستخدم لتسجيل الدخول',
+                                    iconData: Icons.badge_outlined,
+                                    textInputAction: TextInputAction.next,
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  CustomTextFormField(
+                                    controller: _passwordController,
+                                    labelText: 'كلمة المرور *',
+                                    hintText: 'أدخل كلمة المرور',
+                                    iconData: Icons.lock_outline,
+                                    obscureText: true,
+                                    enableTogglePassword: true,
+                                    textInputAction: TextInputAction.next,
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  CustomTextFormField(
+                                    controller: _empCodeController,
+                                    labelText: 'كود الموظف (الرقم الوظيفي) *',
+                                    hintText: 'أدخل الرقم الوظيفي',
+                                    iconData: Icons.pin_outlined,
+                                    isNumberField: true,
+                                    textInputAction: TextInputAction.done,
+                                  ),
+                                  const SizedBox(height: 28),
+
+                                  _buildSectionTitle('بيانات الصلاحيات والإدارة'),
+                                  const SizedBox(height: 20),
+
+                                  CustomDropdownFormField<int>(
+                                    labelText: 'مستوى الصلاحية *',
+                                    hintText: 'اختر مستوى الصلاحية',
+                                    iconData: Icons.security_outlined,
+                                    value: _selectedAuthLevel,
+                                    items: data.authLevels.map((e) {
+                                      return DropdownMenuItem<int>(
+                                        value: e.id,
+                                        child: Text(e.description),
+                                      );
+                                    }).toList(),
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _selectedAuthLevel = val;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  CustomDropdownFormField<int>(
+                                    labelText: 'المجموعة *',
+                                    hintText: 'اختر المجموعة أو الفريق',
+                                    iconData: Icons.group_outlined,
+                                    value: _selectedGroup,
+                                    items: data.groups.map((e) {
+                                      return DropdownMenuItem<int>(
+                                        value: e.groupId,
+                                        child: Text(e.groupName),
+                                      );
+                                    }).toList(),
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _selectedGroup = val;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  CustomDropdownFormField<int>(
+                                    labelText: 'القطاع / الإدارة *',
+                                    hintText: 'اختر القطاع التابع له الموظف',
+                                    iconData: Icons.domain_outlined,
+                                    value: _selectedSector,
+                                    items: data.sectors.map((e) {
+                                      return DropdownMenuItem<int>(
+                                        value: e.id,
+                                        child: Text(e.name),
+                                      );
+                                    }).toList(),
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _selectedSector = val;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 36),
+
+                                  BlocBuilder<
+                                    RegistrationPostCubit,
+                                    RegistrationPostState
+                                  >(
+                                    builder: (context, postState) {
+                                      final isLoading = postState.maybeWhen(
+                                        loading: () => true,
+                                        orElse: () => false,
+                                      );
+                                      return CustomButton(
+                                        text: 'تسجيل الحساب',
+                                        isLoading: isLoading,
+                                        onPressed: _submitForm,
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                loaded: (data) {
-                  return Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 600),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 32,
-                        ),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionTitle('البيانات الأساسية'),
-                          const SizedBox(height: 24),
-
-                          CustomTextFormField(
-                            controller: _empNameController,
-                            labelText: 'الاسم الكامل',
-                            hintText: 'أدخل الاسم الكامل للموظف',
-                            iconData: Icons.person_outline,
-                          ),
-                          const SizedBox(height: 16),
-
-                          CustomTextFormField(
-                            controller: _usernameController,
-                            labelText: 'اسم المستخدم',
-                            hintText: 'أدخل اسم المستخدم لتسجيل الدخول',
-                            iconData: Icons.badge_outlined,
-                          ),
-                          const SizedBox(height: 16),
-
-                          CustomTextFormField(
-                            controller: _passwordController,
-                            labelText: 'كلمة المرور',
-                            hintText: 'أدخل كلمة المرور',
-                            iconData: Icons.lock_outline,
-                            obscureText: true,
-                          ),
-                          const SizedBox(height: 16),
-
-                          CustomTextFormField(
-                            controller: _empCodeController,
-                            labelText: 'كود الموظف (الرقم الوظيفي)',
-                            hintText: 'أدخل الرقم الوظيفي',
-                            iconData: Icons.pin_outlined,
-                            isNumberField: true,
-                          ),
-                          const SizedBox(height: 32),
-
-                          _buildSectionTitle('بيانات الصلاحيات والإدارة'),
-                          const SizedBox(height: 24),
-
-                          CustomDropdownFormField<int>(
-                            labelText: 'مستوى الصلاحية',
-                            hintText: 'اختر مستوى الصلاحية',
-                            iconData: Icons.security_outlined,
-                            value: _selectedAuthLevel,
-                            items: data.authLevels.map((e) {
-                              return DropdownMenuItem<int>(
-                                value: e.id,
-                                child: Text(e.description),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedAuthLevel = val;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          CustomDropdownFormField<int>(
-                            labelText: 'المجموعة',
-                            hintText: 'اختر المجموعة أو الفريق',
-                            iconData: Icons.group_outlined,
-                            value: _selectedGroup,
-                            items: data.groups.map((e) {
-                              return DropdownMenuItem<int>(
-                                value: e.groupId,
-                                child: Text(e.groupName),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedGroup = val;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          CustomDropdownFormField<int>(
-                            labelText: 'القطاع / الإدارة',
-                            hintText: 'اختر القطاع التابع له الموظف',
-                            iconData: Icons.domain_outlined,
-                            value: _selectedSector,
-                            items: data.sectors.map((e) {
-                              return DropdownMenuItem<int>(
-                                value: e.id,
-                                child: Text(e.name),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedSector = val;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 48),
-
-                          BlocBuilder<
-                            RegistrationPostCubit,
-                            RegistrationPostState
-                          >(
-                            builder: (context, postState) {
-                              final isLoading = postState.maybeWhen(
-                                loading: () => true,
-                                orElse: () => false,
-                              );
-                              return CustomButton(
-                                text: 'تسجيل الحساب',
-                                isLoading: isLoading,
-                                onPressed: _submitForm,
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-                },
-              );
-            },
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ),
       ),

@@ -43,11 +43,45 @@ class _EtitVehiclesListScreenState extends State<EtitVehiclesListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canPop = Navigator.of(context).canPop();
+
     return BlocProvider.value(
       value: _cubit,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: BlocBuilder<FleetCubit, FleetState>(
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+          backgroundColor: canPop ? FleetColors.pageBackground : Colors.transparent,
+          appBar: canPop
+              ? AppBar(
+                  automaticallyImplyLeading: false,
+                  backgroundColor: FleetColors.primaryNavy,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  centerTitle: true,
+                  leading: IconButton(
+                    icon: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                    ),
+                    tooltip: 'رجوع',
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                  title: const Text(
+                    'قائمة سيارات الأسطول (ETIT)',
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                )
+              : null,
+          body: Padding(
+            padding: canPop
+                ? const EdgeInsets.fromLTRB(12, 12, 12, 16)
+                : EdgeInsets.zero,
+            child: BlocBuilder<FleetCubit, FleetState>(
           buildWhen: (prev, curr) =>
               prev.isInitialLoading != curr.isInitialLoading ||
               prev.status != curr.status ||
@@ -105,6 +139,8 @@ class _EtitVehiclesListScreenState extends State<EtitVehiclesListScreen> {
               ),
             );
           },
+        ),
+          ),
         ),
       ),
     );

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:incidents_managment/core/constant/colors.dart';
 import 'package:incidents_managment/core/constant/enms.dart';
@@ -56,53 +55,8 @@ class IncidentDetailsPanel extends StatelessWidget {
   }
 }
 
-// ==================== MEASURE SIZE HELPER ====================
-typedef _OnWidgetSizeChange = void Function(Size size);
-
-class _MeasureSizeRenderObject extends RenderProxyBox {
-  Size? _oldSize;
-  _OnWidgetSizeChange onChange;
-
-  _MeasureSizeRenderObject(this.onChange);
-
-  @override
-  void performLayout() {
-    super.performLayout();
-
-    final Size newSize = child?.size ?? Size.zero;
-    if (_oldSize == newSize) return;
-
-    _oldSize = newSize;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      onChange(newSize);
-    });
-  }
-}
-
-class _MeasureSize extends SingleChildRenderObjectWidget {
-  final _OnWidgetSizeChange onChange;
-
-  const _MeasureSize({
-    required this.onChange,
-    required Widget super.child,
-  });
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return _MeasureSizeRenderObject(onChange);
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    covariant _MeasureSizeRenderObject renderObject,
-  ) {
-    renderObject.onChange = onChange;
-  }
-}
-
 // ==================== CONTENT LAYOUT ====================
-class _IncidentDetailContent extends StatefulWidget {
+class _IncidentDetailContent extends StatelessWidget {
   const _IncidentDetailContent({
     super.key,
     required this.incident,
@@ -117,33 +71,16 @@ class _IncidentDetailContent extends StatefulWidget {
   final VoidCallback? onBackToList;
 
   @override
-  State<_IncidentDetailContent> createState() => _IncidentDetailContentState();
-}
-
-class _IncidentDetailContentState extends State<_IncidentDetailContent> {
-  double? _measuredMapAndAddressHeight;
-
-  void _onMapAndAddressSizeChanged(Size size) {
-    if (!mounted) return;
-    if ((_measuredMapAndAddressHeight ?? 0) != size.height) {
-      setState(() {
-        _measuredMapAndAddressHeight = size.height;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final padding =
-        widget.contentPadding ?? ResponsiveHelper.responsivePadding(context);
+        contentPadding ?? ResponsiveHelper.responsivePadding(context);
     final spacing = ResponsiveHelper.responsiveSpacing(
       context,
       mobileSpacing: 10,
-      desktopSpacing: 10,
+      desktopSpacing: 12,
     );
-    final isWide = MediaQuery.sizeOf(context).width > 1050;
-    final hasAddress = widget.incident.address != null &&
-        widget.incident.address!.trim().isNotEmpty;
+    final hasAddress =
+        incident.address != null && incident.address!.trim().isNotEmpty;
 
     // Top Right section: Map & Address combined
     final mapAndAddressWidgets = Column(
@@ -151,38 +88,26 @@ class _IncidentDetailContentState extends State<_IncidentDetailContent> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (hasAddress) ...[
-          _AddressCard(address: widget.incident.address!),
+          _AddressCard(address: incident.address!),
           SizedBox(height: spacing),
         ],
         AppMapSection(
-          lat: widget.incident.currentIncidentXAxis ?? 28.0871,
-          lng: widget.incident.currentIncidentYAxis ?? 30.7618,
-          mapHeight: 320,
+          lat: incident.currentIncidentXAxis ?? 28.0871,
+          lng: incident.currentIncidentYAxis ?? 30.7618,
+          mapHeight: 300,
         ),
       ],
     );
 
-    // Dynamic matched height on web for missions card
-    final webMatchedHeight =
-        _measuredMapAndAddressHeight ?? (hasAddress ? 515.0 : 410.0);
-
     // Right Column widgets (Visually RIGHT in RTL - Map, Address, Description, Media)
     final rightColumnWidgets = <Widget>[
-      if (isWide)
-        _MeasureSize(
-          onChange: _onMapAndAddressSizeChanged,
-          child: mapAndAddressWidgets,
-        )
-      else
-        mapAndAddressWidgets,
+      mapAndAddressWidgets,
       SizedBox(height: spacing),
-
-      _DescriptionCard(incident: widget.incident),
+      _DescriptionCard(incident: incident),
       SizedBox(height: spacing),
-
       IncidentPhotosGrid(
-        incident: widget.incident,
-        incidentId: widget.incident.currentIncidentId ?? 0,
+        incident: incident,
+        incidentId: incident.currentIncidentId ?? 0,
       ),
       SizedBox(height: spacing),
     ];
@@ -190,79 +115,78 @@ class _IncidentDetailContentState extends State<_IncidentDetailContent> {
     // Left Column widgets (Visually LEFT in RTL - Missions / Follow-up Actions, Notes, Timeline)
     final leftColumnWidgets = <Widget>[
       _MissionsCard(
-        incident: widget.incident,
-        height: isWide ? webMatchedHeight : null,
+        incident: incident,
+        height: null,
       ),
       SizedBox(height: spacing),
-
-      if (widget.incident.currentIncidentNotes != null &&
-          widget.incident.currentIncidentNotes!.trim().isNotEmpty) ...[
-        _NotesCard(notes: widget.incident.currentIncidentNotes!),
+      if (incident.currentIncidentNotes != null &&
+          incident.currentIncidentNotes!.trim().isNotEmpty) ...[
+        _NotesCard(notes: incident.currentIncidentNotes!),
         SizedBox(height: spacing),
       ],
-
-      _TimelineCard(incident: widget.incident),
+      _TimelineCard(incident: incident),
     ];
-
-    Widget mainLayout;
-    if (isWide) {
-      mainLayout = Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // RIGHT COLUMN (Map, Address & Media - visually right/center in RTL)
-          Expanded(
-            flex: 11,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: rightColumnWidgets,
-            ),
-          ),
-          SizedBox(width: spacing),
-          // LEFT COLUMN (Missions / Follow-up Actions & Timeline - visually left in RTL)
-          Expanded(
-            flex: 9,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: leftColumnWidgets,
-            ),
-          ),
-        ],
-      );
-    } else {
-      // Mobile stacked layout (Address & Map first, then missions & timeline)
-      mainLayout = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ...rightColumnWidgets,
-          SizedBox(height: spacing),
-          ...leftColumnWidgets,
-        ],
-      );
-    }
 
     return Container(
       color: backgroundColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.showBackToList)
-            _BackNavigation(onPressed: widget.onBackToList),
+          if (showBackToList)
+            _BackNavigation(onPressed: onBackToList),
           Expanded(
-            child: SingleChildScrollView(
-              padding: padding.copyWith(
-                top: widget.showBackToList ? 8 : padding.top,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header Section (Always on top, full width)
-                  _IncidentHeaderSection(incident: widget.incident),
-                  SizedBox(height: spacing),
-                  // Responsive main content
-                  mainLayout,
-                  const SizedBox(height: 16),
-                ],
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 680;
+                final Widget mainLayout = isWide
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // RIGHT COLUMN (Map, Address & Media - visually right/center in RTL)
+                          Expanded(
+                            flex: 11,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: rightColumnWidgets,
+                            ),
+                          ),
+                          SizedBox(width: spacing),
+                          // LEFT COLUMN (Missions / Follow-up Actions & Timeline - visually left in RTL)
+                          Expanded(
+                            flex: 9,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: leftColumnWidgets,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ...rightColumnWidgets,
+                          SizedBox(height: spacing),
+                          ...leftColumnWidgets,
+                        ],
+                      );
+
+                return SingleChildScrollView(
+                  padding: padding.copyWith(
+                    top: showBackToList ? 8 : padding.top,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Header Section (Always on top, full width)
+                      _IncidentHeaderSection(incident: incident),
+                      SizedBox(height: spacing),
+                      // Responsive main content based on actual detail pane width
+                      mainLayout,
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],

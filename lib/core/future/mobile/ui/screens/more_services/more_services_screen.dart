@@ -196,8 +196,22 @@ class MobileMoreServicesScreen extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              // 4. إدارة الحساب والنظام
-              _buildSectionTitle('إدارة الحساب والنظام'),
+              // 4. التقارير وإدارة الحساب والنظام
+              _buildSectionTitle('التقارير وإدارة النظام'),
+              _buildServiceTile(
+                icon: Icons.analytics_rounded,
+                iconColor: const Color(0xFF1B64F2),
+                title: 'التقارير والإحصائيات التنفيذية',
+                subtitle: 'مؤشرات الأداء، تقارير الفروع، وتحليل الاستجابة للأزمات',
+                onTap: () => context.pushNamed(Routes.reports),
+              ),
+              _buildServiceTile(
+                icon: Icons.person_add_alt_1_rounded,
+                iconColor: const Color(0xFF0F3B6C),
+                title: 'تسجيل مستخدم جديد',
+                subtitle: 'إضافة حساب موظف جديد وتحديد الصلاحيات والقطاع',
+                onTap: () => context.pushNamed(Routes.registration),
+              ),
               _buildServiceTile(
                 icon: Icons.logout_rounded,
                 iconColor: const Color(0xFFDC2626),
