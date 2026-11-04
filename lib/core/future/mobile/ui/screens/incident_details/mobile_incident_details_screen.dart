@@ -16,6 +16,7 @@ import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/in
 import 'package:incidents_managment/core/future/home/logic/incident_map_cubit/incident_map_state.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/dash_board/incident_detail_dialogs.dart';
 import 'package:incidents_managment/core/future/mobile/ui/screens/add_photo/add_image.dart';
+import 'package:incidents_managment/core/helpers/date_format.dart';
 import 'package:incidents_managment/core/helpers/incident_description_parse.dart';
 import 'package:incidents_managment/core/helpers/routing.dart';
 import 'package:incidents_managment/core/network/api_constants.dart';
@@ -191,7 +192,10 @@ class _MobileIncidentDetailsScreenState
                     textDirection: TextDirection.rtl,
                     child: Scaffold(
                       backgroundColor: const Color(0xFFF4F7FB),
-                      bottomNavigationBar: _buildBottomActionBar(context, incident),
+                      bottomNavigationBar: _buildBottomActionBar(
+                        context,
+                        incident,
+                      ),
                       body: RefreshIndicator(
                         onRefresh: () async {
                           await context.read<IncidentMapCubit>().refresh();
@@ -206,19 +210,11 @@ class _MobileIncidentDetailsScreenState
 
                             // Main Content
                             SliverPadding(
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                0,
-                                16,
-                                32,
-                              ),
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
                               sliver: SliverList(
                                 delegate: SliverChildListDelegate([
                                   // 1. Overview Card (Title, #ID, Headline, Branch, Status, Severity)
-                                  _buildIncidentHeaderCard(
-                                    context,
-                                    incident,
-                                  ),
+                                  _buildIncidentHeaderCard(context, incident),
                                   const SizedBox(height: 12),
 
                                   // 2. 2x3 Details Grid
@@ -230,8 +226,7 @@ class _MobileIncidentDetailsScreenState
                                   const SizedBox(height: 12),
 
                                   // 4. Incident Notes Card (Only when real notes exist)
-                                  if (incident.currentIncidentNotes !=
-                                          null &&
+                                  if (incident.currentIncidentNotes != null &&
                                       incident.currentIncidentNotes!
                                           .trim()
                                           .isNotEmpty) ...[
@@ -241,6 +236,13 @@ class _MobileIncidentDetailsScreenState
 
                                   // 5. Missions Section
                                   _buildMissionsSection(context, incident),
+                                  const SizedBox(height: 12),
+
+                                  // 5.1 Status & Severity History Section (Live)
+                                  _buildTimelineHistorySection(
+                                    context,
+                                    incident,
+                                  ),
                                   const SizedBox(height: 12),
 
                                   // 6. Photos Section (Only when real photos exist)
@@ -261,6 +263,504 @@ class _MobileIncidentDetailsScreenState
             );
           },
         ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // STATUS & SEVERITY HISTORY TIMELINE SECTION
+  // ==========================================
+  Widget _buildTimelineHistorySection(
+    BuildContext context,
+    CurrentIncidentModel incident,
+  ) {
+    final historyList = incident.statusSeverityHistory;
+    final hasHistory = historyList != null && historyList.isNotEmpty;
+
+    // Build timeline items showing transition from old -> new
+    final sortedHistory = hasHistory
+        ? (List<IncidentStatusSeverityHistory>.from(historyList)..sort((a, b) {
+            final aTime =
+                a.currentIncidentStatusChangedAt ??
+                a.currentIncidentSeverityChangedAt ??
+                DateTime.now();
+            final bTime =
+                b.currentIncidentStatusChangedAt ??
+                b.currentIncidentSeverityChangedAt ??
+                DateTime.now();
+            return aTime.compareTo(bTime);
+          }))
+        : <IncidentStatusSeverityHistory>[];
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.history_rounded,
+                  color: Color(0xFF1B72E8),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'سجل الأحداث والتغييرات (Live History)',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+              ),
+              if (hasHistory)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${sortedHistory.length} حركة',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF475569),
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // 1. Initial Creation Event Node
+          if (incident.currentIncidentCreatedAt != null) ...[
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF16A34A),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          size: 15,
+                          color: Color(0xFF16A34A),
+                        ),
+                      ),
+                      if (hasHistory)
+                        Expanded(
+                          child: Container(
+                            width: 2,
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            color: const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: hasHistory ? 14 : 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'تسجيل وإنشاء الأزمة',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            incident.currentIncidentCreatedAt!.timeAgoArabic(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                          if (incident.username != null ||
+                              incident.managerName != null)
+                            Text(
+                              'بواسطة: ${incident.username ?? incident.managerName}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFF94A3B8),
+                                fontFamily: 'Cairo',
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // 2. Timeline nodes for all status & severity updates (Old -> New)
+          if (!hasHistory && incident.currentIncidentCreatedAt == null)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              alignment: Alignment.center,
+              child: const Column(
+                children: [
+                  Icon(
+                    Icons.history_toggle_off_rounded,
+                    size: 36,
+                    color: Color(0xFFCBD5E1),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'لا يوجد سجل تغييرات مسجل حالياً',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF64748B),
+                      fontFamily: 'Cairo',
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            Builder(
+              builder: (context) {
+                int? prevStatus = 1;
+                int? prevSeverity = sortedHistory.isNotEmpty ? sortedHistory.first.currentIncidentSeverity : null;
+
+                return Column(
+                  children: List.generate(sortedHistory.length, (idx) {
+                    final h = sortedHistory[idx];
+                    final isLast = idx == sortedHistory.length - 1;
+                    final time =
+                        h.currentIncidentStatusChangedAt ??
+                        h.currentIncidentSeverityChangedAt ??
+                        DateTime.now();
+
+                    final currStatus = h.currentIncidentStatus;
+                    final currSeverity = h.currentIncidentSeverity;
+
+                    final statusChanged =
+                        currStatus != null && currStatus != prevStatus;
+                    final severityChanged =
+                        currSeverity != null && currSeverity != prevSeverity;
+
+                    final statName = currStatus != null
+                        ? getStatusArabic(currStatus)
+                        : null;
+                    final prevStatName = prevStatus != null
+                        ? getStatusArabic(prevStatus ?? 0)
+                        : null;
+
+                    final sevName = currSeverity != null
+                        ? getSeverityArabic(currSeverity)
+                        : null;
+                    final prevSevName = prevSeverity != null
+                        ? getSeverityArabic(prevSeverity ?? 0)
+                        : null;
+
+                    final actor =
+                        h.statusChangedByName ??
+                        h.severityChangedByName ??
+                        (h.currentIncidentStatusChangedBy != null
+                            ? '#${h.currentIncidentStatusChangedBy}'
+                            : null);
+
+                    final widgetRow = IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Column(
+                            children: [
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: severityChanged
+                                      ? const Color(0xFFFEF2F2)
+                                      : const Color(0xFFEFF6FF),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: severityChanged
+                                        ? const Color(0xFFDC2626)
+                                        : const Color(0xFF1B72E8),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Icon(
+                                  severityChanged
+                                      ? Icons.warning_amber_rounded
+                                      : Icons.sync_alt_rounded,
+                                  size: 14,
+                                  color: severityChanged
+                                      ? const Color(0xFFDC2626)
+                                      : const Color(0xFF1B72E8),
+                                ),
+                              ),
+                              if (!isLast)
+                                Expanded(
+                                  child: Container(
+                                    width: 2,
+                                    margin: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    color: const Color(0xFFE2E8F0),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Status Transition (Old -> New)
+                                  if (statusChanged) ...[
+                                    Wrap(
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      children: [
+                                        const Text(
+                                          'تحديث بيانات المتابعة (الحالة):',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF1E293B),
+                                            fontFamily: 'Cairo',
+                                          ),
+                                        ),
+                                        if (prevStatName != null) ...[
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF1F5F9),
+                                              borderRadius:
+                                                  BorderRadius.circular(5),
+                                            ),
+                                            child: Text(
+                                              prevStatName,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                color: Color(0xFF64748B),
+                                                decoration:
+                                                    TextDecoration.lineThrough,
+                                                fontFamily: 'Cairo',
+                                              ),
+                                            ),
+                                          ),
+                                          const Icon(
+                                            Icons.arrow_back_rounded,
+                                            size: 12,
+                                            color: Color(0xFF94A3B8),
+                                          ),
+                                        ],
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 7,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEFF6FF),
+                                            borderRadius: BorderRadius.circular(
+                                              5,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFFBFDBFE),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            statName ?? '',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF1D4ED8),
+                                              fontFamily: 'Cairo',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                  ],
+
+                                  // Severity Transition (Old -> New)
+                                  if (severityChanged) ...[
+                                    Wrap(
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      children: [
+                                        const Text(
+                                          'تعديل الخطورة:',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF1E293B),
+                                            fontFamily: 'Cairo',
+                                          ),
+                                        ),
+                                        if (prevSevName != null) ...[
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF1F5F9),
+                                              borderRadius:
+                                                  BorderRadius.circular(5),
+                                            ),
+                                            child: Text(
+                                              prevSevName,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                color: Color(0xFF64748B),
+                                                decoration:
+                                                    TextDecoration.lineThrough,
+                                                fontFamily: 'Cairo',
+                                              ),
+                                            ),
+                                          ),
+                                          const Icon(
+                                            Icons.arrow_back_rounded,
+                                            size: 12,
+                                            color: Color(0xFF94A3B8),
+                                          ),
+                                        ],
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 7,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFEF2F2),
+                                            borderRadius: BorderRadius.circular(
+                                              5,
+                                            ),
+                                            border: Border.all(
+                                              color: const Color(0xFFFECACA),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            sevName ?? '',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFFDC2626),
+                                              fontFamily: 'Cairo',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                  ],
+
+                                  if (!statusChanged && !severityChanged) ...[
+                                    Text(
+                                      'تحديث متابعة: ${statName ?? ''} | ${sevName ?? ''}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF334155),
+                                        fontFamily: 'Cairo',
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                  ],
+
+                                  Row(
+                                    children: [
+                                      Text(
+                                        time.timeAgoArabic(),
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Color(0xFF64748B),
+                                          fontFamily: 'Cairo',
+                                        ),
+                                      ),
+                                      if (actor != null &&
+                                          actor.isNotEmpty) ...[
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '• بواسطة: $actor',
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
+                                            color: Color(0xFF94A3B8),
+                                            fontFamily: 'Cairo',
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (currStatus != null) prevStatus = currStatus;
+                    if (currSeverity != null) prevSeverity = currSeverity;
+
+                    return widgetRow;
+                  }),
+                );
+              },
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -319,8 +819,7 @@ class _MobileIncidentDetailsScreenState
                         child: Image.asset(
                           'assets/images/logo.png',
                           fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Icon(
+                          errorBuilder: (context, error, stackTrace) => Icon(
                             Icons.water_drop_rounded,
                             color: appColor,
                             size: 28,
@@ -434,337 +933,335 @@ class _MobileIncidentDetailsScreenState
       margin: const EdgeInsets.only(top: 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Row: Water droplet icon, Title (نوع الأزمة), # ID Badge
-            Row(
-              children: [
-                // Right: Water drop container
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.water_drop_rounded,
-                      color: Color(0xFF2563EB),
-                      size: 24,
-                    ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Row: Water droplet icon, Title (نوع الأزمة), # ID Badge
+          Row(
+            children: [
+              // Right: Water drop container
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.water_drop_rounded,
+                    color: Color(0xFF2563EB),
+                    size: 24,
                   ),
                 ),
-                const SizedBox(width: 12),
+              ),
+              const SizedBox(width: 12),
 
-                // Center: Title
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+              // Center: Title
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // Left: # ID Badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFDBEAFE)),
+                ),
+                child: Text(
+                  '# $incidentNumber',
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF1E56A0),
                   ),
                 ),
-                const SizedBox(width: 10),
+              ),
+            ],
+          ),
 
-                // Left: # ID Badge
-                Container(
+          const SizedBox(height: 12),
+
+          // Chips Row: Branch, Severity, Status
+          Row(
+            children: [
+              // Branch chip
+              Expanded(
+                child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFDBEAFE)),
-                  ),
-                  child: Text(
-                    '# $incidentNumber',
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF1E56A0),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Chips Row: Branch, Severity, Status
-            Row(
-              children: [
-                // Branch chip
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.apartment_rounded,
-                          size: 16,
-                          color: Color(0xFF2563EB),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            'فرع $branch',
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E293B),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // Severity Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: _getSeverityColor(severity).withValues(alpha: 0.08),
+                    color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _getSeverityColor(
-                        severity,
-                      ).withValues(alpha: 0.25),
-                    ),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.crisis_alert_rounded,
-                        size: 15,
+                      const Icon(
+                        Icons.apartment_rounded,
+                        size: 16,
+                        color: Color(0xFF2563EB),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'فرع $branch',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E293B),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Severity Badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: _getSeverityColor(severity).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _getSeverityColor(severity).withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.crisis_alert_rounded,
+                      size: 15,
+                      color: _getSeverityColor(severity),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      _getSeverityText(severity, incident.severityName),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
                         color: _getSeverityColor(severity),
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        _getSeverityText(severity, incident.severityName),
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: _getSeverityColor(severity),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // Status Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(status).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _getStatusColor(status).withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.description_outlined,
-                        size: 15,
-                        color: _getStatusColor(status),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        _getStatusText(status, incident.statusName),
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: _getStatusColor(status),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            if (hasDescription) ...[
-              const SizedBox(height: 14),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              const SizedBox(height: 14),
-
-              // Section Header: تفاصيل البلاغ والأزمة
-              Row(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.description_outlined,
-                      size: 16,
-                      color: Color(0xFF2563EB),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'تفاصيل ووصف البلاغ',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Full parsed title / description text
-              Text(
-                parsed.displayTitle.isNotEmpty
-                    ? parsed.displayTitle
-                    : rawDescription,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF334155),
-                  height: 1.5,
-                ),
-              ),
-
-              if (parsed.locationFromDescription != null) ...[
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.place_outlined,
-                      size: 15,
-                      color: Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        parsed.locationFromDescription!,
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          color: Color(0xFF64748B),
-                          height: 1.4,
-                        ),
-                      ),
                     ),
                   ],
                 ),
-              ],
+              ),
+              const SizedBox(width: 8),
 
-              if (parsed.technicalDetails != null) ...[
-                const SizedBox(height: 6),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.tune_rounded,
-                      size: 15,
-                      color: Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        parsed.technicalDetails!,
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          color: Color(0xFF64748B),
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-
-              const SizedBox(height: 12),
-
-              // النص الكامل من المصدر (كما هو في شاشة الويب)
+              // Status Badge
               Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                decoration: BoxDecoration(
+                  color: _getStatusColor(status).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _getStatusColor(status).withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.article_outlined,
-                          size: 15,
-                          color: Color(0xFF475569),
-                        ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'النص الكامل من المصدر',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF475569),
-                          ),
-                        ),
-                      ],
+                    Icon(
+                      Icons.description_outlined,
+                      size: 15,
+                      color: _getStatusColor(status),
                     ),
-                    const SizedBox(height: 6),
-                    SelectableText(
-                      rawDescription,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF1E293B),
-                        height: 1.55,
+                    const SizedBox(width: 5),
+                    Text(
+                      _getStatusText(status, incident.statusName),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: _getStatusColor(status),
                       ),
                     ),
                   ],
                 ),
               ),
             ],
+          ),
+
+          if (hasDescription) ...[
+            const SizedBox(height: 14),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+            const SizedBox(height: 14),
+
+            // Section Header: تفاصيل البلاغ والأزمة
+            Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.description_outlined,
+                    size: 16,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'تفاصيل ووصف البلاغ',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Full parsed title / description text
+            Text(
+              parsed.displayTitle.isNotEmpty
+                  ? parsed.displayTitle
+                  : rawDescription,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF334155),
+                height: 1.5,
+              ),
+            ),
+
+            if (parsed.locationFromDescription != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.place_outlined,
+                    size: 15,
+                    color: Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      parsed.locationFromDescription!,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF64748B),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            if (parsed.technicalDetails != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.tune_rounded,
+                    size: 15,
+                    color: Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      parsed.technicalDetails!,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF64748B),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            const SizedBox(height: 12),
+
+            // النص الكامل من المصدر (كما هو في شاشة الويب)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.article_outlined,
+                        size: 15,
+                        color: Color(0xFF475569),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'النص الكامل من المصدر',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF475569),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  SelectableText(
+                    rawDescription,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF1E293B),
+                      height: 1.55,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
-        ),
-      );
+        ],
+      ),
+    );
   }
 
   // ==========================================
@@ -1779,20 +2276,21 @@ class _MobileIncidentDetailsScreenState
                 currentIncident = incident;
               }
 
-              final missions = [
-                ...(currentIncident.currentIncidentWithMissions ?? []),
-              ]..sort(
-                  (a, b) => (a.currentIncidentMissionOrder ?? 0).compareTo(
-                    b.currentIncidentMissionOrder ?? 0,
-                  ),
-                );
+              final missions =
+                  [...(currentIncident.currentIncidentWithMissions ?? [])]
+                    ..sort(
+                      (a, b) => (a.currentIncidentMissionOrder ?? 0).compareTo(
+                        b.currentIncidentMissionOrder ?? 0,
+                      ),
+                    );
 
               return SafeArea(
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(24)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1855,16 +2353,17 @@ class _MobileIncidentDetailsScreenState
                           child: Center(
                             child: Text(
                               'لا توجد مهام مسجلة لهذه الأزمة',
-                              style:
-                                  TextStyle(color: Colors.grey, fontSize: 15),
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 15,
+                              ),
                             ),
                           ),
                         )
                       else
                         ConstrainedBox(
                           constraints: BoxConstraints(
-                            maxHeight:
-                                MediaQuery.sizeOf(context).height * 0.65,
+                            maxHeight: MediaQuery.sizeOf(context).height * 0.65,
                           ),
                           child: ListView.separated(
                             shrinkWrap: true,
@@ -1933,12 +2432,13 @@ class _MobileIncidentDetailsScreenState
                                               Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 3,
-                                                ),
+                                                      horizontal: 8,
+                                                      vertical: 3,
+                                                    ),
                                                 decoration: BoxDecoration(
-                                                  color: _getStatusColor(status)
-                                                      .withValues(alpha: 0.1),
+                                                  color: _getStatusColor(
+                                                    status,
+                                                  ).withValues(alpha: 0.1),
                                                   borderRadius:
                                                       BorderRadius.circular(6),
                                                 ),
@@ -1947,8 +2447,9 @@ class _MobileIncidentDetailsScreenState
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.bold,
-                                                    color:
-                                                        _getStatusColor(status),
+                                                    color: _getStatusColor(
+                                                      status,
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -1968,56 +2469,72 @@ class _MobileIncidentDetailsScreenState
                                             ],
                                           ),
                                           if (m.assignedEmployees != null &&
-                                              m.assignedEmployees!
+                                              m
+                                                  .assignedEmployees!
                                                   .isNotEmpty) ...[
                                             const SizedBox(height: 6),
                                             Wrap(
                                               spacing: 6,
                                               runSpacing: 4,
-                                              children: m.assignedEmployees!.map(
-                                                (emp) => Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue
-                                                        .withValues(alpha: 0.08),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            6),
-                                                    border: Border.all(
-                                                      color: Colors.blue
-                                                          .withValues(
-                                                              alpha: 0.2),
-                                                    ),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      const Icon(
-                                                        Icons.person_outline,
-                                                        size: 11,
-                                                        color: Color(0xFF2563EB),
-                                                      ),
-                                                      const SizedBox(width: 3),
-                                                      Text(
-                                                        emp.empName ??
-                                                            'مستخدم',
-                                                        style: const TextStyle(
-                                                          fontSize: 10.5,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color:
-                                                              Color(0xFF2563EB),
+                                              children: m.assignedEmployees!
+                                                  .map(
+                                                    (emp) => Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 6,
+                                                            vertical: 2,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.blue
+                                                            .withValues(
+                                                              alpha: 0.08,
+                                                            ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              6,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: Colors.blue
+                                                              .withValues(
+                                                                alpha: 0.2,
+                                                              ),
                                                         ),
                                                       ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ).toList(),
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          const Icon(
+                                                            Icons
+                                                                .person_outline,
+                                                            size: 11,
+                                                            color: Color(
+                                                              0xFF2563EB,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 3,
+                                                          ),
+                                                          Text(
+                                                            emp.empName ??
+                                                                'مستخدم',
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontSize:
+                                                                      10.5,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  color: Color(
+                                                                    0xFF2563EB,
+                                                                  ),
+                                                                ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  )
+                                                  .toList(),
                                             ),
                                           ],
                                         ],

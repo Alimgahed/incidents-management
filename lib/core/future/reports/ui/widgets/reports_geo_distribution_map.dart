@@ -22,6 +22,7 @@ class ReportsGeoDistributionMapCard extends StatefulWidget {
 class _ReportsGeoDistributionMapCardState
     extends State<ReportsGeoDistributionMapCard> {
   final MapController _mapController = MapController();
+  bool _showHeatmapMode = false;
 
   static const _palette = [
     Color(0xFFEF4444),
@@ -123,44 +124,108 @@ class _ReportsGeoDistributionMapCardState
         final color = _getBranchColor(branch);
         activeBranchColors[branch] = color;
 
-        markers.add(
-          Marker(
-            point: point,
-            width: 36,
-            height: 36,
-            child: GestureDetector(
-              onTap: () {
-                _mapController.move(point, 15);
-                showMapIncidentDetailsModal(context, inc);
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.4),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+        if (_showHeatmapMode) {
+          // Heatmap marker: Glowing multi-layer halo proportional to severity
+          final sev = (inc.currentIncidentSeverity ?? 1).clamp(1, 4);
+          final heatColor = sev >= 3
+              ? const Color(0xFFEF4444) // Red for high/critical
+              : (sev == 2 ? const Color(0xFFF97316) : const Color(0xFFEAB308)); // Orange/Yellow
+
+          final size = 48.0 + (sev * 12.0); // 60 to 96 px radius
+
+          markers.add(
+            Marker(
+              point: point,
+              width: size,
+              height: size,
+              child: GestureDetector(
+                onTap: () {
+                  _mapController.move(point, 15);
+                  showMapIncidentDetailsModal(context, inc);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        heatColor.withValues(alpha: 0.85),
+                        heatColor.withValues(alpha: 0.45),
+                        heatColor.withValues(alpha: 0.15),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.4, 0.75, 1.0],
                     ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    '${inc.currentIncidentId ?? ''}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: heatColor.withValues(alpha: 0.8),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: heatColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
             ),
-          ),
-        );
+          );
+        } else {
+          markers.add(
+            Marker(
+              point: point,
+              width: 36,
+              height: 36,
+              child: GestureDetector(
+                onTap: () {
+                  _mapController.move(point, 15);
+                  showMapIncidentDetailsModal(context, inc);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.4),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${inc.currentIncidentId ?? ''}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
       }
     }
 
@@ -184,28 +249,73 @@ class _ReportsGeoDistributionMapCardState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Button "عرض كامل الخريطة"
-              OutlinedButton(
-                onPressed: widget.onOpenFullMap,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
+              // Action buttons on the left
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton(
+                    onPressed: widget.onOpenFullMap,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'عرض كامل الخريطة',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1B72E8),
+                        fontFamily: 'Cairo',
+                      ),
+                    ),
                   ),
-                  side: const BorderSide(color: Color(0xFFE2E8F0)),
-                  shape: RoundedRectangleBorder(
+                  const SizedBox(width: 8),
+                  // Toggle Heatmap vs Pin mode
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _showHeatmapMode = !_showHeatmapMode;
+                      });
+                    },
                     borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _showHeatmapMode ? const Color(0xFFFEF2F2) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _showHeatmapMode ? const Color(0xFFF87171) : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.whatshot_rounded,
+                            size: 15,
+                            color: _showHeatmapMode ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _showHeatmapMode ? 'خريطة حرارية (مفعل)' : 'تفعيل Heatmap',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: _showHeatmapMode ? FontWeight.bold : FontWeight.w600,
+                              color: _showHeatmapMode ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                child: const Text(
-                  'عرض كامل الخريطة',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1B72E8),
-                    fontFamily: 'Cairo',
-                  ),
-                ),
+                ],
               ),
               // Title + Markers count
               Row(
@@ -358,7 +468,29 @@ class _ReportsGeoDistributionMapCardState
                   ),
                 ),
 
-                if (activeBranchColors.isNotEmpty) ...[
+                if (_showHeatmapMode) ...[
+                  const SizedBox(width: 14),
+                  SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Text(
+                          'تدرج بؤر الخطورة',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F172A),
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildHeatmapLegendRow('خطورة قصوى', const Color(0xFFEF4444)),
+                        _buildHeatmapLegendRow('خطورة متوسطة', const Color(0xFFF97316)),
+                        _buildHeatmapLegendRow('خطورة منخفضة', const Color(0xFFEAB308)),
+                      ],
+                    ),
+                  ),
+                ] else if (activeBranchColors.isNotEmpty) ...[
                   const SizedBox(width: 14),
                   // Legend List on the right
                   SingleChildScrollView(
@@ -395,6 +527,41 @@ class _ReportsGeoDistributionMapCardState
                     ),
                   ),
                 ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeatmapLegendRow(String label, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF475569),
+              fontFamily: 'Cairo',
+            ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.5),
+                  blurRadius: 4,
+                ),
               ],
             ),
           ),

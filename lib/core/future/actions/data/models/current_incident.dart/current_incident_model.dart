@@ -63,6 +63,8 @@ class CurrentIncidentModel {
   final String? statusUpdatedByUserName;
   @JsonKey(name: 'severity_updated_by_user')
   final String? severityUpdatedByUserName;
+  @JsonKey(name: 'status_severity_history')
+  final List<IncidentStatusSeverityHistory>? statusSeverityHistory;
 
   CurrentIncidentModel({
     this.currentIncidentId,
@@ -91,6 +93,7 @@ class CurrentIncidentModel {
     this.severityName,
     this.statusUpdatedByUserName,
     this.severityUpdatedByUserName,
+    this.statusSeverityHistory,
   });
 
   CurrentIncidentModel copyWith({
@@ -120,6 +123,7 @@ class CurrentIncidentModel {
     String? severityName,
     String? statusUpdatedByUserName,
     String? severityUpdatedByUserName,
+    List<IncidentStatusSeverityHistory>? statusSeverityHistory,
     List<CurrentIncidentWithMissions>? missions,
     List<CurrentIncidentWithMissions>? currentIncidentWithMissions,
   }) {
@@ -166,6 +170,8 @@ class CurrentIncidentModel {
           statusUpdatedByUserName ?? this.statusUpdatedByUserName,
       severityUpdatedByUserName:
           severityUpdatedByUserName ?? this.severityUpdatedByUserName,
+      statusSeverityHistory:
+          statusSeverityHistory ?? this.statusSeverityHistory,
     );
     model.currentIncidentWithMissions =
         currentIncidentWithMissions ?? missions ?? this.currentIncidentWithMissions;
@@ -323,4 +329,93 @@ class CurrentIncidentPhoto extends Equatable {
     filePath,
     id,
   ];
+}
+
+@JsonSerializable()
+class IncidentStatusSeverityHistory extends Equatable {
+  @JsonKey(name: 'current_incident_id')
+  final int? currentIncidentId;
+  @JsonKey(name: 'current_incident_status')
+  final int? currentIncidentStatus;
+  @JsonKey(name: 'current_incident_status_changed_by')
+  final int? currentIncidentStatusChangedBy;
+  @JsonKey(name: 'current_incident_status_changed_at')
+  final DateTime? currentIncidentStatusChangedAt;
+  @JsonKey(name: 'current_incident_severity')
+  final int? currentIncidentSeverity;
+  @JsonKey(name: 'current_incident_severity_changed_by')
+  final int? currentIncidentSeverityChangedBy;
+  @JsonKey(name: 'current_incident_severity_changed_at')
+  final DateTime? currentIncidentSeverityChangedAt;
+  @JsonKey(name: 'status_changed_by')
+  final String? statusChangedByName;
+  @JsonKey(name: 'severity_changed_by')
+  final String? severityChangedByName;
+
+  const IncidentStatusSeverityHistory({
+    this.currentIncidentId,
+    this.currentIncidentStatus,
+    this.currentIncidentStatusChangedBy,
+    this.currentIncidentStatusChangedAt,
+    this.currentIncidentSeverity,
+    this.currentIncidentSeverityChangedBy,
+    this.currentIncidentSeverityChangedAt,
+    this.statusChangedByName,
+    this.severityChangedByName,
+  });
+
+  factory IncidentStatusSeverityHistory.fromJson(Map<String, dynamic> json) {
+    DateTime? parseDate(dynamic v) {
+      if (v == null) return null;
+      if (v is DateTime) return v;
+      if (v is String) return DateTime.tryParse(v);
+      return null;
+    }
+
+    int? parseInt(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      return int.tryParse(v.toString());
+    }
+
+    return IncidentStatusSeverityHistory(
+      currentIncidentId: parseInt(json['current_incident_id']),
+      currentIncidentStatus: parseInt(json['current_incident_status']),
+      currentIncidentStatusChangedBy: parseInt(json['current_incident_status_changed_by']),
+      currentIncidentStatusChangedAt: parseDate(json['current_incident_status_changed_at']),
+      currentIncidentSeverity: parseInt(json['current_incident_severity']),
+      currentIncidentSeverityChangedBy: parseInt(json['current_incident_severity_changed_by']),
+      currentIncidentSeverityChangedAt: parseDate(json['current_incident_severity_changed_at']),
+      statusChangedByName: json['status_changed_by']?.toString(),
+      severityChangedByName: json['severity_changed_by']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'current_incident_id': currentIncidentId,
+        'current_incident_status': currentIncidentStatus,
+        'current_incident_status_changed_by': currentIncidentStatusChangedBy,
+        'current_incident_status_changed_at':
+            currentIncidentStatusChangedAt?.toIso8601String(),
+        'current_incident_severity': currentIncidentSeverity,
+        'current_incident_severity_changed_by':
+            currentIncidentSeverityChangedBy,
+        'current_incident_severity_changed_at':
+            currentIncidentSeverityChangedAt?.toIso8601String(),
+        'status_changed_by': statusChangedByName,
+        'severity_changed_by': severityChangedByName,
+      };
+
+  @override
+  List<Object?> get props => [
+        currentIncidentId,
+        currentIncidentStatus,
+        currentIncidentStatusChangedBy,
+        currentIncidentStatusChangedAt,
+        currentIncidentSeverity,
+        currentIncidentSeverityChangedBy,
+        currentIncidentSeverityChangedAt,
+        statusChangedByName,
+        severityChangedByName,
+      ];
 }

@@ -14,6 +14,8 @@ import 'package:incidents_managment/core/future/home/ui/widgets/dashboard_live_s
 import 'package:incidents_managment/core/future/home/ui/widgets/map_widget.dart';
 import 'package:incidents_managment/core/future/home/ui/widgets/side_bar.dart';
 import 'package:incidents_managment/core/future/valve/ui/web_valve_map_screen.dart';
+import 'package:incidents_managment/core/future/gis/logic/gis_cubit.dart';
+import 'package:incidents_managment/core/future/gis/ui/gis_map_screen.dart';
 import 'package:incidents_managment/core/theming/app_theme.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
 import 'package:incidents_managment/core/di/dependcy_injection.dart';
@@ -28,7 +30,7 @@ class CrisisDashboard extends StatefulWidget {
 }
 
 class _CrisisDashboardState extends State<CrisisDashboard> {
-  final List<Widget?> _tabs = List<Widget?>.filled(9, null);
+  final List<Widget?> _tabs = List<Widget?>.filled(10, null);
 
   static const _titles = <String>[
     'لوحة التحكم',
@@ -40,6 +42,7 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
     'جميع المهام',
     'ربط مهام بالأزمة',
     'خريطة المحابس',
+    'خريطة نظم المعلومات (GIS)',
   ];
 
   @override
@@ -140,6 +143,10 @@ class _CrisisDashboardState extends State<CrisisDashboard> {
                           6 => AllMissions(key: UniqueKey()),
                           7 => const Addincidentmission(),
                           8 => const WebValveMapScreen(),
+                          9 => BlocProvider(
+                              create: (_) => getIt<GisCubit>(),
+                              child: const GisMapScreen(),
+                            ),
                           _ => const SizedBox.shrink(),
                         };
                       }

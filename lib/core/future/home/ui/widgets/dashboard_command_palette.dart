@@ -17,6 +17,8 @@ const _kDashboardPaletteNav = <({int index, String title, IconData icon})>[
   (index: 5, title: 'أنواع الأزمات', icon: Icons.category_outlined),
   (index: 6, title: 'جميع المهام', icon: Icons.assignment_outlined),
   (index: 7, title: 'ربط مهام بالأزمة', icon: Icons.hub_outlined),
+  (index: 8, title: 'خريطة المحابس', icon: Icons.water_drop_outlined),
+  (index: 9, title: 'خريطة نظم المعلومات (GIS)', icon: Icons.layers_outlined),
 ];
 
 /// Opens the command palette (also bound to Ctrl/Cmd+K via [DashboardCommandPaletteHost]).

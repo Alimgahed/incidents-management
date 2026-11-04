@@ -107,6 +107,13 @@ class MobileMoreServicesScreen extends StatelessWidget {
               // 1. الخرائط والعمليات الميدانية
               _buildSectionTitle('الخرائط والعمليات الميدانية'),
               _buildServiceTile(
+                icon: Icons.layers_rounded,
+                iconColor: const Color(0xFF0F3B6C),
+                title: 'خريطة نظم المعلومات الجغرافية (GIS)',
+                subtitle: 'استعراض شبكات وخطوط المياه، المحابس، والطبقات الجغرافية المباشرة',
+                onTap: () => context.pushNamed(Routes.gisMap),
+              ),
+              _buildServiceTile(
                 icon: Icons.water_drop_rounded,
                 iconColor: const Color(0xFF0284C7),
                 title: 'خريطة المحابس والشبكات',

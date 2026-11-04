@@ -278,11 +278,18 @@ void showEditDialog(
                         onPressed: () {
                           Navigator.pop(dialogContext);
                           
+                          final sessionUser = getIt.isRegistered<SessionManager>()
+                              ? getIt<SessionManager>().getCurrentUser()
+                              : null;
+                          final currentUserName =
+                              sessionUser?.empName ?? sessionUser?.username;
+
                           // Optimistically update the UI so it doesn't wait for server response/socket broadcast
                           context.read<IncidentMapCubit>().optimisticUpdateIncident(
                             incidentId: incident.currentIncidentId!,
                             newStatus: selectedStatus,
                             newSeverity: selectedSeverity,
+                            updatedByUserName: currentUserName,
                           );
 
                           cubit.submitIncident(

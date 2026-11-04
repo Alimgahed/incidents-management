@@ -1477,15 +1477,15 @@ class _TimelineCard extends StatelessWidget {
 
     if (items.isEmpty) {
       return _SectionCard(
-        title: 'الخط الزمني',
+        title: 'الجدول الزمني للأزمة',
         icon: Icons.timeline,
         child: _EmptyTimelineState(),
       );
     }
 
     return _SectionCard(
-      title: 'الخط الزمني للحالة',
-      icon: Icons.timeline,
+      title: 'سجل التغييرات المباشر (Live History Timeline)',
+      icon: Icons.history_rounded,
       child: Column(children: items),
     );
   }
@@ -1493,43 +1493,157 @@ class _TimelineCard extends StatelessWidget {
   List<Widget> _buildTimelineItems() {
     final items = <_TimelineItem>[];
 
+    // 1. Initial creation
     if (incident.currentIncidentCreatedAt != null) {
+      final initialSev = incident.currentIncidentSeverity != null
+          ? getSeverityArabic(incident.currentIncidentSeverity!)
+          : null;
       items.add(
         _TimelineItem(
           icon: Icons.add_circle_outline,
-          title: 'تم إنشاء البلاغ',
+          title: 'إنشاء وتسجيل الأزمة',
+          detail: initialSev != null ? 'درجة الخطورة المبدئية: $initialSev' : null,
           time: incident.currentIncidentCreatedAt!,
           userId: incident.currentIncidentCreatedBy,
-          userName: incident.username,
+          userName: incident.username ?? incident.managerName,
           isFirst: true,
           isLast: false,
         ),
       );
     }
 
-    if (incident.currentIncidentStatusUpdatedAt != null) {
-      items.add(
-        _TimelineItem(
-          icon: Icons.update_rounded,
-          title: 'تحديث حالة الأزمة',
-          time: incident.currentIncidentStatusUpdatedAt!,
-          userId: incident.currentIncidentStatusUpdatedBy,
-          userName: incident.statusUpdatedByUserName,
-          isFirst: false,
-          isLast: false,
-        ),
-      );
+    // 2. Status & Severity History
+    final historyList = incident.statusSeverityHistory;
+    if (historyList != null && historyList.isNotEmpty) {
+      // Sort chronologically ascending
+      final sortedHistory = List<IncidentStatusSeverityHistory>.from(historyList)
+        ..sort((a, b) {
+          final aTime = a.currentIncidentStatusChangedAt ??
+              a.currentIncidentSeverityChangedAt ??
+              DateTime.now();
+          final bTime = b.currentIncidentStatusChangedAt ??
+              b.currentIncidentSeverityChangedAt ??
+              DateTime.now();
+          return aTime.compareTo(bTime);
+        });
+
+      int? prevStatus = (incident.currentIncidentCreatedAt != null) ? 1 : null;
+      int? prevSeverity = sortedHistory.isNotEmpty ? sortedHistory.first.currentIncidentSeverity : null;
+
+      for (int i = 0; i < sortedHistory.length; i++) {
+        final h = sortedHistory[i];
+        final time = h.currentIncidentStatusChangedAt ??
+            h.currentIncidentSeverityChangedAt ??
+            DateTime.now();
+
+        final currStatus = h.currentIncidentStatus;
+        final currSeverity = h.currentIncidentSeverity;
+
+        final statusChanged = currStatus != null && currStatus != prevStatus;
+        final severityChanged = currSeverity != null && currSeverity != prevSeverity;
+
+        final statName = currStatus != null ? getStatusArabic(currStatus) : null;
+        final prevStatName = prevStatus != null ? getStatusArabic(prevStatus) : null;
+
+        final sevName = currSeverity != null ? getSeverityArabic(currSeverity) : null;
+        final prevSevName = prevSeverity != null ? getSeverityArabic(prevSeverity) : null;
+
+        String title = '';
+        String detail = '';
+
+        if (statusChanged && severityChanged) {
+          title = 'تحديث الحالة والخطورة معاً';
+          detail = 'الحالة: ($prevStatName ⬅ $statName) • الخطورة: ($prevSevName ⬅ $sevName)';
+        } else if (statusChanged) {
+          title = 'تحديث بيانات المتابعة';
+          detail = prevStatName != null
+              ? 'تغيرت الحالة من [$prevStatName] إلى [$statName]'
+              : 'الحالة الحالية: $statName';
+        } else if (severityChanged) {
+          title = 'تعديل درجة الخطورة';
+          detail = prevSevName != null
+              ? 'تغيرت الخطورة من [$prevSevName] إلى [$sevName]'
+              : 'درجة الخطورة: $sevName';
+        } else {
+          // If neither is different (first entry or duplicate log)
+          title = 'تحديث بيانات المتابعة';
+          final parts = <String>[];
+          if (statName != null) parts.add('الحالة: $statName');
+          if (sevName != null) parts.add('الخطورة: $sevName');
+          detail = parts.join(' | ');
+        }
+
+        final actor = h.statusChangedByName ??
+            h.severityChangedByName ??
+            (h.currentIncidentStatusChangedBy != null
+                ? '#${h.currentIncidentStatusChangedBy}'
+                : null);
+
+        items.add(
+          _TimelineItem(
+            icon: severityChanged ? Icons.warning_amber_rounded : Icons.sync_alt_rounded,
+            title: title,
+            detail: detail.isNotEmpty ? detail : null,
+            time: time,
+            userName: actor,
+            isFirst: false,
+            isLast: false,
+          ),
+        );
+
+        if (currStatus != null) prevStatus = currStatus;
+        if (currSeverity != null) prevSeverity = currSeverity;
+      }
+    } else {
+      // Fallback if history array is empty
+      if (incident.currentIncidentStatusUpdatedAt != null) {
+        final statName = incident.currentIncidentStatus != null
+            ? getStatusArabic(incident.currentIncidentStatus!)
+            : 'غير محدد';
+        items.add(
+          _TimelineItem(
+            icon: Icons.update_rounded,
+            title: 'تحديث بيانات المتابعة',
+            detail: 'الحالة المسجلة: $statName',
+            time: incident.currentIncidentStatusUpdatedAt!,
+            userId: incident.currentIncidentStatusUpdatedBy,
+            userName: incident.statusUpdatedByUserName,
+            isFirst: false,
+            isLast: false,
+          ),
+        );
+      }
+
+      if (incident.currentIncidentSeverityUpdateAt != null) {
+        final sevName = incident.currentIncidentSeverity != null
+            ? getSeverityArabic(incident.currentIncidentSeverity!)
+            : 'غير محدد';
+        items.add(
+          _TimelineItem(
+            icon: Icons.priority_high_rounded,
+            title: 'تعديل درجة الخطورة',
+            detail: 'الخطورة المسجلة: $sevName',
+            time: incident.currentIncidentSeverityUpdateAt!,
+            userId: incident.currentIncidentSeverityUpdateBy,
+            userName: incident.severityUpdatedByUserName,
+            isFirst: false,
+            isLast: false,
+          ),
+        );
+      }
     }
 
-    if (incident.currentIncidentSeverityUpdateAt != null) {
+    if (items.isNotEmpty) {
+      final last = items.removeLast();
       items.add(
         _TimelineItem(
-          icon: Icons.priority_high_rounded,
-          title: 'تحديث مستوى الخطورة',
-          time: incident.currentIncidentSeverityUpdateAt!,
-          userId: incident.currentIncidentSeverityUpdateBy,
-          userName: incident.severityUpdatedByUserName,
-          isFirst: false,
+          icon: last.icon,
+          title: last.title,
+          detail: last.detail,
+          time: last.time,
+          userId: last.userId,
+          userName: last.userName,
+          isFirst: last.isFirst,
           isLast: true,
         ),
       );
@@ -1565,6 +1679,7 @@ class _TimelineItem extends StatelessWidget {
   const _TimelineItem({
     required this.icon,
     required this.title,
+    this.detail,
     required this.time,
     this.userId,
     this.userName,
@@ -1574,6 +1689,7 @@ class _TimelineItem extends StatelessWidget {
 
   final IconData icon;
   final String title;
+  final String? detail;
   final DateTime time;
   final int? userId;
   final String? userName;
@@ -1592,14 +1708,14 @@ class _TimelineItem extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: const Color(0xFFEFF6FF),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: appColor.withValues(alpha: 0.6),
+                    color: const Color(0xFF1B72E8),
                     width: 1.5,
                   ),
                 ),
-                child: Icon(icon, size: 14, color: appColor),
+                child: Icon(icon, size: 14, color: const Color(0xFF1B72E8)),
               ),
               if (!isLast)
                 Expanded(
@@ -1624,26 +1740,54 @@ class _TimelineItem extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF0F172A),
+                      fontFamily: 'Cairo',
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    time.timeAgoArabic(),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                  if (userId != null || userName != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      'بواسطة: ${userName ?? '#$userId'}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Color(0xFF94A3B8),
+                  if (detail != null && detail!.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Text(
+                        detail!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF334155),
+                          fontFamily: 'Cairo',
+                        ),
                       ),
                     ),
                   ],
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Text(
+                        time.timeAgoArabic(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF64748B),
+                          fontFamily: 'Cairo',
+                        ),
+                      ),
+                      if (userId != null || (userName != null && userName!.isNotEmpty)) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '•  بواسطة: ${userName ?? '#$userId'}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF94A3B8),
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),

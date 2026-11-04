@@ -78,6 +78,14 @@ Widget buildSidebar(BuildContext context, {bool isDrawer = false}) {
                     ),
                     buildNavItem(
                       context,
+                      icon: Icons.layers_outlined,
+                      selectedIcon: Icons.layers_rounded,
+                      label: 'خريطة نظم المعلومات (GIS)',
+                      index: 9,
+                      isDrawer: isDrawer,
+                    ),
+                    buildNavItem(
+                      context,
                       icon: Icons.bar_chart_outlined,
                       selectedIcon: Icons.bar_chart_rounded,
                       label: 'التقارير',

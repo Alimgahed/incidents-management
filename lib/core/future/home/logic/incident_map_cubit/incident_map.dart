@@ -87,6 +87,135 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     _lastIncidentPayloadAt = DateTime.now();
   }
 
+  void _handleStatusSeverityHistoryUpdated(dynamic data) {
+    try {
+      if (kDebugMode) {
+        debugPrint('Socket.IO status_severity_history_updated received: $data');
+      }
+      dynamic payload = data;
+      if (payload is String) {
+        try {
+          payload = jsonDecode(payload);
+        } catch (_) {}
+      }
+
+      int? incidentId;
+      dynamic historyRaw;
+
+      if (payload is Map) {
+        incidentId = payload['current_incident_id'] as int? ??
+            int.tryParse('${payload["current_incident_id"]}');
+        historyRaw = payload['status_severity_history'] ?? payload['history'] ?? payload['data'];
+        if (historyRaw == null && payload.containsKey('current_incident_status')) {
+          historyRaw = [payload];
+        }
+      } else if (payload is List && payload.isNotEmpty && payload.first is Map) {
+        incidentId = payload.first['current_incident_id'] as int? ??
+            int.tryParse('${payload.first["current_incident_id"]}');
+        historyRaw = payload;
+      }
+
+      if (incidentId == null) return;
+
+      final index = incidentss.indexWhere((i) => i.currentIncidentId == incidentId);
+      if (index == -1) return;
+
+      final oldIncident = incidentss[index];
+      final newHistoryList = <IncidentStatusSeverityHistory>[];
+
+      if (historyRaw is List) {
+        for (final item in historyRaw) {
+          if (item is Map) {
+            try {
+              newHistoryList.add(
+                IncidentStatusSeverityHistory.fromJson(Map<String, dynamic>.from(item)),
+              );
+            } catch (_) {}
+          }
+        }
+      }
+
+      if (newHistoryList.isEmpty) return;
+
+      final updatedHistory = List<IncidentStatusSeverityHistory>.of(
+        oldIncident.statusSeverityHistory ?? [],
+      );
+
+      for (final h in newHistoryList) {
+        final existingIdx = updatedHistory.indexWhere(
+          (ex) =>
+              ex.currentIncidentStatusChangedAt == h.currentIncidentStatusChangedAt &&
+              ex.currentIncidentStatus == h.currentIncidentStatus,
+        );
+        if (existingIdx != -1) {
+          updatedHistory[existingIdx] = h;
+        } else {
+          updatedHistory.add(h);
+        }
+      }
+
+      updatedHistory.sort((a, b) {
+        final aTime = a.currentIncidentStatusChangedAt ?? a.currentIncidentSeverityChangedAt;
+        final bTime = b.currentIncidentStatusChangedAt ?? b.currentIncidentSeverityChangedAt;
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return -1;
+        if (bTime == null) return 1;
+        return aTime.compareTo(bTime);
+      });
+
+      final updatedIncident = CurrentIncidentModel(
+        currentIncidentId: oldIncident.currentIncidentId,
+        currentIncidentDescription: oldIncident.currentIncidentDescription,
+        currentIncidentTypeId: oldIncident.currentIncidentTypeId,
+        branchId: oldIncident.branchId,
+        managerName: oldIncident.managerName,
+        managerId: oldIncident.managerId,
+        currentIncidentTypeName: oldIncident.currentIncidentTypeName,
+        currentIncidentCreatedBy: oldIncident.currentIncidentCreatedBy,
+        currentIncidentCreatedAt: oldIncident.currentIncidentCreatedAt,
+        currentIncidentSeverity: oldIncident.currentIncidentSeverity,
+        currentIncidentSeverityUpdateBy: oldIncident.currentIncidentSeverityUpdateBy,
+        currentIncidentSeverityUpdateAt: oldIncident.currentIncidentSeverityUpdateAt,
+        currentIncidentStatus: oldIncident.currentIncidentStatus,
+        currentIncidentStatusUpdatedBy: oldIncident.currentIncidentStatusUpdatedBy,
+        currentIncidentStatusUpdatedAt: oldIncident.currentIncidentStatusUpdatedAt,
+        currentIncidentXAxis: oldIncident.currentIncidentXAxis,
+        currentIncidentYAxis: oldIncident.currentIncidentYAxis,
+        currentIncidentNotes: oldIncident.currentIncidentNotes,
+        branchName: oldIncident.branchName,
+        username: oldIncident.username,
+        address: oldIncident.address,
+        photos: oldIncident.photos,
+        statusName: oldIncident.statusName,
+        severityName: oldIncident.severityName,
+        statusUpdatedByUserName: oldIncident.statusUpdatedByUserName,
+        severityUpdatedByUserName: oldIncident.severityUpdatedByUserName,
+        statusSeverityHistory: updatedHistory,
+      )..currentIncidentWithMissions = oldIncident.currentIncidentWithMissions;
+
+      final updatedList = List<CurrentIncidentModel>.of(incidentss);
+      updatedList[index] = updatedIncident;
+      incidentss = updatedList;
+
+      _bumpPayloadTime();
+
+      if (getIt.isRegistered<IncidentCacheRepository>()) {
+        unawaited(getIt<IncidentCacheRepository>().upsert(
+          CachedIncident.fromMap(
+            updatedIncident.toJson(),
+            idOrTempId: incidentId,
+          ),
+        ));
+      }
+
+      emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('Error in _handleStatusSeverityHistoryUpdated: $e');
+      }
+    }
+  }
+
   // ===========================================================================
   // SOCKET INITIALIZATION & CACHE PRELOADING
   // ===========================================================================
@@ -253,19 +382,34 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
   void _setupSocketListeners() {
     _socket?.onConnect((_) {
+      if (kDebugMode) debugPrint('IncidentMap: Socket connected successfully');
       _reconnectAttempts = 0;
       _reconnectTimer?.cancel();
       _socket?.emit('get_incidents');
+      // Emit loaded state immediately so UI connected status updates instantly
+      if (!isClosed && state is! IncidentMapLoading) {
+        emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+      }
     });
 
-    _socket?.onDisconnect((_) => _attemptReconnect());
-
-    _socket?.onConnectError((_) {
+    _socket?.onDisconnect((reason) {
+      if (kDebugMode) debugPrint('IncidentMap: Socket disconnected ()');
+      if (!isClosed) {
+        emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+      }
       _attemptReconnect();
     });
 
-    _socket?.onError((_) {
-      if (kDebugMode) debugPrint('IncidentMap: Socket error received');
+    _socket?.onConnectError((err) {
+      if (kDebugMode) debugPrint('IncidentMap: Socket connect error ()');
+      if (!isClosed) {
+        emit(IncidentMapLoaded(incidents: List.unmodifiable(incidentss)));
+      }
+      _attemptReconnect();
+    });
+
+    _socket?.onError((err) {
+      if (kDebugMode) debugPrint('IncidentMap: Socket error received ()');
     });
 
     _socket?.on('incident_snapshot', _handleIncidentSnapshot);
@@ -275,6 +419,8 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
     _socket?.on('mission_updated', _handleMissionStatusUpdated);
     _socket?.on('mission_update_error', _handleMissionUpdateError);
+    _socket?.on('status_severity_history_updated', _handleStatusSeverityHistoryUpdated);
+    _socket?.on('status_severity_history', _handleStatusSeverityHistoryUpdated);
   }
 
   // ===========================================================================
@@ -342,6 +488,13 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
       if (kDebugMode) {
         debugPrint('IncidentMap: Received raw snapshot with ${data.length} items from server');
+        if (data.isNotEmpty) {
+          try {
+            debugPrint('🔥 [SNAPSHOT SAMPLE INCIDENT]: ${jsonEncode(data.first)}');
+          } catch (e) {
+            debugPrint('🔥 [SNAPSHOT SAMPLE INCIDENT]: ${data.first}');
+          }
+        }
       }
 
       // Defensively copy to a plain List<dynamic> so it can be sent across
@@ -406,7 +559,13 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
   void _handleIncidentCreated(dynamic data) {
     try {
-      if (kDebugMode) debugPrint('Socket.IO incident_created received: $data');
+      if (kDebugMode) {
+        try {
+          debugPrint('🔥 [INCIDENT_CREATED RAW]: ${jsonEncode(data)}');
+        } catch (e) {
+          debugPrint('🔥 [INCIDENT_CREATED RAW]: $data');
+        }
+      }
       final newIncident = _parseIncidentPayload(data);
       addIncident(newIncident);
       if (getIt.isRegistered<RealTimeAlertManager>()) {
@@ -500,8 +659,14 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
   void _handleIncidentUpdated(dynamic data) {
     try {
-      if (kDebugMode) debugPrint('Socket.IO incident_updated received: $data');
-      final updatedIncident = _parseIncidentPayload(data);
+      if (kDebugMode) {
+        try {
+          debugPrint('🔥 [INCIDENT_UPDATED RAW]: ${jsonEncode(data)}');
+        } catch (e) {
+          debugPrint('🔥 [INCIDENT_UPDATED RAW]: $data');
+        }
+      }
+      var updatedIncident = _parseIncidentPayload(data);
 
       final index = incidentss.indexWhere(
         (i) => i.currentIncidentId == updatedIncident.currentIncidentId,
@@ -509,6 +674,46 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
 
       if (index != -1) {
         final oldIncident = incidentss[index];
+
+        // Merge status & severity history list so we never lose audit trail logs
+        final mergedHistory = List<IncidentStatusSeverityHistory>.from(
+          updatedIncident.statusSeverityHistory ?? oldIncident.statusSeverityHistory ?? [],
+        );
+
+        // If the update payload didn't explicitly include statusSeverityHistory, but status or severity changed,
+        // create a new history log entry right now with timestamp and actor
+        final statusChanged = updatedIncident.currentIncidentStatus != null &&
+            updatedIncident.currentIncidentStatus != oldIncident.currentIncidentStatus;
+        final severityChanged = updatedIncident.currentIncidentSeverity != null &&
+            updatedIncident.currentIncidentSeverity != oldIncident.currentIncidentSeverity;
+
+        if (statusChanged || severityChanged) {
+          final now = updatedIncident.currentIncidentStatusUpdatedAt ??
+              updatedIncident.currentIncidentSeverityUpdateAt ??
+              DateTime.now();
+          final actor = updatedIncident.statusUpdatedByUserName ??
+              updatedIncident.severityUpdatedByUserName ??
+              updatedIncident.username ??
+              'المستخدم';
+
+          mergedHistory.add(
+            IncidentStatusSeverityHistory(
+              currentIncidentId: updatedIncident.currentIncidentId,
+              currentIncidentStatus: updatedIncident.currentIncidentStatus,
+              currentIncidentStatusChangedAt: now,
+              currentIncidentSeverity: updatedIncident.currentIncidentSeverity,
+              currentIncidentSeverityChangedAt: now,
+              statusChangedByName: actor,
+              severityChangedByName: actor,
+            ),
+          );
+        }
+
+        updatedIncident = updatedIncident.copyWith(
+          statusSeverityHistory: mergedHistory,
+          currentIncidentWithMissions: updatedIncident.currentIncidentWithMissions ?? oldIncident.currentIncidentWithMissions,
+        );
+
         final updated = List<CurrentIncidentModel>.of(incidentss);
         updated[index] = updatedIncident;
         incidentss = updated;
@@ -539,7 +744,7 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
         }
       }
     } catch (e, st) {
-      if (kDebugMode) debugPrint('Error handling incident_updated: $e\n$st');
+      if (kDebugMode) debugPrint('Error handling incident_updated: \n');
       refresh();
     }
   }
@@ -711,17 +916,43 @@ class IncidentMapCubit extends Cubit<IncidentMapState> {
     required int incidentId,
     required int newStatus,
     required int newSeverity,
+    String? updatedByUserName,
   }) {
     if (getIt.isRegistered<RealTimeAlertManager>()) {
-      getIt<RealTimeAlertManager>().recordLocalAction('incident_$incidentId');
+      getIt<RealTimeAlertManager>().recordLocalAction('incident_');
     }
     final index = incidentss.indexWhere(
       (i) => i.currentIncidentId == incidentId,
     );
     if (index != -1) {
-      final updatedIncident = incidentss[index].copyWith(
+      final old = incidentss[index];
+      final now = DateTime.now();
+      
+      final historyList = List<IncidentStatusSeverityHistory>.from(
+        old.statusSeverityHistory ?? [],
+      );
+
+      // Append new movement node
+      historyList.add(
+        IncidentStatusSeverityHistory(
+          currentIncidentId: incidentId,
+          currentIncidentStatus: newStatus,
+          currentIncidentStatusChangedAt: now,
+          currentIncidentSeverity: newSeverity,
+          currentIncidentSeverityChangedAt: now,
+          statusChangedByName: updatedByUserName ?? old.statusUpdatedByUserName ?? 'المستخدم الحالي',
+          severityChangedByName: updatedByUserName ?? old.severityUpdatedByUserName ?? 'المستخدم الحالي',
+        ),
+      );
+
+      final updatedIncident = old.copyWith(
         currentIncidentStatus: newStatus,
         currentIncidentSeverity: newSeverity,
+        currentIncidentStatusUpdatedAt: now,
+        currentIncidentSeverityUpdateAt: now,
+        statusUpdatedByUserName: updatedByUserName ?? old.statusUpdatedByUserName,
+        severityUpdatedByUserName: updatedByUserName ?? old.severityUpdatedByUserName,
+        statusSeverityHistory: historyList,
       );
 
       final updated = List<CurrentIncidentModel>.of(incidentss);

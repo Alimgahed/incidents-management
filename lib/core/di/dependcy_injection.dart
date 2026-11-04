@@ -1,3 +1,5 @@
+import 'package:incidents_managment/core/future/gis/data/gis_api_service.dart';
+import 'package:incidents_managment/core/future/gis/logic/gis_cubit.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:incidents_managment/core/future/actions/data/repos/add_incident/add_incdient_repo.dart';
@@ -222,5 +224,13 @@ Future<void> setup() async {
   );
   getIt.registerLazySingleton<RegistrationPost>(
     () => RegistrationPost(apiService: getIt<ApiService>()),
+  );
+
+  // GIS Layer API Integration
+  getIt.registerLazySingleton<GisApiService>(
+    () => GisApiService(dio: getIt<Dio>()),
+  );
+  getIt.registerFactory<GisCubit>(
+    () => GisCubit(apiService: getIt<GisApiService>()),
   );
 }

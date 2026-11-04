@@ -19,6 +19,7 @@ import 'package:incidents_managment/core/future/reports/ui/widgets/reports_stale
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_status_donut_chart.dart';
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_tab_bar.dart';
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_trend_chart.dart';
+import 'package:incidents_managment/core/future/reports/ui/widgets/reports_time_heatmap.dart';
 import 'package:incidents_managment/core/future/reports/ui/widgets/reports_type_bars.dart';
 
 class IncidentReportsScreen extends StatelessWidget {
@@ -439,6 +440,11 @@ class _ReportsView extends StatelessWidget {
         SizedBox(
           height: 380,
           child: ReportsTrendChartCard(state: state),
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: 420,
+          child: ReportsTimeHeatmapCard(state: state),
         ),
         const SizedBox(height: 14),
         SizedBox(
