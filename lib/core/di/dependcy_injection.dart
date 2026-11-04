@@ -51,6 +51,10 @@ import 'package:incidents_managment/core/security/secure_storage_service.dart';
 import 'package:incidents_managment/core/security/session_manager.dart';
 import 'package:incidents_managment/core/realtime/services/activity_center_store.dart';
 import 'package:incidents_managment/core/realtime/services/realtime_alert_manager.dart';
+import 'package:incidents_managment/features/valves_map/services/etit_gps_service.dart';
+import 'package:incidents_managment/features/fleet/domain/repositories/fleet_repository.dart';
+import 'package:incidents_managment/features/fleet/data/repositories/fleet_repository_impl.dart';
+import 'package:incidents_managment/features/fleet/presentation/cubit/fleet_cubit.dart';
 
 final getIt = GetIt.instance;
 
@@ -232,5 +236,14 @@ Future<void> setup() async {
   );
   getIt.registerFactory<GisCubit>(
     () => GisCubit(apiService: getIt<GisApiService>()),
+  );
+
+  // ETIT GPS Fleet Management Clean Architecture Layer
+  getIt.registerLazySingleton<EtitGpsService>(() => EtitGpsService());
+  getIt.registerLazySingleton<FleetRepository>(
+    () => FleetRepositoryImpl(gpsService: getIt<EtitGpsService>()),
+  );
+  getIt.registerFactory<FleetCubit>(
+    () => FleetCubit(repository: getIt<FleetRepository>()),
   );
 }

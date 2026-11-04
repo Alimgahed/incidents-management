@@ -74,6 +74,50 @@ class EtitVehicleModel {
     return vehicleType ?? 'مركبة';
   }
 
+  EtitVehicleModel copyWith({
+    String? id,
+    String? code,
+    String? plateNumber,
+    String? codePlateNumber,
+    String? branch,
+    String? allocation,
+    String? vehicleType,
+    String? statusName,
+    String? deviceCode,
+    String? vendorName,
+    String? providerName,
+    String? chassisNumber,
+    bool? isMonitored,
+    double? latitude,
+    double? longitude,
+    double? speed,
+    String? statusCode,
+    String? lastUpdate,
+    Map<String, dynamic>? rawData,
+  }) {
+    return EtitVehicleModel(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      plateNumber: plateNumber ?? this.plateNumber,
+      codePlateNumber: codePlateNumber ?? this.codePlateNumber,
+      branch: branch ?? this.branch,
+      allocation: allocation ?? this.allocation,
+      vehicleType: vehicleType ?? this.vehicleType,
+      statusName: statusName ?? this.statusName,
+      deviceCode: deviceCode ?? this.deviceCode,
+      vendorName: vendorName ?? this.vendorName,
+      providerName: providerName ?? this.providerName,
+      chassisNumber: chassisNumber ?? this.chassisNumber,
+      isMonitored: isMonitored ?? this.isMonitored,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      speed: speed ?? this.speed,
+      statusCode: statusCode ?? this.statusCode,
+      lastUpdate: lastUpdate ?? this.lastUpdate,
+      rawData: rawData ?? this.rawData,
+    );
+  }
+
   factory EtitVehicleModel.fromJson(Map<String, dynamic> json) {
     return EtitVehicleModel(
       id: json['ID']?.toString() ?? '',
@@ -127,4 +171,36 @@ class EtitVehicleModel {
       'lastUpdate': lastUpdate,
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EtitVehicleModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          code == other.code &&
+          plateNumber == other.plateNumber &&
+          allocation == other.allocation &&
+          vehicleType == other.vehicleType &&
+          deviceCode == other.deviceCode &&
+          latitude == other.latitude &&
+          longitude == other.longitude &&
+          speed == other.speed &&
+          statusCode == other.statusCode &&
+          lastUpdate == other.lastUpdate;
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    code,
+    plateNumber,
+    allocation,
+    vehicleType,
+    deviceCode,
+    latitude,
+    longitude,
+    speed,
+    statusCode,
+    lastUpdate,
+  );
 }

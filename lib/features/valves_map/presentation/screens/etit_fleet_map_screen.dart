@@ -1,10 +1,17 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/di/dependcy_injection.dart';
+import '../../../fleet/core/shimmer/fleet_shimmer_widgets.dart';
+import '../../../fleet/core/theme/fleet_design_system.dart';
+import '../../../fleet/domain/repositories/fleet_repository.dart';
+import '../../../fleet/presentation/cubit/fleet_cubit.dart';
+import '../../../fleet/presentation/cubit/fleet_state.dart';
+import '../../../fleet/presentation/widgets/fleet_error_banner.dart';
+import '../../../fleet/presentation/widgets/fleet_vehicle_details_modal.dart';
 import '../../models/etit_vehicle_model.dart';
-import '../../services/etit_gps_service.dart';
 
 class EtitFleetMapScreen extends StatefulWidget {
   final EtitVehicleModel? targetVehicle;
@@ -17,31 +24,10 @@ class EtitFleetMapScreen extends StatefulWidget {
 
 class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
   final MapController _mapController = MapController();
-  final EtitGpsService _gpsService = EtitGpsService();
   final TextEditingController _searchController = TextEditingController();
-
-  List<EtitVehicleModel> _allVehicles = [];
-  List<EtitVehicleModel> _filteredVehicles = [];
-  EtitVehicleModel? _selectedVehicle;
-
-  bool _isLoading = true;
-  bool _isRefreshing = false;
-  bool _isSidePanelExpanded = false;
-  bool _isFollowingSelected = false;
-
-  // Filters (All dynamic from ETIT model data)
-  String _searchQuery = '';
-  String _selectedStatus = 'الكل'; // الكل, متحركة, متوقفة, غير متصل
-  String _selectedBranch = 'الكل';
-  String _selectedType = 'الكل';
-  String _selectedVendor = 'الكل';
-  String _selectedProvider = 'الكل';
-  String _selectedSystemStatus = 'الكل';
-
-  // Map tile style
-  String _mapLayerKey = 'osm';
-
-  Timer? _refreshTimer;
+  late final FleetCubit _cubit;
+  bool _ownsCubit = false;
+  bool _hasCenteredInitialTarget = false;
 
   static const LatLng _minyaCenter = LatLng(28.10988, 30.75030);
 
@@ -60,181 +46,45 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedVehicle = widget.targetVehicle;
-    _loadLiveFleet();
-    // Live polling every 10 seconds (100% Read-Only)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      _loadLiveFleet(silent: true);
-    });
+    FleetCubit? existing;
+    try {
+      existing = context.read<FleetCubit>();
+    } catch (_) {
+      existing = null;
+    }
+
+    if (existing != null) {
+      _cubit = existing;
+      _ownsCubit = false;
+      if (widget.targetVehicle != null) {
+        _cubit.selectVehicle(widget.targetVehicle);
+      }
+      if (_cubit.state.allVehicles.isEmpty) {
+        _cubit.initialize(targetVehicle: widget.targetVehicle);
+      }
+    } else {
+      _cubit = getIt.isRegistered<FleetCubit>()
+          ? getIt<FleetCubit>()
+          : FleetCubit(repository: getIt<FleetRepository>());
+      _ownsCubit = true;
+      _cubit.initialize(targetVehicle: widget.targetVehicle);
+    }
+
+    _searchController.text = _cubit.state.filters.searchQuery;
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
     _searchController.dispose();
     _mapController.dispose();
+    if (_ownsCubit) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
-  Future<void> _loadLiveFleet({bool silent = false}) async {
-    if (!silent) {
-      setState(() => _isLoading = true);
-    } else {
-      if (mounted) setState(() => _isRefreshing = true);
-    }
-
-    final data = await _gpsService.getVehiclesWithLiveTracking();
-
-    if (!mounted) return;
-
-    setState(() {
-      _allVehicles = data;
-      _applyFilters();
-      _isLoading = false;
-      _isRefreshing = false;
-
-      if (_selectedVehicle != null) {
-        final updated = _allVehicles.where((v) => v.id == _selectedVehicle!.id);
-        if (updated.isNotEmpty) {
-          _selectedVehicle = updated.first;
-        }
-      } else if (widget.targetVehicle != null && !silent) {
-        final match = _allVehicles.where((v) => v.id == widget.targetVehicle!.id);
-        if (match.isNotEmpty) {
-          _selectedVehicle = match.first;
-        }
-      }
-    });
-
-    if (!silent && _selectedVehicle != null && _selectedVehicle!.hasValidLocation) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _mapController.move(
-            LatLng(_selectedVehicle!.latitude!, _selectedVehicle!.longitude!),
-            15.5,
-          );
-        }
-      });
-    } else if (silent &&
-        _isFollowingSelected &&
-        _selectedVehicle != null &&
-        _selectedVehicle!.hasValidLocation) {
-      _mapController.move(
-        LatLng(_selectedVehicle!.latitude!, _selectedVehicle!.longitude!),
-        _mapController.camera.zoom,
-      );
-    }
-  }
-
-  void _applyFilters() {
-    final q = _searchQuery.trim().toLowerCase();
-
-    _filteredVehicles = _allVehicles.where((v) {
-      final matchesSearch = q.isEmpty ||
-          v.plateNumber.toLowerCase().contains(q) ||
-          v.code.toLowerCase().contains(q) ||
-          (v.codePlateNumber ?? '').toLowerCase().contains(q) ||
-          (v.deviceCode ?? '').toLowerCase().contains(q) ||
-          (v.allocation ?? '').toLowerCase().contains(q) ||
-          (v.chassisNumber ?? '').toLowerCase().contains(q) ||
-          (v.vendorName ?? '').toLowerCase().contains(q) ||
-          (v.providerName ?? '').toLowerCase().contains(q);
-
-      bool matchesStatus = true;
-      if (_selectedStatus == 'متحركة') {
-        matchesStatus = v.isMoving;
-      } else if (_selectedStatus == 'متوقفة') {
-        matchesStatus = v.isStopped;
-      } else if (_selectedStatus == 'غير متصل') {
-        matchesStatus = v.isOffline;
-      }
-
-      final vBranch = (v.allocation ?? '').trim().isEmpty
-          ? 'غير محدد'
-          : v.allocation!.trim();
-      final matchesBranch =
-          _selectedBranch == 'الكل' || vBranch == _selectedBranch;
-
-      final vType = (v.vehicleType ?? '').trim().isEmpty
-          ? 'غير محدد'
-          : v.vehicleType!.trim();
-      final matchesType = _selectedType == 'الكل' || vType == _selectedType;
-
-      final vVendor = (v.vendorName ?? '').trim().isEmpty
-          ? 'غير محدد'
-          : v.vendorName!.trim();
-      final matchesVendor =
-          _selectedVendor == 'الكل' || vVendor == _selectedVendor;
-
-      final vProvider = (v.providerName ?? '').trim().isEmpty
-          ? 'غير محدد'
-          : v.providerName!.trim();
-      final matchesProvider =
-          _selectedProvider == 'الكل' || vProvider == _selectedProvider;
-
-      final vSysStatus = (v.statusName ?? '').trim().isEmpty
-          ? 'غير محدد'
-          : v.statusName!.trim();
-      final matchesSysStatus =
-          _selectedSystemStatus == 'الكل' || vSysStatus == _selectedSystemStatus;
-
-      return matchesSearch &&
-          matchesStatus &&
-          matchesBranch &&
-          matchesType &&
-          matchesVendor &&
-          matchesProvider &&
-          matchesSysStatus;
-    }).toList();
-  }
-
-  bool get _hasActiveFilters =>
-      _searchQuery.isNotEmpty ||
-      _selectedStatus != 'الكل' ||
-      _selectedBranch != 'الكل' ||
-      _selectedType != 'الكل' ||
-      _selectedVendor != 'الكل' ||
-      _selectedProvider != 'الكل' ||
-      _selectedSystemStatus != 'الكل';
-
-  void _clearAllFilters() {
-    setState(() {
-      _searchController.clear();
-      _searchQuery = '';
-      _selectedStatus = 'الكل';
-      _selectedBranch = 'الكل';
-      _selectedType = 'الكل';
-      _selectedVendor = 'الكل';
-      _selectedProvider = 'الكل';
-      _selectedSystemStatus = 'الكل';
-      _applyFilters();
-    });
-  }
-
-  List<String> _extractUniqueOptions(String? Function(EtitVehicleModel) getter) {
-    final set = _allVehicles
-        .map((v) {
-          final val = (getter(v) ?? '').trim();
-          return val.isEmpty ? 'غير محدد' : val;
-        })
-        .toSet()
-        .toList()
-      ..sort();
-    return ['الكل', ...set];
-  }
-
-  List<String> get _branches => _extractUniqueOptions((v) => v.allocation);
-  List<String> get _vehicleTypes => _extractUniqueOptions((v) => v.vehicleType);
-  List<String> get _vendors => _extractUniqueOptions((v) => v.vendorName);
-  List<String> get _providers => _extractUniqueOptions((v) => v.providerName);
-
-  int get _totalCount => _allVehicles.length;
-  int get _movingCount => _allVehicles.where((v) => v.isMoving).length;
-  int get _stoppedCount => _allVehicles.where((v) => v.isStopped).length;
-  int get _offlineCount => _allVehicles.where((v) => v.isOffline).length;
-
-  void _fitAllMarkers() {
-    final pts = _filteredVehicles
+  void _fitAllMarkers(List<EtitVehicleModel> vehicles) {
+    final pts = vehicles
         .where((v) => v.hasValidLocation)
         .map((v) => LatLng(v.latitude!, v.longitude!))
         .toList();
@@ -256,12 +106,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
   }
 
   void _selectAndFocusVehicle(EtitVehicleModel v, {bool fromPanel = false}) {
-    setState(() {
-      _selectedVehicle = v;
-      if (fromPanel) {
-        _isSidePanelExpanded = false;
-      }
-    });
+    _cubit.selectVehicle(v, collapseMapList: fromPanel);
     if (v.hasValidLocation) {
       _mapController.move(LatLng(v.latitude!, v.longitude!), 15.5);
     } else {
@@ -270,7 +115,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
           content: Text(
             'المركبة (${v.plateNumber.isNotEmpty ? v.plateNumber : v.code}) ليس لها إحداثيات GPS متصلة حالياً — تم عرض كافة بياناتها بالأسفل.',
           ),
-          backgroundColor: const Color(0xFFB91C1C),
+          backgroundColor: FleetColors.offlineText,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
         ),
@@ -279,15 +124,15 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
   }
 
   Color _statusColor(EtitVehicleModel v) {
-    if (v.isMoving) return const Color(0xFF16A34A);
-    if (v.isStopped) return const Color(0xFFD97706);
-    return const Color(0xFFDC2626);
+    if (v.isMoving) return FleetColors.movingDot;
+    if (v.isStopped) return FleetColors.stoppedDot;
+    return FleetColors.offlineDot;
   }
 
   Color _statusBgColor(EtitVehicleModel v) {
-    if (v.isMoving) return const Color(0xFFDCFCE7);
-    if (v.isStopped) return const Color(0xFFFEF3C7);
-    return const Color(0xFFFEE2E2);
+    if (v.isMoving) return FleetColors.movingBadgeBg;
+    if (v.isStopped) return FleetColors.stoppedBadgeBg;
+    return FleetColors.offlineBadgeBg;
   }
 
   IconData _vehicleIcon(String? type) {
@@ -298,106 +143,138 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
     return Icons.directions_car_filled_rounded;
   }
 
-  DateTime? _parseEtitDate(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return null;
-    final clean = raw.trim();
-    final direct = DateTime.tryParse(clean);
-    if (direct != null) return direct;
-
-    // Format like "4 November 2026 18:15" or "04 November 2026 18:15:22"
-    final months = {
-      'january': 1,
-      'february': 2,
-      'march': 3,
-      'april': 4,
-      'may': 5,
-      'june': 6,
-      'july': 7,
-      'august': 8,
-      'september': 9,
-      'october': 10,
-      'november': 11,
-      'december': 12,
-    };
-    final m = RegExp(
-      r'^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?',
-    ).firstMatch(clean);
-    if (m != null) {
-      final day = int.tryParse(m.group(1)!) ?? 1;
-      final mon = months[m.group(2)!.toLowerCase()] ?? 1;
-      final year = int.tryParse(m.group(3)!) ?? 2026;
-      final hour = int.tryParse(m.group(4)!) ?? 0;
-      final min = int.tryParse(m.group(5)!) ?? 0;
-      final sec = int.tryParse(m.group(6) ?? '0') ?? 0;
-      return DateTime(year, mon, day, hour, min, sec);
-    }
-    return null;
-  }
-
-  String _formatLastUpdateLabel(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return 'غير متوفر';
-    final dt = _parseEtitDate(raw);
-    if (dt == null) return raw;
-    final now = DateTime.now();
-    final isToday =
-        dt.year == now.year && dt.month == now.month && dt.day == now.day;
-    final hour12 = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
-    final amPm = dt.hour >= 12 ? 'م' : 'ص';
-    final timeStr =
-        '${hour12.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} $amPm';
-    if (isToday) return 'اليوم $timeStr';
-    return '${dt.year}/${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')} $timeStr';
-  }
-
-  String _formatRelativeShort(String? raw) {
-    final dt = _parseEtitDate(raw);
-    if (dt == null) return '';
-    final diff = DateTime.now().difference(dt);
-    if (diff.isNegative || diff.inMinutes < 1) return 'الآن';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} د';
-    if (diff.inHours < 24) return '${diff.inHours} س';
-    return '${diff.inDays} ي';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final mapVehicles =
-        _filteredVehicles.where((v) => v.hasValidLocation).toList();
+    return BlocProvider<FleetCubit>.value(
+      value: _cubit,
+      child: BlocConsumer<FleetCubit, FleetState>(
+        listenWhen: (prev, curr) =>
+            prev.selectedVehicle != curr.selectedVehicle ||
+            prev.filters.searchQuery != curr.filters.searchQuery ||
+            prev.lastSyncedAt != curr.lastSyncedAt,
+        listener: (context, state) {
+          if (_searchController.text != state.filters.searchQuery) {
+            _searchController.value = TextEditingValue(
+              text: state.filters.searchQuery,
+              selection: TextSelection.collapsed(
+                offset: state.filters.searchQuery.length,
+              ),
+            );
+          }
+
+          if (!_hasCenteredInitialTarget &&
+              widget.targetVehicle != null &&
+              state.selectedVehicle != null &&
+              state.selectedVehicle!.hasValidLocation) {
+            _hasCenteredInitialTarget = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _mapController.move(
+                  LatLng(
+                    state.selectedVehicle!.latitude!,
+                    state.selectedVehicle!.longitude!,
+                  ),
+                  15.5,
+                );
+              }
+            });
+          } else if (state.isFollowingSelected &&
+              state.selectedVehicle != null &&
+              state.selectedVehicle!.hasValidLocation) {
+            _mapController.move(
+              LatLng(
+                state.selectedVehicle!.latitude!,
+                state.selectedVehicle!.longitude!,
+              ),
+              _mapController.camera.zoom,
+            );
+          }
+        },
+        buildWhen: (prev, curr) =>
+            prev.isInitialLoading != curr.isInitialLoading ||
+            prev.status != curr.status ||
+            prev.hasData != curr.hasData,
+        builder: (context, state) {
+          if (state.isInitialLoading) {
+            return const Scaffold(
+              backgroundColor: FleetColors.pageBackground,
+              body: FleetMapShimmer(),
+            );
+          }
+
+          if (state.status == FleetStatus.error && !state.hasData) {
+            return Scaffold(
+              backgroundColor: FleetColors.pageBackground,
+              body: FleetErrorStateView(
+                failure: state.failure!,
+                onRetry: () => _cubit.refresh(forceFullRefresh: true),
+              ),
+            );
+          }
+
+          return _buildMapCanvas(context);
+        },
+      ),
+    );
+  }
+
+  Widget _buildMapCanvas(BuildContext context) {
     final canPop = Navigator.of(context).canPop();
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isMobile = FleetResponsive.isMobile(screenWidth);
 
     return Scaffold(
       backgroundColor: const Color(0xFFE5E7EB),
       body: Stack(
         children: [
-          // ── 1. Interactive Live Map ────────────────────────────────────────
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: widget.targetVehicle?.hasValidLocation == true
-                  ? LatLng(
-                      widget.targetVehicle!.latitude!,
-                      widget.targetVehicle!.longitude!,
-                    )
-                  : _minyaCenter,
-              initialZoom:
-                  widget.targetVehicle?.hasValidLocation == true ? 15.0 : 11.0,
-              maxZoom: 19,
-              minZoom: 5,
-              onTap: (_, _) => setState(() {
-                _selectedVehicle = null;
-                _isFollowingSelected = false;
-              }),
-            ),
-            children: [
-              TileLayer(
-                urlTemplate:
-                    (_mapLayers[_mapLayerKey] ?? _mapLayers['osm']!)['url']!,
-                userAgentPackageName: 'incidents_managment',
-              ),
-              MarkerLayer(
-                markers: mapVehicles.map((v) => _buildVehicleMarker(v)).toList(),
-              ),
-            ],
+          // ── 1. Interactive Live Map (Rebuilds only when map markers/layer/selection change)
+          BlocBuilder<FleetCubit, FleetState>(
+            buildWhen: (prev, curr) =>
+                prev.filteredVehicles != curr.filteredVehicles ||
+                prev.selectedVehicle != curr.selectedVehicle ||
+                prev.mapLayerKey != curr.mapLayerKey,
+            builder: (context, state) {
+              final mapVehicles = state.filteredVehicles
+                  .where((v) => v.hasValidLocation)
+                  .toList(growable: false);
+
+              return FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter:
+                      widget.targetVehicle?.hasValidLocation == true
+                          ? LatLng(
+                              widget.targetVehicle!.latitude!,
+                              widget.targetVehicle!.longitude!,
+                            )
+                          : _minyaCenter,
+                  initialZoom: widget.targetVehicle?.hasValidLocation == true
+                      ? 15.0
+                      : 11.0,
+                  maxZoom: 19,
+                  minZoom: 5,
+                  onTap: (_, _) => _cubit.selectVehicle(null),
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        (_mapLayers[state.mapLayerKey] ??
+                            _mapLayers['osm']!)['url']!,
+                    userAgentPackageName: 'incidents_managment',
+                  ),
+                  MarkerLayer(
+                    markers: mapVehicles
+                        .map(
+                          (v) => _buildVehicleMarker(
+                            v,
+                            isSelected: state.selectedVehicle?.id == v.id,
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                ],
+              );
+            },
           ),
 
           // ── 2. Left-Side Map Zoom & Tools Strip ───────────────────────────
@@ -425,237 +302,38 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
               children: [
                 _buildTopFloatingBar(canPop: canPop),
                 const SizedBox(height: 10),
-                Align(
-                  alignment: AlignmentDirectional.topStart,
-                  child: SizedBox(
-                    width: 322,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 1. تحديد الكل + تحديث الآن
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildTopActionButton(
-                                label: 'تحديد الكل',
-                                icon: Icons.fit_screen_outlined,
-                                onTap: _fitAllMarkers,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _buildTopActionButton(
-                                label: 'تحديث الآن',
-                                icon: Icons.refresh_rounded,
-                                isSpinning: _isRefreshing,
-                                onTap: () => _loadLiveFleet(),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        // 2. البحث بالرقم
-                        Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (val) {
-                              setState(() {
-                                _searchQuery = val;
-                                _applyFilters();
-                              });
-                            },
-                            style: const TextStyle(fontSize: 12),
-                            decoration: InputDecoration(
-                              hintText: 'ابحث برقم اللوحة، كود السيارة أو IMEI...',
-                              hintStyle: const TextStyle(
-                                fontSize: 11.5,
-                                color: Color(0xFF94A3B8),
-                              ),
-                              prefixIcon: const Icon(
-                                Icons.search_rounded,
-                                size: 18,
-                                color: Color(0xFF64748B),
-                              ),
-                              suffixIcon: _searchQuery.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(
-                                        Icons.clear_rounded,
-                                        size: 15,
-                                      ),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        setState(() {
-                                          _searchQuery = '';
-                                          _applyFilters();
-                                        });
-                                      },
-                                    )
-                                  : null,
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-
-                        // 3. زر قائمة المركبات
-                        Material(
-                          color: _isSidePanelExpanded
-                              ? const Color(0xFF0F3B6C)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          elevation: 3,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(10),
-                            onTap: () => setState(
-                              () => _isSidePanelExpanded = !_isSidePanelExpanded,
-                            ),
-                            child: Container(
-                              height: 40,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: _isSidePanelExpanded
-                                      ? const Color(0xFF0F3B6C)
-                                      : const Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.directions_car_filled_rounded,
-                                    size: 18,
-                                    color: _isSidePanelExpanded
-                                        ? Colors.white
-                                        : const Color(0xFF0F3B6C),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'قائمة المركبات (${_filteredVehicles.length})',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: _isSidePanelExpanded
-                                            ? Colors.white
-                                            : const Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    _isSidePanelExpanded
-                                        ? Icons.keyboard_arrow_up_rounded
-                                        : Icons.keyboard_arrow_down_rounded,
-                                    size: 20,
-                                    color: _isSidePanelExpanded
-                                        ? Colors.white
-                                        : const Color(0xFF475569),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // 4. القائمة المنسدلة للمركبات (تظهر عند الضغط)
-                        if (_isSidePanelExpanded)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: SizedBox(
-                              height: 360,
-                              child: _buildRightVehiclesPanel(),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
+                _buildRightStackedControls(),
               ],
             ),
           ),
 
           // ── 5. Selected Vehicle Floating Details Card ─────────────────────
-          if (_selectedVehicle != null)
-            Positioned(
-              bottom: 16,
-              left: 155,
-              right: _isSidePanelExpanded ? 348 : 16,
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: _buildSelectedVehicleCard(_selectedVehicle!),
-                ),
-              ),
-            ),
+          BlocBuilder<FleetCubit, FleetState>(
+            buildWhen: (prev, curr) =>
+                prev.selectedVehicle != curr.selectedVehicle ||
+                prev.isFollowingSelected != curr.isFollowingSelected ||
+                prev.isMapListExpanded != curr.isMapListExpanded,
+            builder: (context, state) {
+              final selected = state.selectedVehicle;
+              if (selected == null) return const SizedBox.shrink();
 
-          // ── 7. Loading Overlay ────────────────────────────────────────────
-          if (_isLoading)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withAlpha(45),
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 18,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 16,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Color(0xFF0F3B6C),
-                          ),
-                        ),
-                        SizedBox(width: 14),
-                        Text(
-                          'جاري تحميل خريطة الأسطول والبيانات الحية من ETIT...',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                      ],
+              return Positioned(
+                bottom: 16,
+                left: isMobile ? 14 : 155,
+                right: (!isMobile && state.isMapListExpanded) ? 348 : 16,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: _buildSelectedVehicleCard(
+                      selected,
+                      isFollowing: state.isFollowingSelected,
                     ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -664,8 +342,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
   // 1. CUSTOM VEHICLE MARKER ON MAP
   // ═══════════════════════════════════════════════════════════════════════════
-  Marker _buildVehicleMarker(EtitVehicleModel v) {
-    final isSelected = _selectedVehicle?.id == v.id;
+  Marker _buildVehicleMarker(EtitVehicleModel v, {required bool isSelected}) {
     final color = _statusColor(v);
 
     String statusSuffix;
@@ -692,7 +369,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF0F3B6C) : Colors.white,
+                color: isSelected ? FleetColors.primaryNavy : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isSelected ? Colors.white : color.withAlpha(180),
@@ -728,7 +405,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                         fontWeight: FontWeight.w800,
                         color: isSelected
                             ? Colors.white
-                            : const Color(0xFF0F172A),
+                            : FleetColors.textPrimary,
                       ),
                     ),
                   ),
@@ -783,297 +460,473 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
   // 2. TOP FLOATING FILTER & ACTION BAR
   // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildTopFloatingBar({required bool canPop}) {
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        // Right Group: Status Pills + Dropdowns + Search
-        Wrap(
+    return BlocBuilder<FleetCubit, FleetState>(
+      buildWhen: (prev, curr) =>
+          prev.statistics != curr.statistics ||
+          prev.filters != curr.filters ||
+          prev.mapLayerKey != curr.mapLayerKey,
+      builder: (context, state) {
+        final stats = state.statistics;
+        final filters = state.filters;
+
+        return Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
           spacing: 8,
           runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (canPop)
-              Material(
-                color: const Color(0xFF0F3B6C),
-                borderRadius: BorderRadius.circular(10),
-                elevation: 3,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () => Navigator.of(context).pop(),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.arrow_back_rounded,
-                            size: 16, color: Colors.white),
-                        SizedBox(width: 6),
-                        Text(
-                          'عودة للقائمة',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
+            // Right Group: Status Pills + Dropdowns
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (canPop)
+                  Material(
+                    color: FleetColors.primaryNavy,
+                    borderRadius: BorderRadius.circular(10),
+                    elevation: 3,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () => Navigator.of(context).pop(),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-            // Status Filter Pills Group
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildStatusPill(
-                    label: 'الكل',
-                    count: _totalCount,
-                    value: 'الكل',
-                    dotColor: null,
-                    activeColor: const Color(0xFF0F3B6C),
-                  ),
-                  const SizedBox(width: 4),
-                  _buildStatusPill(
-                    label: 'متحركة',
-                    count: _movingCount,
-                    value: 'متحركة',
-                    dotColor: const Color(0xFF16A34A),
-                    activeColor: const Color(0xFF16A34A),
-                  ),
-                  const SizedBox(width: 4),
-                  _buildStatusPill(
-                    label: 'متوقفة',
-                    count: _stoppedCount,
-                    value: 'متوقفة',
-                    dotColor: const Color(0xFFD97706),
-                    activeColor: const Color(0xFFD97706),
-                  ),
-                  const SizedBox(width: 4),
-                  _buildStatusPill(
-                    label: 'غير متصل',
-                    count: _offlineCount,
-                    value: 'غير متصل',
-                    dotColor: const Color(0xFFDC2626),
-                    activeColor: const Color(0xFFDC2626),
-                  ),
-                ],
-              ),
-            ),
-
-            // Branch Dropdown
-            _buildTopDropdownPill(
-              prefixLabel: 'الفرع',
-              icon: Icons.apartment_rounded,
-              value: _selectedBranch,
-              items: _branches,
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _selectedBranch = val;
-                    _applyFilters();
-                  });
-                }
-              },
-            ),
-
-            // Vehicle Type Dropdown
-            _buildTopDropdownPill(
-              prefixLabel: 'نوع السيارة',
-              icon: Icons.directions_car_outlined,
-              value: _selectedType,
-              items: _vehicleTypes,
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _selectedType = val;
-                    _applyFilters();
-                  });
-                }
-              },
-            ),
-
-            // Tracker Vendor Dropdown
-            _buildTopDropdownPill(
-              prefixLabel: 'الجهاز',
-              icon: Icons.router_outlined,
-              value: _selectedVendor,
-              items: _vendors,
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _selectedVendor = val;
-                    _applyFilters();
-                  });
-                }
-              },
-            ),
-
-            // SIM Provider Dropdown
-            _buildTopDropdownPill(
-              prefixLabel: 'الشريحة',
-              icon: Icons.sim_card_outlined,
-              value: _selectedProvider,
-              items: _providers,
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _selectedProvider = val;
-                    _applyFilters();
-                  });
-                }
-              },
-            ),
-
-            if (_hasActiveFilters)
-              Material(
-                color: const Color(0xFFFEE2E2),
-                borderRadius: BorderRadius.circular(10),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: _clearAllFilters,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.close_rounded,
-                            size: 15, color: Color(0xFFB91C1C)),
-                        SizedBox(width: 4),
-                        Text(
-                          'مسح الفلاتر',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFFB91C1C),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-
-        // Left Group: Map Style + Live Status Badge (البث المباشر)
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            // Map Layer Selector
-            Container(
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _mapLayers.containsKey(_mapLayerKey)
-                      ? _mapLayerKey
-                      : 'osm',
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                  ),
-                  items: _mapLayers.entries
-                      .map(
-                        (e) => DropdownMenuItem<String>(
-                          value: e.key,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.map_outlined,
-                                size: 15,
-                                color: Color(0xFF0F3B6C),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.arrow_back_rounded,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'عودة للقائمة',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
                               ),
-                              const SizedBox(width: 6),
-                              Text(e.value['label']!),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      )
-                      .toList(),
+                      ),
+                    ),
+                  ),
+
+                // Status Filter Pills Group
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildStatusPill(
+                        label: 'الكل',
+                        count: stats.totalCount,
+                        value: 'الكل',
+                        selectedStatus: filters.statusFilter,
+                        dotColor: null,
+                        activeColor: FleetColors.primaryNavy,
+                      ),
+                      const SizedBox(width: 4),
+                      _buildStatusPill(
+                        label: 'متحركة',
+                        count: stats.movingCount,
+                        value: 'متحركة',
+                        selectedStatus: filters.statusFilter,
+                        dotColor: FleetColors.movingDot,
+                        activeColor: FleetColors.movingDot,
+                      ),
+                      const SizedBox(width: 4),
+                      _buildStatusPill(
+                        label: 'متوقفة',
+                        count: stats.stoppedCount,
+                        value: 'متوقفة',
+                        selectedStatus: filters.statusFilter,
+                        dotColor: FleetColors.stoppedDot,
+                        activeColor: FleetColors.stoppedDot,
+                      ),
+                      const SizedBox(width: 4),
+                      _buildStatusPill(
+                        label: 'غير متصل',
+                        count: stats.offlineCount,
+                        value: 'غير متصل',
+                        selectedStatus: filters.statusFilter,
+                        dotColor: FleetColors.offlineDot,
+                        activeColor: FleetColors.offlineDot,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Branch Dropdown
+                _buildTopDropdownPill(
+                  prefixLabel: 'الفرع',
+                  icon: Icons.apartment_rounded,
+                  value: filters.branchFilter,
+                  items: stats.branches,
                   onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _mapLayerKey = val);
-                    }
+                    if (val != null) _cubit.setBranchFilter(val);
                   },
                 ),
-              ),
+
+                // Vehicle Type Dropdown
+                _buildTopDropdownPill(
+                  prefixLabel: 'نوع السيارة',
+                  icon: Icons.directions_car_outlined,
+                  value: filters.vehicleTypeFilter,
+                  items: stats.vehicleTypes,
+                  onChanged: (val) {
+                    if (val != null) _cubit.setVehicleTypeFilter(val);
+                  },
+                ),
+
+                // Tracker Vendor Dropdown
+                _buildTopDropdownPill(
+                  prefixLabel: 'الجهاز',
+                  icon: Icons.router_outlined,
+                  value: filters.vendorFilter,
+                  items: stats.vendors,
+                  onChanged: (val) {
+                    if (val != null) _cubit.setVendorFilter(val);
+                  },
+                ),
+
+                // SIM Provider Dropdown
+                _buildTopDropdownPill(
+                  prefixLabel: 'الشريحة',
+                  icon: Icons.sim_card_outlined,
+                  value: filters.providerFilter,
+                  items: stats.providers,
+                  onChanged: (val) {
+                    if (val != null) _cubit.setProviderFilter(val);
+                  },
+                ),
+
+                if (filters.hasActiveFilters)
+                  Material(
+                    color: FleetColors.offlineBadgeBg,
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () {
+                        _searchController.clear();
+                        _cubit.clearAllFilters();
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.close_rounded,
+                              size: 15,
+                              color: FleetColors.offlineText,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'مسح الفلاتر',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: FleetColors.offlineText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
 
-            // Live Stream Status Pill (البث المباشر فقط)
-            Container(
-              height: 36,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFBBF7D0)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
+            // Left Group: Map Style + Live Status Badge (البث المباشر)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                // Map Layer Selector (خريطة قياسية / قمر صناعي فقط)
+                Container(
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF16A34A),
-                      shape: BoxShape.circle,
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _mapLayers.containsKey(state.mapLayerKey)
+                          ? state.mapLayerKey
+                          : 'osm',
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 16,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: FleetColors.textPrimary,
+                      ),
+                      items: _mapLayers.entries
+                          .map(
+                            (e) => DropdownMenuItem<String>(
+                              value: e.key,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.map_outlined,
+                                    size: 15,
+                                    color: FleetColors.primaryNavy,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(e.value['label']!),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) _cubit.setMapLayer(val);
+                      },
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'البث المباشر',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF15803D),
-                    ),
+                ),
+
+                // Live Stream Status Pill (البث المباشر فقط)
+                Container(
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: FleetColors.movingBorder),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: FleetColors.movingDot,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'البث المباشر',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: FleetColors.movingText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 2B. RIGHT STACKED CONTROLS (تحت بعض: تحديد الكل/تحديث الآن -> بحث -> قائمة المركبات)
+  // ═══════════════════════════════════════════════════════════════════════════
+  Widget _buildRightStackedControls() {
+    return BlocBuilder<FleetCubit, FleetState>(
+      buildWhen: (prev, curr) =>
+          prev.filteredVehicles != curr.filteredVehicles ||
+          prev.isRefreshing != curr.isRefreshing ||
+          prev.isMapListExpanded != curr.isMapListExpanded ||
+          prev.filters.searchQuery != curr.filters.searchQuery ||
+          prev.filters.statusFilter != curr.filters.statusFilter ||
+          prev.selectedVehicle != curr.selectedVehicle ||
+          prev.statistics != curr.statistics,
+      builder: (context, state) {
+        return Align(
+          alignment: AlignmentDirectional.topStart,
+          child: SizedBox(
+            width: 322,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 1. تحديد الكل + تحديث الآن
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTopActionButton(
+                        label: 'تحديد الكل',
+                        icon: Icons.fit_screen_outlined,
+                        onTap: () => _fitAllMarkers(state.filteredVehicles),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildTopActionButton(
+                        label: 'تحديث الآن',
+                        icon: Icons.refresh_rounded,
+                        isSpinning: state.isRefreshing,
+                        onTap: () => _cubit.refresh(forceFullRefresh: true),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // 2. البحث بالرقم
+                Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (val) => _cubit.updateSearchQuery(val),
+                    style: const TextStyle(fontSize: 12),
+                    decoration: InputDecoration(
+                      hintText: 'ابحث برقم اللوحة، كود السيارة أو IMEI...',
+                      hintStyle: const TextStyle(
+                        fontSize: 11.5,
+                        color: FleetColors.textHint,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: FleetColors.textMuted,
+                      ),
+                      suffixIcon: state.filters.searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 15),
+                              onPressed: () {
+                                _searchController.clear();
+                                _cubit.clearSearch();
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // 3. زر قائمة المركبات
+                Material(
+                  color: state.isMapListExpanded
+                      ? FleetColors.primaryNavy
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  elevation: 3,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: _cubit.toggleMapListExpanded,
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: state.isMapListExpanded
+                              ? FleetColors.primaryNavy
+                              : FleetColors.borderMedium,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.directions_car_filled_rounded,
+                            size: 18,
+                            color: state.isMapListExpanded
+                                ? Colors.white
+                                : FleetColors.primaryNavy,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'قائمة المركبات (${state.filteredVehicles.length})',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: state.isMapListExpanded
+                                    ? Colors.white
+                                    : FleetColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            state.isMapListExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            size: 20,
+                            color: state.isMapListExpanded
+                                ? Colors.white
+                                : FleetColors.textSecondary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 4. القائمة المنسدلة للمركبات (تظهر عند الضغط)
+                if (state.isMapListExpanded)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: SizedBox(
+                      height: 360,
+                      child: _buildRightVehiclesPanel(state),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1081,18 +934,14 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
     required String label,
     required int count,
     required String value,
+    required String selectedStatus,
     required Color? dotColor,
     required Color activeColor,
   }) {
-    final isSelected = _selectedStatus == value;
+    final isSelected = selectedStatus == value;
     return InkWell(
       borderRadius: BorderRadius.circular(8),
-      onTap: () {
-        setState(() {
-          _selectedStatus = value;
-          _applyFilters();
-        });
-      },
+      onTap: () => _cubit.setStatusFilter(value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -1118,7 +967,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: isSelected ? Colors.white : const Color(0xFF334155),
+                color: isSelected ? Colors.white : FleetColors.textSecondary,
               ),
             ),
             Text(
@@ -1128,7 +977,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                 fontWeight: FontWeight.w800,
                 color: isSelected
                     ? Colors.white
-                    : (dotColor ?? const Color(0xFF0F172A)),
+                    : (dotColor ?? FleetColors.textPrimary),
               ),
             ),
           ],
@@ -1144,17 +993,16 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final safeItems = items.isEmpty ? const ['الكل'] : items;
     final isFiltered = value != 'الكل';
     return Container(
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: isFiltered ? const Color(0xFFEFF6FF) : Colors.white,
+        color: isFiltered ? FleetColors.selectedRowBg : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isFiltered
-              ? const Color(0xFF3B82F6)
-              : Colors.transparent,
+          color: isFiltered ? FleetColors.accentBlue : Colors.transparent,
         ),
         boxShadow: const [
           BoxShadow(
@@ -1166,7 +1014,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: items.contains(value) ? value : 'الكل',
+          value: safeItems.contains(value) ? value : 'الكل',
           icon: const Padding(
             padding: EdgeInsets.only(right: 4),
             child: Icon(Icons.keyboard_arrow_down_rounded, size: 16),
@@ -1174,16 +1022,16 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1E293B),
+            color: FleetColors.textPrimary,
           ),
-          items: items
+          items: safeItems
               .map(
                 (item) => DropdownMenuItem<String>(
                   value: item,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(icon, size: 15, color: const Color(0xFF0F3B6C)),
+                      Icon(icon, size: 15, color: FleetColors.primaryNavy),
                       const SizedBox(width: 6),
                       Text('$prefixLabel: $item'),
                     ],
@@ -1222,14 +1070,14 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                       height: 14,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Icon(icon, size: 16, color: const Color(0xFF0F3B6C)),
+                  : Icon(icon, size: 16, color: FleetColors.primaryNavy),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E293B),
+                  color: FleetColors.textPrimary,
                 ),
               ),
             ],
@@ -1285,7 +1133,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
           _buildMapToolIconButton(
             icon: Icons.fullscreen_rounded,
             tooltip: 'احتواء جميع المركبات المعروضة',
-            onTap: _fitAllMarkers,
+            onTap: () => _fitAllMarkers(_cubit.state.filteredVehicles),
           ),
           const SizedBox(width: 28, child: Divider(height: 1)),
           _buildMapToolIconButton(
@@ -1293,8 +1141,9 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
             tooltip: 'تبديل طبقة الخريطة',
             onTap: () {
               final keys = _mapLayers.keys.toList();
-              final nextIdx = (keys.indexOf(_mapLayerKey) + 1) % keys.length;
-              setState(() => _mapLayerKey = keys[nextIdx]);
+              final current = _cubit.state.mapLayerKey;
+              final nextIdx = (keys.indexOf(current) + 1) % keys.length;
+              _cubit.setMapLayer(keys[nextIdx]);
             },
           ),
         ],
@@ -1315,7 +1164,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
         child: SizedBox(
           width: 38,
           height: 38,
-          child: Icon(icon, size: 20, color: const Color(0xFF334155)),
+          child: Icon(icon, size: 20, color: FleetColors.textSecondary),
         ),
       ),
     );
@@ -1325,42 +1174,54 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
   // 4. BOTTOM-LEFT STATUS LEGEND CARD (دليل الحالات)
   // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildStatusLegendCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(245),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, 2),
+    return BlocBuilder<FleetCubit, FleetState>(
+      buildWhen: (prev, curr) => prev.statistics != curr.statistics,
+      builder: (context, state) {
+        final stats = state.statistics;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(245),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'دليل الحالات',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'دليل الحالات',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: FleetColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildLegendItem(
+                'متحركة (${stats.movingCount})',
+                FleetColors.movingDot,
+              ),
+              const SizedBox(height: 5),
+              _buildLegendItem(
+                'متوقفة (${stats.stoppedCount})',
+                FleetColors.stoppedDot,
+              ),
+              const SizedBox(height: 5),
+              _buildLegendItem(
+                'غير متصل (${stats.offlineCount})',
+                FleetColors.offlineDot,
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          _buildLegendItem('متحركة ($_movingCount)', const Color(0xFF16A34A)),
-          const SizedBox(height: 5),
-          _buildLegendItem('متوقفة ($_stoppedCount)', const Color(0xFFD97706)),
-          const SizedBox(height: 5),
-          _buildLegendItem(
-            'غير متصل ($_offlineCount)',
-            const Color(0xFFDC2626),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1379,7 +1240,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
           style: const TextStyle(
             fontSize: 11.5,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF334155),
+            color: FleetColors.textSecondary,
           ),
         ),
       ],
@@ -1389,45 +1250,9 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
   // 5. RIGHT-SIDE COLLAPSIBLE VEHICLES PANEL (قائمة المركبات)
   // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildRightVehiclesPanel() {
-    if (!_isSidePanelExpanded) {
-      return Align(
-        alignment: Alignment.topRight,
-        child: Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          elevation: 4,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => setState(() => _isSidePanelExpanded = true),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.directions_car_filled_rounded,
-                    size: 18,
-                    color: Color(0xFF0F3B6C),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'قائمة المركبات (${_filteredVehicles.length})',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+  Widget _buildRightVehiclesPanel(FleetState state) {
+    final stats = state.statistics;
+    final filtered = state.filteredVehicles;
 
     return Container(
       width: 322,
@@ -1445,98 +1270,42 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Panel Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 14, 8),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.directions_car_filled_rounded,
-                  size: 18,
-                  color: Color(0xFF0F3B6C),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'قائمة المركبات (${_filteredVehicles.length})',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  tooltip: 'طي القائمة',
-                  icon: const Icon(
-                    Icons.keyboard_arrow_up_rounded,
-                    size: 20,
-                    color: Color(0xFF64748B),
-                  ),
-                  onPressed: () =>
-                      setState(() => _isSidePanelExpanded = false),
-                ),
-              ],
-            ),
-          ),
-
-          // Quick Search Inside Panel
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Container(
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) {
-                  setState(() {
-                    _searchQuery = val;
-                    _applyFilters();
-                  });
-                },
-                style: const TextStyle(fontSize: 12),
-                decoration: const InputDecoration(
-                  hintText: 'بحث برقم اللوحة أو الكود...',
-                  hintStyle: TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    size: 16,
-                    color: Color(0xFF64748B),
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 9),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
           // 4 Mini Status Tabs inside Panel
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
             child: Row(
               children: [
-                _buildPanelMiniTab('الكل ($_totalCount)', 'الكل'),
+                _buildPanelMiniTab(
+                  'الكل (${stats.totalCount})',
+                  'الكل',
+                  state.filters.statusFilter,
+                ),
                 const SizedBox(width: 4),
-                _buildPanelMiniTab('متحركة ($_movingCount)', 'متحركة'),
+                _buildPanelMiniTab(
+                  'متحركة (${stats.movingCount})',
+                  'متحركة',
+                  state.filters.statusFilter,
+                ),
                 const SizedBox(width: 4),
-                _buildPanelMiniTab('متوقفة ($_stoppedCount)', 'متوقفة'),
+                _buildPanelMiniTab(
+                  'متوقفة (${stats.stoppedCount})',
+                  'متوقفة',
+                  state.filters.statusFilter,
+                ),
                 const SizedBox(width: 4),
-                _buildPanelMiniTab('غير متصل ($_offlineCount)', 'غير متصل'),
+                _buildPanelMiniTab(
+                  'غير متصل (${stats.offlineCount})',
+                  'غير متصل',
+                  state.filters.statusFilter,
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const Divider(height: 1, color: FleetColors.borderLight),
 
           // Scrollable Vehicle Cards List
           Expanded(
-            child: _filteredVehicles.isEmpty
+            child: filtered.isEmpty
                 ? const Center(
                     child: Padding(
                       padding: EdgeInsets.all(20),
@@ -1545,7 +1314,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12.5,
-                          color: Color(0xFF64748B),
+                          color: FleetColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1556,11 +1325,14 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                       horizontal: 10,
                       vertical: 8,
                     ),
-                    itemCount: _filteredVehicles.length,
+                    itemCount: filtered.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 6),
                     itemBuilder: (context, index) {
-                      final v = _filteredVehicles[index];
-                      return _buildPanelVehicleItem(v);
+                      final v = filtered[index];
+                      return _buildPanelVehicleItem(
+                        v,
+                        isSelected: state.selectedVehicle?.id == v.id,
+                      );
                     },
                   ),
           ),
@@ -1569,23 +1341,22 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
     );
   }
 
-  Widget _buildPanelMiniTab(String text, String statusValue) {
-    final isSelected = _selectedStatus == statusValue;
+  Widget _buildPanelMiniTab(
+    String text,
+    String statusValue,
+    String currentStatus,
+  ) {
+    final isSelected = currentStatus == statusValue;
     return Expanded(
       child: InkWell(
         borderRadius: BorderRadius.circular(6),
-        onTap: () {
-          setState(() {
-            _selectedStatus = statusValue;
-            _applyFilters();
-          });
-        },
+        onTap: () => _cubit.setStatusFilter(statusValue),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFF0F3B6C)
-                : const Color(0xFFF1F5F9),
+                ? FleetColors.primaryNavy
+                : FleetColors.surfaceMuted,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
@@ -1596,7 +1367,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: isSelected ? Colors.white : const Color(0xFF475569),
+              color: isSelected ? Colors.white : FleetColors.textSecondary,
             ),
           ),
         ),
@@ -1604,10 +1375,15 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
     );
   }
 
-  Widget _buildPanelVehicleItem(EtitVehicleModel v) {
-    final isSelected = _selectedVehicle?.id == v.id;
+  Widget _buildPanelVehicleItem(
+    EtitVehicleModel v, {
+    required bool isSelected,
+  }) {
     final statusCol = _statusColor(v);
-    final relTime = _formatRelativeShort(v.lastUpdate);
+    final relTime = FleetDateFormatter.formatRelativeDuration(
+      v.lastUpdate,
+      short: true,
+    );
 
     String statusTrailing;
     if (v.isMoving) {
@@ -1618,131 +1394,133 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
       statusTrailing = relTime.isNotEmpty ? 'غير متصل · $relTime' : 'غير متصل';
     }
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: () => _selectAndFocusVehicle(v, fromPanel: true),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF2563EB)
-                : const Color(0xFFE2E8F0),
-            width: isSelected ? 1.5 : 1.0,
+    return RepaintBoundary(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _selectAndFocusVehicle(v, fromPanel: true),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          decoration: BoxDecoration(
+            color: isSelected ? FleetColors.selectedRowBg : Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected
+                  ? FleetColors.accentBlue
+                  : FleetColors.borderLight,
+              width: isSelected ? 1.5 : 1.0,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            // Vehicle Icon + Colored Status Dot
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 40,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Icon(
-                    _vehicleIcon(v.vehicleType),
-                    color: const Color(0xFF334155),
-                    size: 20,
-                  ),
-                ),
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    width: 10,
-                    height: 10,
+          child: Row(
+            children: [
+              // Vehicle Icon + Colored Status Dot
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: statusCol,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
+                      color: FleetColors.surfaceSubtle,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: FleetColors.borderLight),
+                    ),
+                    child: Icon(
+                      _vehicleIcon(v.vehicleType),
+                      color: FleetColors.textSecondary,
+                      size: 20,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 10),
-
-            // Plate + Code + Branch + Speed/Status
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          v.plateNumber.isNotEmpty ? v.plateNumber : v.code,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: statusCol,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          v.code,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF475569),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          (v.allocation ?? '').trim().isNotEmpty
-                              ? v.allocation!
-                              : 'غير محدد',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        statusTrailing,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: statusCol,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(width: 10),
+
+              // Plate + Code + Branch + Speed/Status
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            v.plateNumber.isNotEmpty ? v.plateNumber : v.code,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: FleetColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: FleetColors.surfaceMuted,
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            v.code,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: FleetColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            (v.allocation ?? '').trim().isNotEmpty
+                                ? v.allocation!
+                                : 'غير محدد',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: FleetColors.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          statusTrailing,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: statusCol,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1751,7 +1529,10 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
   // ═══════════════════════════════════════════════════════════════════════════
   // 6. SELECTED VEHICLE FLOATING DETAILS CARD (Bottom Overlay)
   // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildSelectedVehicleCard(EtitVehicleModel v) {
+  Widget _buildSelectedVehicleCard(
+    EtitVehicleModel v, {
+    required bool isFollowing,
+  }) {
     final statusCol = _statusColor(v);
     final statusBg = _statusBgColor(v);
 
@@ -1774,7 +1555,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
           // ── Dark Navy Header Bar ──────────────────────────────────────────
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: const Color(0xFF0F3B6C),
+            color: FleetColors.primaryNavy,
             child: Row(
               children: [
                 Container(
@@ -1861,10 +1642,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                 ),
                 const SizedBox(width: 8),
                 InkWell(
-                  onTap: () => setState(() {
-                    _selectedVehicle = null;
-                    _isFollowingSelected = false;
-                  }),
+                  onTap: () => _cubit.selectVehicle(null),
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
                     padding: const EdgeInsets.all(4),
@@ -1925,7 +1703,9 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                     Expanded(
                       child: _buildDetailMetricCell(
                         label: 'آخر تحديث',
-                        value: _formatLastUpdateLabel(v.lastUpdate),
+                        value: FleetDateFormatter.formatArabicTimestamp(
+                          v.lastUpdate,
+                        ),
                         icon: Icons.access_time_rounded,
                       ),
                     ),
@@ -1954,7 +1734,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
             ),
           ),
 
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const Divider(height: 1, color: FleetColors.borderLight),
 
           // ── Footer Bar: Coordinates + Full Details + Follow Button ─────────
           Padding(
@@ -1989,7 +1769,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                       const Icon(
                         Icons.place_outlined,
                         size: 16,
-                        color: Color(0xFF0F3B6C),
+                        color: FleetColors.primaryNavy,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -1999,7 +1779,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF475569),
+                          color: FleetColors.textSecondary,
                         ),
                       ),
                     ],
@@ -2011,12 +1791,13 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     OutlinedButton.icon(
-                      onPressed: () => _showAllVehicleDataModal(v),
+                      onPressed: () =>
+                          showFleetVehicleDetailsModal(context, v),
                       icon: const Icon(Icons.info_outline_rounded, size: 16),
                       label: const Text('كل بيانات المركبة'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF0F3B6C),
-                        side: const BorderSide(color: Color(0xFFCBD5E1)),
+                        foregroundColor: FleetColors.primaryNavy,
+                        side: const BorderSide(color: FleetColors.borderMedium),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
@@ -2034,9 +1815,7 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                     ElevatedButton.icon(
                       onPressed: v.hasValidLocation
                           ? () {
-                              setState(() {
-                                _isFollowingSelected = !_isFollowingSelected;
-                              });
+                              _cubit.toggleFollowSelected();
                               _mapController.move(
                                 LatLng(v.latitude!, v.longitude!),
                                 16.0,
@@ -2044,21 +1823,19 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                             }
                           : null,
                       icon: Icon(
-                        _isFollowingSelected
+                        isFollowing
                             ? Icons.gps_fixed_rounded
                             : Icons.navigation_outlined,
                         size: 16,
                         color: Colors.white,
                       ),
                       label: Text(
-                        _isFollowingSelected
-                            ? 'جاري التتبع المباشر'
-                            : 'تتبع المركبة',
+                        isFollowing ? 'جاري التتبع المباشر' : 'تتبع المركبة',
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isFollowingSelected
-                            ? const Color(0xFF16A34A)
-                            : const Color(0xFF0F3B6C),
+                        backgroundColor: isFollowing
+                            ? FleetColors.movingDot
+                            : FleetColors.primaryNavy,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -2092,9 +1869,9 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: FleetColors.surfaceSubtle,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: FleetColors.borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2105,14 +1882,18 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 10.5,
-              color: Color(0xFF64748B),
+              color: FleetColors.textMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(icon, size: 14, color: valueColor ?? const Color(0xFF0F3B6C)),
+              Icon(
+                icon,
+                size: 14,
+                color: valueColor ?? FleetColors.primaryNavy,
+              ),
               const SizedBox(width: 5),
               Expanded(
                 child: Text(
@@ -2122,167 +1903,13 @@ class _EtitFleetMapScreenState extends State<EtitFleetMapScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: valueColor ?? const Color(0xFF0F172A),
+                    color: valueColor ?? FleetColors.textPrimary,
                   ),
                 ),
               ),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 7. FULL VEHICLE DATA MODAL (Displays every single field from ETIT)
-  // ═══════════════════════════════════════════════════════════════════════════
-  void _showAllVehicleDataModal(EtitVehicleModel v) {
-    final allRows = <MapEntry<String, String>>[
-      MapEntry('المعرف الفريد (ID)', v.id),
-      MapEntry('كود المركبة (code)', v.code),
-      MapEntry('رقم اللوحة (plateNo)', v.plateNumber),
-      MapEntry('الكود واللوحة (CodePlateNumber)', v.codePlateNumber ?? '-'),
-      MapEntry('الفرع / التخصيص (Allocation)', v.allocation ?? '-'),
-      MapEntry('معرف الفرع (branch UUID)', v.branch ?? '-'),
-      MapEntry(
-        'نوع المركبة (VehicleType)',
-        '${v.vehicleType ?? '-'} (${v.arabicVehicleType})',
-      ),
-      MapEntry('حالة المركبة بالمنظومة (StatusName)', v.statusName ?? '-'),
-      MapEntry('حالة الاتصال الحالية', v.arabicStatusLabel),
-      MapEntry('كود حالة التتبع اللحظي (statusCode)', v.statusCode ?? '-'),
-      MapEntry(
-        'السرعة الحالية (speed)',
-        '${v.speed?.toStringAsFixed(1) ?? '0.0'} كم/س',
-      ),
-      MapEntry('دائرة العرض (latitude)', v.latitude?.toString() ?? '-'),
-      MapEntry('خط الطول (longitude)', v.longitude?.toString() ?? '-'),
-      MapEntry('توقيت آخر تحديث (lastUpdate)', v.lastUpdate ?? '-'),
-      MapEntry('رقم جهاز التتبع IMEI (deviceCode)', v.deviceCode ?? '-'),
-      MapEntry('الشركة المصنعة للجهاز (Vendor_Name)', v.vendorName ?? '-'),
-      MapEntry('مزود شريحة الاتصال (providerName)', v.providerName ?? '-'),
-      MapEntry(
-        'رقم الشاسيه (ChassisNumber)',
-        (v.chassisNumber ?? '').isNotEmpty ? v.chassisNumber! : 'غير مسجل',
-      ),
-      MapEntry('خاضعة للمراقبة (isMonitored)', v.isMonitored ? 'نعم' : 'لا'),
-    ];
-
-    // Append any extra keys in rawData that aren't already listed
-    const knownKeys = {
-      'ID',
-      'code',
-      'plateNo',
-      'CodePlateNumber',
-      'Allocation',
-      'branch',
-      'VehicleType',
-      'StatusName',
-      'deviceCode',
-      'Vendor_Name',
-      'providerName',
-      'ChassisNumber',
-      'isMonitored',
-      'latitude',
-      'longitude',
-      'speed',
-      'statusCode',
-      'lastUpdate',
-    };
-    for (final entry in v.rawData.entries) {
-      if (!knownKeys.contains(entry.key)) {
-        allRows.add(MapEntry(entry.key, '${entry.value ?? '-'}'));
-      }
-    }
-
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 14,
-                ),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0F3B6C),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.fact_check_outlined,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'كافة بيانات المركبة: ${v.plateNumber.isNotEmpty ? v.plateNumber : v.code}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: allRows.length,
-                  separatorBuilder: (_, _) =>
-                      const Divider(height: 1, color: Color(0xFFE2E8F0)),
-                  itemBuilder: (_, i) {
-                    final item = allRows[i];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 9),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 5,
-                            child: Text(
-                              item.key,
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF475569),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 6,
-                            child: SelectableText(
-                              item.value,
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

@@ -10,9 +10,10 @@ import '../models/etit_vehicle_model.dart';
 ///   calls go through the local dev proxy (`node scripts/etit_proxy.js`),
 ///   which owns the ETIT session (login + cookies + auto re-login).
 class EtitGpsService {
-  static final EtitGpsService _instance = EtitGpsService._internal();
+  static final EtitGpsService _instance = EtitGpsService.internal();
   factory EtitGpsService() => _instance;
-  EtitGpsService._internal();
+  @visibleForTesting
+  EtitGpsService.internal();
 
   static const String _webProxy = 'http://127.0.0.1:8089/?url=';
   static const String _fmsBase = 'https://etit-fms.etit-eg.com';
@@ -20,8 +21,8 @@ class EtitGpsService {
 
   final Dio _dio = Dio(
     BaseOptions(
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 25),
+      receiveTimeout: const Duration(seconds: 25),
       responseType: ResponseType.plain,
       validateStatus: (status) => status != null && status < 600,
     ),
@@ -31,6 +32,10 @@ class EtitGpsService {
   final Map<String, String> _jar = {};
   DateTime? _lastLoginTime;
   String? _cachedAllCodes;
+
+  /// In-flight deduplication futures to prevent duplicate concurrent requests.
+  Future<List<EtitVehicleModel>>? _inFlightVehicles;
+  Future<Map<String, Map<String, dynamic>>>? _inFlightLiveCoords;
 
   String _url(String target) =>
       kIsWeb ? '$_webProxy${Uri.encodeComponent(target)}' : target;
@@ -74,9 +79,15 @@ class EtitGpsService {
       _storeCookies(page);
       final html = page.data.toString();
       final viewState =
-          RegExp(r'id="__VIEWSTATE" value="([^"]*)"').firstMatch(html)?.group(1) ?? '';
+          RegExp(
+            r'id="__VIEWSTATE" value="([^"]*)"',
+          ).firstMatch(html)?.group(1) ??
+          '';
       final viewStateGen =
-          RegExp(r'id="__VIEWSTATEGENERATOR" value="([^"]*)"').firstMatch(html)?.group(1) ?? '';
+          RegExp(
+            r'id="__VIEWSTATEGENERATOR" value="([^"]*)"',
+          ).firstMatch(html)?.group(1) ??
+          '';
 
       final form = {
         'ScriptManager1': r'UpdatePanel1|lg_AltairLogin$LoginButton',
@@ -110,7 +121,11 @@ class EtitGpsService {
 
       // Success = ETIT answers with a pageRedirect to an internal page.
       final body = res.data.toString();
-      final ok = RegExp(r'pageRedirect\|\|[^|]*WebPages', caseSensitive: false).hasMatch(body) &&
+      final ok =
+          RegExp(
+            r'pageRedirect\|\|[^|]*WebPages',
+            caseSensitive: false,
+          ).hasMatch(body) &&
           !body.contains('ErrorPage');
       if (!ok) {
         if (kDebugMode) print('ETIT login failed: ${res.data.toString()}');
@@ -120,7 +135,11 @@ class EtitGpsService {
       // Initialise the GPS site session.
       final maps = await _dio.get(
         '$_gpsBase/WebPages/Maps.aspx',
-        options: Options(headers: _headers(referer: '$_fmsBase/WebPages/Transporters/List.aspx')),
+        options: Options(
+          headers: _headers(
+            referer: '$_fmsBase/WebPages/Transporters/List.aspx',
+          ),
+        ),
       );
       _storeCookies(maps);
       _cachedAllCodes = _extractAllCodes(maps.data.toString());
@@ -142,49 +161,107 @@ class EtitGpsService {
   }
 
   String? _extractAllCodes(String html) {
-    final m = RegExp(r'hdn_NAllTransporterCOdes"[^>]*value="([^"]+)"').firstMatch(html) ??
-        RegExp(r'value="([^"]+)"[^>]*hdn_NAllTransporterCOdes').firstMatch(html);
+    final m =
+        RegExp(
+          r'hdn_NAllTransporterCOdes"[^>]*value="([^"]+)"',
+        ).firstMatch(html) ??
+        RegExp(
+          r'value="([^"]+)"[^>]*hdn_NAllTransporterCOdes',
+        ).firstMatch(html);
     return m?.group(1);
   }
 
   /// 1. Fleet vehicles list (plates, branches, types, device IMEI).
+  /// Deduplicates concurrent calls when `searchKeyword` is null/empty.
   Future<List<EtitVehicleModel>> getVehicles({
     int pageIndex = 1,
     int pageSize = 100,
     String? searchKeyword,
+    bool throwOnError = false,
+  }) async {
+    final canDedupe = (searchKeyword == null || searchKeyword.isEmpty);
+    if (canDedupe && _inFlightVehicles != null) {
+      return _inFlightVehicles!;
+    }
+
+    final future = _fetchVehiclesInternal(
+      searchKeyword: searchKeyword,
+      throwOnError: throwOnError,
+    );
+    if (canDedupe) {
+      _inFlightVehicles = future.whenComplete(() => _inFlightVehicles = null);
+    }
+    return future;
+  }
+
+  Future<List<EtitVehicleModel>> _fetchVehiclesInternal({
+    String? searchKeyword,
+    required bool throwOnError,
   }) async {
     await _ensureAuthenticated();
     try {
       Future<List<EtitVehicleModel>> fetchPage(int page) async {
         final payload = {
           'transpoterCriteria': {
-            'SubId': '', 'StuffId': '', 'TransporterCodeName': searchKeyword ?? '',
-            'TransporterId': '', 'TransporterTypeId': '', 'TransporterGroupID': '',
-            'LandmarkId': '', 'ManufacturerId': '', 'ProductionYearID': '',
-            'BranchID': '', 'SubBranchID': '', 'NextExaminationDate': '',
-            'LicenseExpiryDate': '', 'InsuranceEndDate': '', 'EntranceDate': '',
-            'TransporterBrand': '', 'DasboardGPsStatus': '', 'IsdasboardGPsStatus': 0,
-            'TransporterStatus': '', 'Category': '', 'ChassisNumber': '',
-            'EntranceDateBeforeAfter': '', 'InsuranceEndDateBeforeAfter': '',
-            'LicenseExpiryDateBeforeAfter': '', 'NextExaminationDateBeforAfter': '',
-            'PageCount': 0, 'PageIndex': page, 'PageSize': 100,
-            'TotalTransCount': 0, 'TransporterIdList': [],
-          }
+            'SubId': '',
+            'StuffId': '',
+            'TransporterCodeName': searchKeyword ?? '',
+            'TransporterId': '',
+            'TransporterTypeId': '',
+            'TransporterGroupID': '',
+            'LandmarkId': '',
+            'ManufacturerId': '',
+            'ProductionYearID': '',
+            'BranchID': '',
+            'SubBranchID': '',
+            'NextExaminationDate': '',
+            'LicenseExpiryDate': '',
+            'InsuranceEndDate': '',
+            'EntranceDate': '',
+            'TransporterBrand': '',
+            'DasboardGPsStatus': '',
+            'IsdasboardGPsStatus': 0,
+            'TransporterStatus': '',
+            'Category': '',
+            'ChassisNumber': '',
+            'EntranceDateBeforeAfter': '',
+            'InsuranceEndDateBeforeAfter': '',
+            'LicenseExpiryDateBeforeAfter': '',
+            'NextExaminationDateBeforAfter': '',
+            'PageCount': 0,
+            'PageIndex': page,
+            'PageSize': 100,
+            'TotalTransCount': 0,
+            'TransporterIdList': [],
+          },
         };
 
         final res = await _dio.post(
-          _url('$_fmsBase/WebPages/Transporters/List.aspx/GetAllTransporterBySearchCriteria'),
+          _url(
+            '$_fmsBase/WebPages/Transporters/List.aspx/GetAllTransporterBySearchCriteria',
+          ),
           data: jsonEncode(payload),
           options: Options(
             headers: _headers(
-              contentType: kIsWeb ? 'text/plain;charset=UTF-8' : 'application/json; charset=UTF-8',
+              contentType: kIsWeb
+                  ? 'text/plain;charset=UTF-8'
+                  : 'application/json; charset=UTF-8',
               referer: '$_fmsBase/WebPages/Transporters/List.aspx',
             ),
           ),
         );
 
         if (res.statusCode != 200) {
-          if (kDebugMode) print('ETIT vehicles HTTP ${res.statusCode}: ${res.data}');
+          if (kDebugMode) {
+            print('ETIT vehicles HTTP ${res.statusCode}: ${res.data}');
+          }
+          if (throwOnError) {
+            throw DioException.badResponse(
+              statusCode: res.statusCode ?? 500,
+              requestOptions: res.requestOptions,
+              response: res,
+            );
+          }
           return [];
         }
 
@@ -198,28 +275,48 @@ class EtitGpsService {
 
       // Fetch page 1 and page 2 in parallel (total 162 vehicles, max 100 per request)
       final results = await Future.wait([fetchPage(1), fetchPage(2)]);
-      final all = [...results[0], ...results[1]];
-      return all;
+      return [...results[0], ...results[1]];
     } catch (e) {
       if (kDebugMode) print('Error fetching ETIT vehicles: $e');
+      if (throwOnError) rethrow;
       return [];
     }
   }
 
   /// 2. Live GPS coordinates keyed by vehicle ID.
-  Future<Map<String, Map<String, dynamic>>> getLiveCoordinates() async {
+  /// Deduplicates concurrent calls.
+  Future<Map<String, Map<String, dynamic>>> getLiveCoordinates({
+    bool throwOnError = false,
+  }) async {
+    if (_inFlightLiveCoords != null) {
+      return _inFlightLiveCoords!;
+    }
+    final future = _fetchLiveCoordinatesInternal(throwOnError: throwOnError);
+    _inFlightLiveCoords = future.whenComplete(() => _inFlightLiveCoords = null);
+    return future;
+  }
+
+  Future<Map<String, Map<String, dynamic>>> _fetchLiveCoordinatesInternal({
+    required bool throwOnError,
+  }) async {
     await _ensureAuthenticated();
     try {
       if (_cachedAllCodes == null || _cachedAllCodes!.isEmpty) {
         final maps = await _dio.get(
           _url('$_gpsBase/WebPages/Maps.aspx'),
-          options: Options(headers: _headers(referer: '$_fmsBase/WebPages/Transporters/List.aspx')),
+          options: Options(
+            headers: _headers(
+              referer: '$_fmsBase/WebPages/Transporters/List.aspx',
+            ),
+          ),
         );
         if (!kIsWeb) _storeCookies(maps);
         _cachedAllCodes = _extractAllCodes(maps.data.toString());
       }
       if (_cachedAllCodes == null) {
-        if (kDebugMode) print('ETIT: could not read vehicle codes from Maps.aspx');
+        if (kDebugMode) {
+          print('ETIT: could not read vehicle codes from Maps.aspx');
+        }
         return {};
       }
 
@@ -234,7 +331,7 @@ class EtitGpsService {
         ),
       );
 
-      // Response format: ids*speeds*statuses*longitudes*latitudes*...
+      // Response format: ids*speeds*statuses*longitudes*latitudes*dates*...*deviceCodes
       final par = res.data.toString().split('*');
       if (par.length < 5) return {};
       final ids = par[0].split(',');
@@ -254,7 +351,9 @@ class EtitGpsService {
         coords[id] = {
           'lat': (lat != null && lat != 0) ? lat : null,
           'lon': (lon != null && lon != 0) ? lon : null,
-          'speed': i < speeds.length ? double.tryParse(speeds[i].trim()) ?? 0.0 : 0.0,
+          'speed': i < speeds.length
+              ? double.tryParse(speeds[i].trim()) ?? 0.0
+              : 0.0,
           'status': i < statuses.length ? statuses[i].trim() : '',
           'lastUpdate': i < dates.length ? dates[i].trim() : '',
           'deviceCode': i < devCodes.length ? devCodes[i].trim() : '',
@@ -263,6 +362,7 @@ class EtitGpsService {
       return coords;
     } catch (e) {
       if (kDebugMode) print('Error fetching live GPS coords: $e');
+      if (throwOnError) rethrow;
       return {};
     }
   }
@@ -272,21 +372,31 @@ class EtitGpsService {
     final results = await Future.wait([getVehicles(), getLiveCoordinates()]);
     final vehicles = results[0] as List<EtitVehicleModel>;
     final live = results[1] as Map<String, Map<String, dynamic>>;
-    for (final v in vehicles) {
+    return mergeVehiclesWithLiveMap(vehicles, live);
+  }
+
+  /// Pure helper to merge vehicle metadata with live telematics map in O(N) time.
+  List<EtitVehicleModel> mergeVehiclesWithLiveMap(
+    List<EtitVehicleModel> baseVehicles,
+    Map<String, Map<String, dynamic>> live,
+  ) {
+    return baseVehicles.map((v) {
       final loc = live[v.id];
-      if (loc != null) {
-        v.latitude = loc['lat'] as double?;
-        v.longitude = loc['lon'] as double?;
-        v.speed = loc['speed'] as double?;
-        v.statusCode = loc['status'] as String?;
-        v.lastUpdate = loc['lastUpdate'] as String?;
-        final liveImei = (loc['deviceCode'] as String?)?.trim() ?? '';
-        if ((v.deviceCode == null || v.deviceCode!.trim().isEmpty) &&
-            liveImei.isNotEmpty) {
-          v.deviceCode = liveImei;
-        }
-      }
-    }
-    return vehicles;
+      if (loc == null) return v;
+      final liveImei = (loc['deviceCode'] as String?)?.trim() ?? '';
+      final effectiveImei =
+          (v.deviceCode == null || v.deviceCode!.trim().isEmpty) &&
+              liveImei.isNotEmpty
+          ? liveImei
+          : v.deviceCode;
+      return v.copyWith(
+        latitude: loc['lat'] as double?,
+        longitude: loc['lon'] as double?,
+        speed: loc['speed'] as double?,
+        statusCode: loc['status'] as String?,
+        lastUpdate: loc['lastUpdate'] as String?,
+        deviceCode: effectiveImei,
+      );
+    }).toList();
   }
 }
