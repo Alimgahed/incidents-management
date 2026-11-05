@@ -19,7 +19,7 @@ class FleetCubit extends Cubit<FleetState> {
 
   FleetCubit({
     required FleetRepository repository,
-    this.pollInterval = const Duration(seconds: 10),
+    this.pollInterval = const Duration(seconds: 30),
     this.searchDebounceDuration = const Duration(milliseconds: 250),
   }) : _repository = repository,
        super(const FleetState());

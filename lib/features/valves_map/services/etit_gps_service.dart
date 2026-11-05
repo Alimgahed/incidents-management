@@ -15,7 +15,8 @@ class EtitGpsService {
   @visibleForTesting
   EtitGpsService.internal();
 
-  static const String _webProxy = 'http://127.0.0.1:8089/?url=';
+  static const String _webProxy =
+      'https://crises.miniawater.com/api/etit-proxy?url=';
   static const String _fmsBase = 'https://etit-fms.etit-eg.com';
   static const String _gpsBase = 'https://fms-gps.etit-eg.com';
 
