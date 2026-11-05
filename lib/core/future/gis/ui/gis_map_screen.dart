@@ -38,7 +38,101 @@ class _GisMapScreenState extends State<GisMapScreen> {
     super.dispose();
   }
 
-  void _showFeatureDetails(GisFeature feature, String layerName) {
+  
+  void _showServerConfigDialog() {
+    final cubit = context.read<GisCubit>();
+    final currentUrl = cubit.apiService.customBaseUrl ?? cubit.apiService.dio.options.baseUrl;
+    final controller = TextEditingController(text: currentUrl);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(
+                cubit.apiService.isServerAvailable
+                    ? Icons.cloud_done_rounded
+                    : Icons.cloud_off_rounded,
+                color: cubit.apiService.isServerAvailable
+                    ? const Color(0xFF10B981)
+                    : const Color(0xFFF59E0B),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'حالة خادم الـ GIS',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: cubit.apiService.isServerAvailable
+                      ? const Color(0xFFECFDF5)
+                      : const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  cubit.apiService.isServerAvailable
+                      ? 'الخادم متصل وجارٍ جلب الطبقات مباشرة من خادم الـ Geodatabase.'
+                      : 'الخادم غير متصل أو لم يُفعّل بعد على هذا الرابط (HTTP 404). لا يتم عرض أي بيانات افتراضية على الخريطة.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Cairo',
+                    color: cubit.apiService.isServerAvailable
+                        ? const Color(0xFF065F46)
+                        : const Color(0xFF92400E),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'رابط خدمة الـ GIS (Flask Blueprint):',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Cairo'),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'https://crises.miniawater.com/api أو http://localhost:5000',
+                  hintStyle: const TextStyle(fontSize: 11),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                style: const TextStyle(fontSize: 13),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء', style: TextStyle(fontFamily: 'Cairo')),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0F3B6C),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                cubit.setCustomBaseUrl(controller.text);
+                Navigator.pop(ctx);
+              },
+              child: const Text('حفظ واختبار', style: TextStyle(fontFamily: 'Cairo')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+void _showFeatureDetails(GisFeature feature, String layerName) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -60,12 +154,21 @@ class _GisMapScreenState extends State<GisMapScreen> {
 
     // Check points and lines in top-to-bottom priority (valves, pipes, landmarks, etc.)
     final activeStyles = gisLayerStack.reversed.where((s) {
-      return state.enabledLayers.contains(s.name) &&
-          state.currentZoom >= s.minZoom;
+      final isEnabled = state.enabledLayers.contains(s.name) ||
+          s.aliases.any((a) => state.enabledLayers.contains(a));
+      return isEnabled && state.currentZoom >= s.minZoom;
     });
 
     for (final style in activeStyles) {
-      final col = state.layerData[style.name];
+      GisCollection? col = state.layerData[style.name];
+      if (col == null) {
+        for (final a in style.aliases) {
+          if (state.layerData.containsKey(a)) {
+            col = state.layerData[a];
+            break;
+          }
+        }
+      }
       if (col == null) continue;
 
       for (final f in col.features) {
@@ -155,20 +258,30 @@ class _GisMapScreenState extends State<GisMapScreen> {
         if (state.useOsm) {
           layerWidgets.add(
             TileLayer(
-              urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              subdomains: const ['a', 'b', 'c'],
-              userAgentPackageName: 'incidents_managment',
+              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName: 'com.miniawater.crises',
             ),
           );
         }
 
         // 2. Iterate gisLayerStack in bottom-to-top drawing order
+        final labelMarkers = <Marker>[];
+
         for (final style in gisLayerStack) {
-          final isEnabled = state.enabledLayers.contains(style.name);
+          final isEnabled = state.enabledLayers.contains(style.name) ||
+              style.aliases.any((a) => state.enabledLayers.contains(a));
           final meetsZoom = state.currentZoom >= style.minZoom;
           if (!isEnabled || !meetsZoom) continue;
 
-          final collection = state.layerData[style.name];
+          GisCollection? collection = state.layerData[style.name];
+          if (collection == null) {
+            for (final a in style.aliases) {
+              if (state.layerData.containsKey(a)) {
+                collection = state.layerData[a];
+                break;
+              }
+            }
+          }
           if (collection == null || collection.features.isEmpty) continue;
 
           final polygons = <Polygon>[];
@@ -193,6 +306,47 @@ class _GisMapScreenState extends State<GisMapScreen> {
               }
             }
 
+            // Building Name Labels on Vector Base Map
+            if ((style.name == 'buildings' || style.aliases.contains('building')) &&
+                state.currentZoom >= 15.0 &&
+                feature.center != null) {
+              final bName = feature.props['name'] ?? feature.props['NAME'] ?? feature.props['building_name'];
+              if (bName != null && bName.toString().trim().isNotEmpty) {
+                labelMarkers.add(
+                  Marker(
+                    point: feature.center!,
+                    width: 140,
+                    height: 38,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFFA1887F), width: 0.7),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(0, 1)),
+                          ],
+                        ),
+                        child: Text(
+                          bName.toString(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 9.0,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Cairo',
+                            color: Color(0xFF3E2723),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }
+            }
+
             // Lines
             for (final line in feature.lines) {
               if (line.isNotEmpty) {
@@ -206,6 +360,47 @@ class _GisMapScreenState extends State<GisMapScreen> {
                         : const StrokePattern.solid(),
                     borderColor: style.border ?? Colors.transparent,
                     borderStrokeWidth: style.border != null ? 1.0 : 0.0,
+                  ),
+                );
+              }
+            }
+
+            // Street Name Labels on Vector Base Map
+            if ((style.name == 'streets' || style.aliases.contains('street')) &&
+                state.currentZoom >= 14.0 &&
+                feature.center != null) {
+              final sName = feature.props['street_name'] ?? feature.props['STREET_NAME'] ?? feature.props['name'];
+              if (sName != null && sName.toString().trim().isNotEmpty) {
+                labelMarkers.add(
+                  Marker(
+                    point: feature.center!,
+                    width: 150,
+                    height: 28,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.90),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFFBDBDBD), width: 0.7),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black12, blurRadius: 2),
+                          ],
+                        ),
+                        child: Text(
+                          sName.toString(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Cairo',
+                            color: Color(0xFF424242),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 );
               }
@@ -262,6 +457,11 @@ class _GisMapScreenState extends State<GisMapScreen> {
           if (markers.isNotEmpty) {
             layerWidgets.add(MarkerLayer(markers: markers));
           }
+        }
+
+        // Add Base Map Text Labels (Buildings, Streets, Landmarks)
+        if (labelMarkers.isNotEmpty) {
+          layerWidgets.add(MarkerLayer(markers: labelMarkers));
         }
 
         final isStandalone =
@@ -343,10 +543,13 @@ class _GisMapScreenState extends State<GisMapScreen> {
                   mapController: _mapController,
                   options: MapOptions(
                     initialCenter: _minyaCenter,
-                    initialZoom: 15.0,
+                    initialZoom: 15.5,
                     minZoom: 9.0,
                     maxZoom: 19.0,
                     backgroundColor: const Color(0xFFF3F1EC),
+                    onMapReady: () {
+                      cubit.onCameraMoved(_mapController.camera);
+                    },
                     onTap: (_, point) => _handleMapTap(point, state),
                     onPositionChanged: (camera, hasGesture) {
                       cubit.onCameraMoved(camera);
@@ -395,6 +598,21 @@ class _GisMapScreenState extends State<GisMapScreen> {
                               onPressed: () {
                                 _scaffoldKey.currentState?.openEndDrawer();
                               },
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                cubit.apiService.isServerAvailable
+                                    ? Icons.cloud_done_rounded
+                                    : Icons.cloud_queue_rounded,
+                                color: cubit.apiService.isServerAvailable
+                                    ? const Color(0xFF34D399)
+                                    : const Color(0xFFFBBF24),
+                                size: 20,
+                              ),
+                              tooltip: cubit.apiService.isServerAvailable
+                                  ? 'الخادم متصل'
+                                  : 'إعدادات ورابط الخادم',
+                              onPressed: _showServerConfigDialog,
                             ),
                             IconButton(
                               icon: const Icon(
@@ -452,6 +670,57 @@ class _GisMapScreenState extends State<GisMapScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF92400E),
                                   fontFamily: 'Cairo',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Notice if backend is offline/mock
+                if (!cubit.apiService.isServerAvailable)
+                  Positioned(
+                    bottom: 24,
+                    left: 70,
+                    right: 210,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E293B).withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.info_outline_rounded, size: 15, color: Color(0xFF38BDF8)),
+                            const SizedBox(width: 8),
+                            const Flexible(
+                              child: Text(
+                                'خادم GIS غير متصل · لا توجد طبقات جغرافية للعرض',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: Colors.white,
+                                  fontFamily: 'Cairo',
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: _showServerConfigDialog,
+                              child: const Text(
+                                'تغيير الرابط',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: Color(0xFF38BDF8),
+                                  fontFamily: 'Cairo',
+                                  decoration: TextDecoration.underline,
                                 ),
                               ),
                             ),

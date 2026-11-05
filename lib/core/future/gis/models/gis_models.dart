@@ -59,12 +59,20 @@ class GisLayerInfo {
   final String name;
   final List<String> aliases;
   final String geometryType; // point | line | polygon
+  final String category; // basemap | water_network | wastewater_network | operations
+  final String titleAr;
+  final int minZoom;
+  final bool defaultEnabled;
   final bool versionedView;
 
   const GisLayerInfo({
     required this.name,
     this.aliases = const [],
     required this.geometryType,
+    this.category = 'basemap',
+    this.titleAr = '',
+    this.minZoom = 12,
+    this.defaultEnabled = false,
     this.versionedView = false,
   });
 
@@ -76,6 +84,10 @@ class GisLayerInfo {
               .toList() ??
           const [],
       geometryType: (json['geometry_type'] ?? '').toString().toLowerCase(),
+      category: (json['category'] ?? 'basemap').toString().toLowerCase(),
+      titleAr: (json['title_ar'] ?? json['name'] ?? '').toString(),
+      minZoom: (json['min_zoom'] as num?)?.toInt() ?? 12,
+      defaultEnabled: json['default_enabled'] == true,
       versionedView: json['versioned_view'] == true,
     );
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:incidents_managment/core/future/gis/data/gis_api_service.dart';
 import 'package:incidents_managment/core/future/gis/logic/gis_state.dart';
 import 'package:incidents_managment/core/future/gis/models/gis_models.dart';
@@ -15,33 +16,47 @@ class GisCubit extends Cubit<GisState> {
 
   GisCubit({required this.apiService}) : super(const GisState());
 
-  /// Initialize layer schema and load initial metadata
+  /// Initialize layer schema and load initial metadata and viewport
   Future<void> init() async {
     emit(state.copyWith(isLoading: true, errorMessage: () => null));
 
     try {
       final layers = await apiService.fetchAvailableLayers();
       final defaultEnabled = <String>{};
-      for (final l in layers) {
-        defaultEnabled.add(l.name);
+
+      if (layers.isNotEmpty) {
+        for (final l in layers) {
+          if (l.defaultEnabled || state.enabledLayers.contains(l.name)) {
+            defaultEnabled.add(l.name);
+          }
+        }
+      } else {
+        defaultEnabled.addAll(state.enabledLayers);
       }
-      // Also ensure standard stack layers are known
-      for (final s in gisLayerStack) {
-        defaultEnabled.add(s.name);
-      }
+
+      final initialBounds = state.lastBounds ??
+          LatLngBounds(
+            const LatLng(28.0500, 30.7000),
+            const LatLng(28.1300, 30.8000),
+          );
 
       emit(state.copyWith(
         isLoading: false,
         availableLayers: layers,
         enabledLayers: defaultEnabled,
+        lastBounds: initialBounds,
+        layerData: layers.isEmpty ? const {} : state.layerData,
       ));
 
-      if (state.lastBounds != null) {
-        _fetchViewportLayers(state.lastBounds!, state.currentZoom);
+      if (layers.isNotEmpty) {
+        _fetchViewportLayers(initialBounds, state.currentZoom);
       }
     } catch (e) {
       emit(state.copyWith(
         isLoading: false,
+        availableLayers: const [],
+        enabledLayers: const {},
+        layerData: const {},
         errorMessage: () => 'فشل في تحميل قائمة طبقات الخريطة: $e',
       ));
     }
@@ -56,12 +71,20 @@ class GisCubit extends Cubit<GisState> {
 
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      _fetchViewportLayers(camera.visibleBounds, camera.zoom);
+      if (apiService.isServerAvailable && state.enabledLayers.isNotEmpty) {
+        _fetchViewportLayers(camera.visibleBounds, camera.zoom);
+      }
     });
   }
 
   /// Fetch active layers for current viewport
   Future<void> _fetchViewportLayers(LatLngBounds bounds, double zoom) async {
+    // If backend is not available or no layers enabled, do not fetch anything
+    if (!apiService.isServerAvailable || state.enabledLayers.isEmpty) {
+      emit(state.copyWith(isLayersLoading: false, layerData: const {}));
+      return;
+    }
+
     // 1. Cancel previous in-flight requests
     _cancelToken?.cancel('Camera moved');
     _cancelToken = CancelToken();
@@ -71,10 +94,16 @@ class GisCubit extends Cubit<GisState> {
 
     final simplify = GisApiService.getSimplificationForZoom(zoom);
     final activeStack = gisLayerStack.where((style) {
-      final isEnabled = state.enabledLayers.contains(style.name);
+      final isEnabled = state.enabledLayers.contains(style.name) ||
+          style.aliases.any((a) => state.enabledLayers.contains(a));
       final meetsZoom = zoom >= style.minZoom;
       return isEnabled && meetsZoom;
     }).toList();
+
+    if (activeStack.isEmpty) {
+      emit(state.copyWith(isLayersLoading: false));
+      return;
+    }
 
     final updatedData = Map<String, GisCollection>.from(state.layerData);
     final truncatedList = <String>[];
@@ -123,17 +152,24 @@ class GisCubit extends Cubit<GisState> {
   /// Toggle visibility of a specific layer
   void toggleLayer(String layerName) {
     final updated = Set<String>.from(state.enabledLayers);
-    if (updated.contains(layerName)) {
-      updated.remove(layerName);
+    final clean = layerName.toLowerCase().trim();
+
+    if (updated.contains(clean)) {
+      updated.remove(clean);
     } else {
-      updated.add(layerName);
+      updated.add(clean);
     }
 
     emit(state.copyWith(enabledLayers: updated));
 
-    if (state.lastBounds != null) {
+    if (state.lastBounds != null && apiService.isServerAvailable) {
       _fetchViewportLayers(state.lastBounds!, state.currentZoom);
     }
+  }
+
+  /// Sets the active category filter in the layers drawer (all, basemap, water_network, wastewater_network, operations)
+  void setCategoryFilter(String category) {
+    emit(state.copyWith(activeCategoryFilter: category));
   }
 
   /// Toggle OSM tile underlay on/off
@@ -157,10 +193,18 @@ class GisCubit extends Cubit<GisState> {
     ));
   }
 
+  /// Configure custom backend URL for GIS blueprint
+  void setCustomBaseUrl(String? url) {
+    apiService.customBaseUrl = (url != null && url.trim().isNotEmpty) ? url.trim() : null;
+    init();
+  }
+
   /// Manually force reload
   void reload() {
-    if (state.lastBounds != null) {
+    if (state.lastBounds != null && apiService.isServerAvailable) {
       _fetchViewportLayers(state.lastBounds!, state.currentZoom);
+    } else {
+      init();
     }
   }
 

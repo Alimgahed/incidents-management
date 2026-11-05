@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:incidents_managment/core/future/gis/data/gis_mock_data.dart';
 import 'package:incidents_managment/core/future/gis/models/gis_models.dart';
 
 class GisApiService {
@@ -10,25 +9,29 @@ class GisApiService {
   /// Custom base URL or prefix if the Flask blueprint is at a sub-path or different host.
   /// Examples:
   /// - null: uses Dio's baseUrl directly
-  /// - "https://crises.miniawater.com/gis"
   /// - "http://localhost:5000"
+  /// - "https://crises.miniawater.com/gis"
   String? customBaseUrl;
+
+  /// Flag indicating whether the backend Flask server is reachable
+  bool isServerAvailable = false;
 
   GisApiService({required this.dio, this.customBaseUrl});
 
+  /// Safely builds a fully qualified URL ensuring single slashes between segments
   String _buildUrl(String path) {
+    String base;
     if (customBaseUrl != null && customBaseUrl!.isNotEmpty) {
-      final base = customBaseUrl!.endsWith('/')
-          ? customBaseUrl!.substring(0, customBaseUrl!.length - 1)
-          : customBaseUrl!;
-      final sub = path.startsWith('/') ? path : '/$path';
-      return '$base$sub';
+      base = customBaseUrl!;
+    } else {
+      base = dio.options.baseUrl;
     }
-    // Relative to dio.options.baseUrl
-    if (path.startsWith('/')) {
-      return path.substring(1);
+
+    if (base.endsWith('/')) {
+      base = base.substring(0, base.length - 1);
     }
-    return path;
+    final cleanPath = path.startsWith('/') ? path : '/$path';
+    return '$base$cleanPath';
   }
 
   /// Calculates geometry simplification based on map zoom:
@@ -59,11 +62,17 @@ class GisApiService {
 
   /// GET /api/layers
   Future<List<GisLayerInfo>> fetchAvailableLayers({CancelToken? cancelToken}) async {
-    final candidates = [
-      _buildUrl('layers'),
-      _buildUrl('api/layers'),
-      _buildUrl('gis/layers'),
-    ];
+    final candidates = <String>[];
+    if (customBaseUrl != null && customBaseUrl!.isNotEmpty) {
+      candidates.add(_buildUrl('layers'));
+    } else {
+      final rootHost = dio.options.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+      candidates.addAll([
+        _buildUrl('layers'), // https://crises.miniawater.com/api/layers
+        '$rootHost/gis/api/layers', // https://crises.miniawater.com/gis/api/layers
+        _buildUrl('gis/layers'), // https://crises.miniawater.com/api/gis/layers
+      ]);
+    }
 
     for (final url in candidates) {
       try {
@@ -73,11 +82,24 @@ class GisApiService {
           options: Options(
             responseType: ResponseType.json,
             headers: {'Accept': 'application/json'},
+            sendTimeout: kIsWeb ? null : const Duration(seconds: 4),
+            receiveTimeout: const Duration(seconds: 4),
+            extra: {'noRetry': true},
           ),
         );
 
         if (response.statusCode == 200 && response.data is List) {
+          isServerAvailable = true;
           final list = response.data as List;
+          final rootHost = dio.options.baseUrl.replaceAll(RegExp(r'/api/?$'), '');
+          if (url.contains('/gis/api/')) {
+            customBaseUrl = '$rootHost/gis/api';
+          } else if (url.contains('/api/gis/')) {
+            customBaseUrl = '$rootHost/api/gis';
+          } else {
+            customBaseUrl ??= dio.options.baseUrl;
+          }
+
           return list
               .whereType<Map<String, dynamic>>()
               .map((e) => GisLayerInfo.fromJson(e))
@@ -89,9 +111,9 @@ class GisApiService {
       }
     }
 
-    // Fallback to default schema layers if backend is not yet accessible
-    debugPrint('⚠️ GIS API /layers not responding. Using default schema layers.');
-    return GisMockData.defaultLayers;
+    isServerAvailable = false;
+    debugPrint('ℹ️ GIS API: No remote GIS layers available from server.');
+    return const [];
   }
 
   /// GET /api/layers/{name}/fields
@@ -99,11 +121,19 @@ class GisApiService {
     String layerName, {
     CancelToken? cancelToken,
   }) async {
+    if (!isServerAvailable) return const [];
+
     try {
       final response = await dio.get(
         _buildUrl('layers/$layerName/fields'),
         cancelToken: cancelToken,
-        options: Options(responseType: ResponseType.json),
+        options: Options(
+          responseType: ResponseType.json,
+          headers: {'Accept': 'application/json'},
+          sendTimeout: kIsWeb ? null : const Duration(seconds: 4),
+          receiveTimeout: const Duration(seconds: 4),
+          extra: {'noRetry': true},
+        ),
       );
 
       if (response.statusCode == 200 && response.data is List) {
@@ -124,6 +154,11 @@ class GisApiService {
     double simplify = 0,
     CancelToken? cancelToken,
   }) async {
+    // If backend was unreachable or returned no schema, do not load mock data
+    if (!isServerAvailable) {
+      return GisCollection(name, false, const []);
+    }
+
     final bbox = formatPaddedBbox(bounds);
     final queryParams = {
       'bbox': bbox,
@@ -137,23 +172,24 @@ class GisApiService {
         queryParameters: queryParams,
         cancelToken: cancelToken,
         options: Options(
-          responseType: ResponseType.plain, // plain string for off-isolate compute
+          responseType: ResponseType.plain,
           headers: {'Accept': 'application/json'},
+          sendTimeout: kIsWeb ? null : const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+          extra: {'noRetry': true},
         ),
       );
 
       if (response.statusCode == 200 && response.data != null) {
         final rawString = response.data.toString();
-        // Offload heavy JSON parsing and coordinate transformation to an isolate
         return await compute(parseCollection, rawString);
       }
     } catch (e) {
       if (e is DioException && CancelToken.isCancel(e)) rethrow;
-      debugPrint('GIS API fetchLayer ($name) failed: $e. Returning mock collection.');
+      debugPrint('GIS API fetchLayer ($name) failed: $e');
     }
 
-    // Graceful fallback to mock data
-    return GisMockData.getMockCollection(name);
+    return GisCollection(name, false, const []);
   }
 
   /// GET /api/health
@@ -164,11 +200,16 @@ class GisApiService {
         cancelToken: cancelToken,
         options: Options(
           receiveTimeout: const Duration(seconds: 4),
-          sendTimeout: const Duration(seconds: 4),
+          sendTimeout: kIsWeb ? null : const Duration(seconds: 4),
+          headers: {'Accept': 'application/json'},
+          extra: {'noRetry': true},
         ),
       );
-      return response.statusCode == 200;
+      final isOk = response.statusCode == 200;
+      isServerAvailable = isOk;
+      return isOk;
     } catch (_) {
+      isServerAvailable = false;
       return false;
     }
   }

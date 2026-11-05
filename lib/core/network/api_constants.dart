@@ -25,4 +25,9 @@ class ApiConstants {
   static const login = "/login";
   static const logout = "/logout";
   static const allValves = "/all-valves";
+  static const fleetTracking = "/fleet/tracking";
+  static const fleetVehicles = "/fleet/vehicles";
+  static const fleetLive = "/fleet/live";
+  static const fleetRefresh = "/fleet/refresh";
+  static const fleetProxy = "/fleet/proxy";
 }

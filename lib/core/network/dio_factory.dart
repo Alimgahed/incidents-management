@@ -23,9 +23,7 @@ class DioFactory {
         // Web (dio_web_adapter): sendTimeout is only valid when the request has a body.
         sendTimeout: kIsWeb ? null : const Duration(seconds: 15),
         headers: {
-          'Content-Type': 'application/json; charset=utf-8',
           'Accept': 'application/json',
-          'Accept-Charset': 'utf-8',
         },
         responseDecoder: (responseBytes, options, responseBody) {
           return utf8.decode(responseBytes, allowMalformed: true);
@@ -33,10 +31,14 @@ class DioFactory {
       ),
     );
 
-    // Dynamic Header Injection & Cache Busting
+    // Dynamic Header Injection, Content-Type hygiene & Cache Busting
     _dio!.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          // Track start time for latency calculation
+          options.extra['dio_start_time'] =
+              DateTime.now().millisecondsSinceEpoch;
+
           final secureStorage = getIt<SecureStorageService>();
           final token = await secureStorage.getUserToken();
 
@@ -44,8 +46,26 @@ class DioFactory {
             options.headers['Authorization'] = 'Bearer $token';
           }
 
+          final method = options.method.toUpperCase();
+
+          // Only attach Content-Type if request actually has a body and is not FormData.
+          // In HTTP and browsers (Flutter Web), GET/HEAD or bodyless requests MUST NOT
+          // send Content-Type: application/json because it triggers unnecessary CORS
+          // preflight (OPTIONS) requests that fail if the endpoint does not handle OPTIONS.
+          if (method == 'GET' || method == 'HEAD' || options.data == null) {
+            options.headers.remove('Content-Type');
+          } else if (options.data is! FormData &&
+              !options.headers.containsKey('Content-Type')) {
+            options.headers['Content-Type'] = 'application/json; charset=utf-8';
+          }
+
+          // Web (dio_web_adapter): sendTimeout cannot be used without a request body
+          if (kIsWeb && options.data == null) {
+            options.sendTimeout = null;
+          }
+
           // Disable browser caching for GET requests on Flutter Web
-          if (options.method.toUpperCase() == 'GET') {
+          if (method == 'GET') {
             options.queryParameters['_t'] =
                 DateTime.now().millisecondsSinceEpoch;
           }
@@ -61,10 +81,8 @@ class DioFactory {
     // Add in-memory cache for GET requests
     _dio!.interceptors.add(CacheInterceptor());
 
-    // Add Sanitized Logging Interceptor (debug mode only)
-    if (kDebugMode) {
-      _dio!.interceptors.add(SanitizedLoggerInterceptor());
-    }
+    // Comprehensive logging interceptor to print all request & response data
+    _dio!.interceptors.add(SanitizedLoggerInterceptor());
 
     return _dio!;
   }
@@ -72,7 +90,7 @@ class DioFactory {
 
 /// Retry interceptor with exponential back-off for transient network failures.
 /// Only retries on connection timeouts, send timeouts, and network errors.
-/// Does NOT retry on 4xx/5xx server errors (those are intentional responses).
+/// Does NOT retry if extra['noRetry'] == true or on intentional 4xx/5xx responses.
 class RetryInterceptor extends Interceptor {
   final Dio dio;
   final int maxRetries;
@@ -87,10 +105,11 @@ class RetryInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     final retryCount = err.requestOptions.extra['retryCount'] ?? 0;
+    final noRetry = err.requestOptions.extra['noRetry'] == true;
 
-    // Only retry on transient network/timeout errors, not server responses
-    // Do not retry FormData requests because the multipart stream has already been consumed
+    // Only retry on transient network/timeout errors, not server responses or forbidden retries
     final shouldRetry =
+        !noRetry &&
         retryCount < maxRetries &&
         err.requestOptions.data is! FormData &&
         (err.type == DioExceptionType.connectionTimeout ||
@@ -99,11 +118,9 @@ class RetryInterceptor extends Interceptor {
 
     if (shouldRetry) {
       final delay = baseDelay * (1 << retryCount); // Exponential back-off
-      if (kDebugMode) {
-        debugPrint(
-          'Retry ${retryCount + 1}/$maxRetries after ${delay.inMilliseconds}ms for ${err.requestOptions.uri}',
-        );
-      }
+      debugPrint(
+        'Retry ${retryCount + 1}/$maxRetries after ${delay.inMilliseconds}ms for ${err.requestOptions.uri}',
+      );
       await Future.delayed(delay);
 
       err.requestOptions.extra['retryCount'] = retryCount + 1;
@@ -154,9 +171,7 @@ class CacheInterceptor extends Interceptor {
     final entry = _cache[key];
 
     if (entry != null && !entry.isExpired) {
-      if (kDebugMode) {
-        debugPrint('Cache HIT: $key');
-      }
+      debugPrint('Cache HIT: $key');
       return handler.resolve(
         Response(requestOptions: options, data: entry.data, statusCode: 200),
       );
@@ -191,58 +206,166 @@ class _CacheEntry {
   bool get isExpired => DateTime.now().isAfter(expiry);
 }
 
-/// A custom logging interceptor that automatically strips authorization headers
-/// and redacts sensitive request parameters in standard debugPrint output.
+/// A comprehensive logging interceptor that formats and prints all request,
+/// response, and error data safely without truncation or breaking debug output.
 class SanitizedLoggerInterceptor extends Interceptor {
+  static const int _maxChunkLength = 950;
+
+  /// Helper to print long messages in chunks so Flutter console doesn't truncate them
+  static void _logChunked(String message) {
+    final lines = message.split('\n');
+    for (final line in lines) {
+      if (line.length <= _maxChunkLength) {
+        debugPrint(line);
+      } else {
+        for (int i = 0; i < line.length; i += _maxChunkLength) {
+          final end = (i + _maxChunkLength < line.length)
+              ? i + _maxChunkLength
+              : line.length;
+          debugPrint(line.substring(i, end));
+        }
+      }
+    }
+  }
+
+  /// Safely converts dynamic request/response body into clean, readable text
+  static String _formatPayload(dynamic data) {
+    if (data == null) return '(empty)';
+    if (data is FormData) {
+      final fields = data.fields.map((e) => '${e.key}: ${e.value}').toList();
+      final files = data.files
+          .map((e) => '${e.key}: [File: ${e.value.filename}, ${e.value.length} bytes]')
+          .toList();
+      return 'FormData(fields: $fields, files: $files)';
+    }
+    if (data is Map || data is List) {
+      try {
+        const encoder = JsonEncoder.withIndent('  ');
+        return encoder.convert(data);
+      } catch (_) {
+        return data.toString();
+      }
+    }
+    return data.toString();
+  }
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final startTime = DateTime.now();
+    options.extra['dio_start_time'] ??= startTime.millisecondsSinceEpoch;
+
     final sanitizedHeaders = Map<String, dynamic>.from(options.headers);
     if (sanitizedHeaders.containsKey('Authorization')) {
-      sanitizedHeaders['Authorization'] = '[REDACTED_BEARER_TOKEN]';
+      final auth = sanitizedHeaders['Authorization'].toString();
+      if (auth.length > 25) {
+        sanitizedHeaders['Authorization'] =
+            '${auth.substring(0, 15)}... [length: ${auth.length}]';
+      }
     }
 
     var requestBody = options.data;
     if (options.path.contains('/login') && requestBody is Map) {
       requestBody = Map<String, dynamic>.from(requestBody);
       if (requestBody.containsKey('password')) {
-        requestBody['password'] = '[REDACTED_PASSWORD]';
+        requestBody['password'] = '******';
       }
     }
 
-    debugPrint('--> Dio Request: ${options.method} ${options.uri}');
-    debugPrint('Headers: $sanitizedHeaders');
-    if (requestBody != null) {
-      debugPrint('Body: $requestBody');
+    final queryParams = options.queryParameters.isNotEmpty
+        ? options.queryParameters.toString()
+        : '(none)';
+
+    final buf = StringBuffer();
+    buf.writeln('┌── [DIO REQUEST] ──────────────────────────────────────────');
+    buf.writeln('│ 🌐 METHOD:       ${options.method.toUpperCase()}');
+    buf.writeln('│ 🔗 URL:          ${options.uri}');
+    buf.writeln('│ 🔍 QUERY PARAMS: $queryParams');
+    buf.writeln('│ 📋 HEADERS:      $sanitizedHeaders');
+    if (options.contentType != null) {
+      buf.writeln('│ 📦 CONTENT-TYPE: ${options.contentType}');
     }
+    buf.writeln('│ 📝 BODY:');
+    final bodyFormatted = _formatPayload(requestBody);
+    for (final l in bodyFormatted.split('\n')) {
+      buf.writeln('│    $l');
+    }
+    buf.writeln(
+      '│ ⏱️ TIMEOUT:      connect=${options.connectTimeout?.inSeconds}s, '
+      'receive=${options.receiveTimeout?.inSeconds}s, '
+      'send=${options.sendTimeout?.inSeconds ?? "none"}s',
+    );
+    buf.write('└───────────────────────────────────────────────────────────');
+
+    _logChunked(buf.toString());
     handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    debugPrint(
-      '<-- Dio Response (${response.statusCode}): ${response.requestOptions.uri}',
-    );
-    // Strip user token from logged response body on login endpoint
+    final startTime = response.requestOptions.extra['dio_start_time'] as int?;
+    final duration = startTime != null
+        ? '${DateTime.now().millisecondsSinceEpoch - startTime}ms'
+        : 'unknown';
+
     var responseData = response.data;
     if (response.requestOptions.path.contains('/login') &&
         responseData is Map) {
       responseData = Map<String, dynamic>.from(responseData);
       if (responseData.containsKey('token')) {
-        responseData['token'] = '[REDACTED_JWT_TOKEN]';
+        final tok = responseData['token'].toString();
+        responseData['token'] =
+            '${tok.substring(0, 15)}... [length: ${tok.length}]';
       }
     }
-    debugPrint('Response Data: $responseData');
+
+    final buf = StringBuffer();
+    buf.writeln('┌── [DIO RESPONSE] ─────────────────────────────────────────');
+    buf.writeln('│ 🌐 METHOD:   ${response.requestOptions.method.toUpperCase()}');
+    buf.writeln('│ 🔗 URL:      ${response.requestOptions.uri}');
+    buf.writeln(
+      '│ ✅ STATUS:   ${response.statusCode} ${response.statusMessage ?? ''} [Latency: $duration]',
+    );
+    buf.writeln('│ 📋 HEADERS:  ${response.headers.map}');
+    buf.writeln('│ 📦 DATA:');
+    final dataFormatted = _formatPayload(responseData);
+    for (final l in dataFormatted.split('\n')) {
+      buf.writeln('│    $l');
+    }
+    buf.write('└───────────────────────────────────────────────────────────');
+
+    _logChunked(buf.toString());
     handler.next(response);
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    debugPrint(
-      '<-- Dio Error: ${err.message} [Code: ${err.response?.statusCode}]',
+    final startTime = err.requestOptions.extra['dio_start_time'] as int?;
+    final duration = startTime != null
+        ? '${DateTime.now().millisecondsSinceEpoch - startTime}ms'
+        : 'unknown';
+
+    final buf = StringBuffer();
+    buf.writeln('┌── [DIO ERROR] ────────────────────────────────────────────');
+    buf.writeln('│ 🌐 METHOD:       ${err.requestOptions.method.toUpperCase()}');
+    buf.writeln('│ 🔗 URL:          ${err.requestOptions.uri}');
+    buf.writeln('│ ❌ ERROR TYPE:   ${err.type}');
+    buf.writeln('│ ⚠️ MESSAGE:      ${err.message}');
+    buf.writeln(
+      '│ 🔢 STATUS CODE:  ${err.response?.statusCode ?? "No Response"} [Latency: $duration]',
     );
-    if (err.response?.data != null) {
-      debugPrint('Error Data: ${err.response?.data}');
+    if (err.response?.headers != null) {
+      buf.writeln('│ 📋 RESP HEADERS: ${err.response?.headers.map}');
     }
+    if (err.response?.data != null) {
+      buf.writeln('│ 📦 RESP DATA:');
+      final errDataFormatted = _formatPayload(err.response?.data);
+      for (final l in errDataFormatted.split('\n')) {
+        buf.writeln('│    $l');
+      }
+    }
+    buf.write('└───────────────────────────────────────────────────────────');
+
+    _logChunked(buf.toString());
     handler.next(err);
   }
 }

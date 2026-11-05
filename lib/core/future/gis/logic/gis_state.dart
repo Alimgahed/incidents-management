@@ -14,6 +14,7 @@ class GisState {
   final double currentZoom;
   final LatLngBounds? lastBounds;
   final String? errorMessage;
+  final String activeCategoryFilter; // all | basemap | water_network | wastewater_network | operations
 
   const GisState({
     this.isLoading = false,
@@ -21,22 +22,26 @@ class GisState {
     this.availableLayers = const [],
     this.enabledLayers = const {
       'districts',
+      'water_bodies',
       'canals',
-      'street',
-      'pipe',
-      'w_valve',
-      'landmark',
-      'building',
-      'railway',
+      'streets',
+      'buildings',
+      'landmarks',
+      'railways',
+      'bridges',
+      'water_pipes',
+      'water_valves',
+      'pipe_breaks',
     },
     this.layerData = const {},
     this.truncatedLayers = const [],
     this.selectedFeature,
     this.selectedFeatureLayer,
-    this.useOsm = false, // Document specifies GIS layers on beige background by default
-    this.currentZoom = 15.0,
+    this.useOsm = false, // Base map is built directly from GIS system vector layers instead of OpenStreetMap
+    this.currentZoom = 15.5,
     this.lastBounds,
     this.errorMessage,
+    this.activeCategoryFilter = 'all',
   });
 
   GisState copyWith({
@@ -52,6 +57,7 @@ class GisState {
     double? currentZoom,
     LatLngBounds? lastBounds,
     String? Function()? errorMessage,
+    String? activeCategoryFilter,
   }) {
     return GisState(
       isLoading: isLoading ?? this.isLoading,
@@ -70,6 +76,7 @@ class GisState {
       currentZoom: currentZoom ?? this.currentZoom,
       lastBounds: lastBounds ?? this.lastBounds,
       errorMessage: errorMessage != null ? errorMessage() : this.errorMessage,
+      activeCategoryFilter: activeCategoryFilter ?? this.activeCategoryFilter,
     );
   }
 }

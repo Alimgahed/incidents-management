@@ -1,22 +1,66 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:incidents_managment/core/network/api_constants.dart';
 import 'package:flutter/foundation.dart';
+import 'package:incidents_managment/core/di/dependcy_injection.dart';
+import 'package:incidents_managment/core/network/dio_factory.dart';
+import 'package:incidents_managment/core/helpers/shared_preference.dart';
+import 'package:incidents_managment/core/security/secure_storage_service.dart';
 import '../models/etit_vehicle_model.dart';
 
 /// Read-only client for ETIT GPS Fleet Management & Live Tracking.
 ///
 /// * Mobile/Desktop: talks to ETIT directly and manages the session cookies.
 /// * Web: browsers block cross-origin calls and the `Cookie` header, so all
-///   calls go through the local dev proxy (`node scripts/etit_proxy.js`),
+///   calls go through the local dev proxy or backend proxy (`/fleet/proxy`),
 ///   which owns the ETIT session (login + cookies + auto re-login).
 class EtitGpsService {
   static final EtitGpsService _instance = EtitGpsService.internal();
   factory EtitGpsService() => _instance;
   @visibleForTesting
-  EtitGpsService.internal();
+  EtitGpsService.internal() {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          try {
+            final token = await _getToken();
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
+          } catch (e) {
+            if (kDebugMode) print('Token retrieval error for fleet call: $e');
+          }
+          handler.next(options);
+        },
+      ),
+    );
+  }
 
-  static const String _webProxy =
-      'https://crises.miniawater.com/api/etit-proxy?url=';
+  /// Resolves the authenticated shared application Dio (with all app interceptors attached).
+  Dio get _backendDio {
+    if (getIt.isRegistered<Dio>()) {
+      return getIt<Dio>();
+    }
+    return DioFactory.getDioInstance();
+  }
+
+  /// Safely retrieves the current user's JWT token across Web & Mobile platforms.
+  static Future<String?> _getToken() async {
+    try {
+      if (getIt.isRegistered<SecureStorageService>()) {
+        final token = await getIt<SecureStorageService>().getUserToken();
+        if (token != null && token.isNotEmpty) return token;
+      }
+    } catch (_) {}
+    try {
+      final token = await SharedPreferencesHelper.getData<String>('user_token');
+      if (token != null && token.isNotEmpty) return token;
+    } catch (_) {}
+    return null;
+  }
+
+  static String get _backendProxy =>
+      '${ApiConstants.baseUrl}${ApiConstants.fleetProxy}?url=';
   static const String _fmsBase = 'https://etit-fms.etit-eg.com';
   static const String _gpsBase = 'https://fms-gps.etit-eg.com';
 
@@ -39,7 +83,7 @@ class EtitGpsService {
   Future<Map<String, Map<String, dynamic>>>? _inFlightLiveCoords;
 
   String _url(String target) =>
-      kIsWeb ? '$_webProxy${Uri.encodeComponent(target)}' : target;
+      kIsWeb ? '$_backendProxy${Uri.encodeComponent(target)}' : target;
 
   String get _cookieHeader =>
       _jar.entries.map((e) => '${e.key}=${e.value}').join('; ');
@@ -52,9 +96,16 @@ class EtitGpsService {
     }
   }
 
-  Map<String, dynamic> _headers({String? contentType, String? referer}) {
+  Map<String, dynamic> _headers({
+    String? contentType,
+    String? referer,
+    String? token,
+  }) {
     final h = <String, dynamic>{};
     if (contentType != null) h['Content-Type'] = contentType;
+    if (token != null && token.isNotEmpty) {
+      h['Authorization'] = 'Bearer $token';
+    }
     if (!kIsWeb) {
       h['X-Requested-With'] = 'XMLHttpRequest';
       // On web the proxy adds cookies/referer; browsers forbid setting them.
@@ -199,8 +250,42 @@ class EtitGpsService {
     String? searchKeyword,
     required bool throwOnError,
   }) async {
+    // 1. Try fetching from Backend fleet vehicles API first using the shared app Dio
+    try {
+      final dio = _backendDio;
+      final backendRes = await dio.get(
+        '${ApiConstants.baseUrl}${ApiConstants.fleetVehicles}',
+      );
+      if (backendRes.statusCode == 200 && backendRes.data != null) {
+        final dynamic raw = backendRes.data;
+        final decoded = raw is String ? jsonDecode(raw) : raw;
+        if (decoded is List) {
+          final list = decoded
+              .map((r) => EtitVehicleModel.fromJson(r as Map<String, dynamic>))
+              .toList();
+          if (searchKeyword != null && searchKeyword.trim().isNotEmpty) {
+            final kw = searchKeyword.trim().toLowerCase();
+            return list
+                .where(
+                  (v) =>
+                      v.plateNumber.toLowerCase().contains(kw) ||
+                      v.code.toLowerCase().contains(kw) ||
+                      (v.allocation ?? '').toLowerCase().contains(kw),
+                )
+                .toList();
+          }
+          return list;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Backend /fleet/vehicles not reached, trying ETIT direct: $e');
+      }
+    }
+
     await _ensureAuthenticated();
     try {
+      final token = await _getToken();
       Future<List<EtitVehicleModel>> fetchPage(int page) async {
         final payload = {
           'transpoterCriteria': {
@@ -248,6 +333,7 @@ class EtitGpsService {
                   ? 'text/plain;charset=UTF-8'
                   : 'application/json; charset=UTF-8',
               referer: '$_fmsBase/WebPages/Transporters/List.aspx',
+              token: token,
             ),
           ),
         );
@@ -300,14 +386,41 @@ class EtitGpsService {
   Future<Map<String, Map<String, dynamic>>> _fetchLiveCoordinatesInternal({
     required bool throwOnError,
   }) async {
+    // 1. Try fetching from Backend live API first using the shared app Dio
+    try {
+      final dio = _backendDio;
+      final backendRes = await dio.get(
+        '${ApiConstants.baseUrl}${ApiConstants.fleetLive}',
+      );
+      if (backendRes.statusCode == 200 && backendRes.data != null) {
+        final dynamic raw = backendRes.data;
+        final decoded = raw is String ? jsonDecode(raw) : raw;
+        if (decoded is Map) {
+          final result = <String, Map<String, dynamic>>{};
+          decoded.forEach((key, value) {
+            if (value is Map) {
+              result[key.toString()] = Map<String, dynamic>.from(value);
+            }
+          });
+          return result;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Backend /fleet/live not reached, trying ETIT direct: $e');
+      }
+    }
+
     await _ensureAuthenticated();
     try {
+      final token = await _getToken();
       if (_cachedAllCodes == null || _cachedAllCodes!.isEmpty) {
         final maps = await _dio.get(
           _url('$_gpsBase/WebPages/Maps.aspx'),
           options: Options(
             headers: _headers(
               referer: '$_fmsBase/WebPages/Transporters/List.aspx',
+              token: token,
             ),
           ),
         );
@@ -328,6 +441,7 @@ class EtitGpsService {
           headers: _headers(
             contentType: 'application/x-www-form-urlencoded',
             referer: '$_gpsBase/WebPages/Maps.aspx',
+            token: token,
           ),
         ),
       );
@@ -370,10 +484,47 @@ class EtitGpsService {
 
   /// 3. Vehicles merged with their live coordinates.
   Future<List<EtitVehicleModel>> getVehiclesWithLiveTracking() async {
+    // 1. Try fetching directly from Backend fleet tracking (single cached O(1) call) using shared app Dio
+    try {
+      final dio = _backendDio;
+      final backendRes = await dio.get(
+        '${ApiConstants.baseUrl}${ApiConstants.fleetTracking}',
+      );
+      if (backendRes.statusCode == 200 && backendRes.data != null) {
+        final dynamic raw = backendRes.data;
+        final decoded = raw is String ? jsonDecode(raw) : raw;
+        if (decoded is List) {
+          return decoded
+              .map((r) => EtitVehicleModel.fromJson(r as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print(
+          'Backend /fleet/tracking not reached, falling back to separate calls: $e',
+        );
+      }
+    }
+
     final results = await Future.wait([getVehicles(), getLiveCoordinates()]);
     final vehicles = results[0] as List<EtitVehicleModel>;
     final live = results[1] as Map<String, Map<String, dynamic>>;
     return mergeVehiclesWithLiveMap(vehicles, live);
+  }
+
+  /// Forces backend cache refresh and re-fetch from ETIT.
+  Future<bool> forceBackendRefresh() async {
+    try {
+      final dio = _backendDio;
+      final res = await dio.post(
+        '${ApiConstants.baseUrl}${ApiConstants.fleetRefresh}',
+      );
+      return res.statusCode == 200;
+    } catch (e) {
+      if (kDebugMode) print('forceBackendRefresh error: $e');
+      return false;
+    }
   }
 
   /// Pure helper to merge vehicle metadata with live telematics map in O(N) time.

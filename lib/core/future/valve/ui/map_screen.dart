@@ -254,7 +254,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                     TileLayer(
                       urlTemplate: _isSatelliteMode
                           ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-                          : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       subdomains: _isSatelliteMode
                           ? const []
                           : const ['a', 'b', 'c'],
